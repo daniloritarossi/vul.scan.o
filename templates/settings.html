@@ -88,7 +88,7 @@
     }
   </style>
   <style>body { min-height: max(884px, 100dvh); }</style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
 </head>
 
 <body
@@ -166,7 +166,7 @@
   {% include 'partials/sidebar.html' %}
 
     <!-- Main Content Canvas -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto max-w-3xl space-y-8">
 
         <!-- Page header -->
@@ -479,14 +479,9 @@
     let cfg = {};
 
     // ── Helpers ────────────────────────────────────────────────────
+    // Delega al toast condiviso (vfa-ui.js): stile/posizione/ARIA unificati.
     function showToast(msg, ok = true) {
-      const t = $('toast');
-      t.textContent = msg;
-      t.className = 'font-code-sm text-code-sm px-4 py-2 rounded-lg ' +
-        (ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-            : 'bg-red-50 text-red-700 border border-red-200');
-      t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 3000);
+      return window.vfaToast(msg, ok !== false);
     }
 
     // ── Provider toggle buttons ────────────────────────────────────

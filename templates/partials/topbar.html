@@ -2,6 +2,11 @@
 Expects one of:
 - crumbs: breadcrumb [{key, text, href?}] — last item = current page
 - top_tag_key, top_tag_text: legacy single chip (e.g. status on dashboard) #}
+<!-- Skip-to-content link: primo elemento focusabile (WCAG 2.4.1 Bypass Blocks). -->
+<a href="#main" class="skip-link" data-i18n="a11y.skip">Skip to content</a>
+<!-- Shared UI primitives: focus-visible, toast unificato, reduced-motion. -->
+<link rel="stylesheet" href="/static/vfa-ui.css" />
+<script src="/static/vfa-ui.js?v=1" defer></script>
 <!-- Dark theme (opt-in): default light. Restore prima del paint per evitare flash. -->
 <link rel="stylesheet" href="/static/theme-dark.css" />
 <script>

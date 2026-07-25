@@ -39,7 +39,7 @@
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
 </head>
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
   <div class="shader-bg">
@@ -75,7 +75,7 @@
   {% include 'partials/sidebar.html' %}
 
     <!-- Main Content -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
 
         <!-- Header -->
@@ -104,8 +104,8 @@
           </div>
         </div>
 
-        <!-- Filters -->
-        <div class="flex flex-wrap gap-3 items-center">
+        <!-- Filters (sticky: restano in vista scorrendo la tabella) -->
+        <div class="sticky top-0 z-20 flex flex-wrap gap-3 items-center bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
           <input id="sbom-filter-asset" type="text" data-i18n-ph="sbom.filter_asset" placeholder="Filter by asset IP…"
             class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition w-52" />
           <input id="sbom-filter-pkg" type="text" data-i18n-ph="sbom.filter_pkg" placeholder="Filter by package…"
@@ -121,7 +121,7 @@
         <!-- Table -->
         <section class="neural-panel rounded-2xl overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+            <table class="w-full text-left border-collapse vfa-responsive-table">
               <thead>
                 <tr class="border-b border-slate-200/70 bg-white/40">
                   <th class="font-label-caps text-label-caps text-slate-500 px-5 py-4" data-i18n="sbom.th_asset">ASSET</th>
@@ -210,13 +210,13 @@
       const deps = (r.depends_on || []).length ? ` | deps: ${esc((r.depends_on || []).join(', '))}` : '';
       const tip = `${esc(r.purl)}\n${esc(r.cpe)}\nsha256:${esc((r.sha256 || '').slice(0, 16))}…\nsupplier: ${esc(r.supplier)}${deps}`;
       return `<tr class="hover:bg-white/60 transition-colors">
-        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-900 font-semibold">${esc(r.asset_ip)}</td>
-        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-700"><span class="cursor-help border-b border-dotted border-slate-300" title="${tip}">${esc(r.package)}</span></td>
-        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-500">${esc(r.version) || '—'}</td>
-        <td class="px-5 py-3">${ecoTag(r.ecosystem)}</td>
-        <td class="px-5 py-3">${licenseTag(r.license)}</td>
-        <td class="px-5 py-3">${vulnBadge(r.cve_count)}</td>
-        <td class="px-5 py-3">${r.cve_count > 0
+        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-900 font-semibold" data-label="${esc(t('sbom.th_asset'))}">${esc(r.asset_ip)}</td>
+        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('sbom.th_pkg'))}"><span class="cursor-help border-b border-dotted border-slate-300" title="${tip}">${esc(r.package)}</span></td>
+        <td class="px-5 py-3 font-code-sm text-code-sm text-slate-500" data-label="${esc(t('sbom.th_ver'))}">${esc(r.version) || '—'}</td>
+        <td class="px-5 py-3" data-label="${esc(t('sbom.th_eco'))}">${ecoTag(r.ecosystem)}</td>
+        <td class="px-5 py-3" data-label="${esc(t('sbom.th_license'))}">${licenseTag(r.license)}</td>
+        <td class="px-5 py-3" data-label="${esc(t('sbom.th_cve'))}">${vulnBadge(r.cve_count)}</td>
+        <td class="px-5 py-3" data-label="${esc(t('sbom.th_status'))}">${r.cve_count > 0
           ? `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-rose-700"><span class="material-symbols-outlined text-[13px]">warning</span>${t('sbom.status_vuln')}</span>`
           : `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-emerald-700"><span class="material-symbols-outlined text-[13px]">verified</span>${t('sbom.status_ok')}</span>`}
         </td>

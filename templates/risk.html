@@ -51,7 +51,8 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
+  <script src="/static/tableutils.js"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -72,7 +73,7 @@
   {% include 'partials/sidebar.html' %}
 
     <!-- Main -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8 max-w-[1600px]">
         <!-- Header -->
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -168,19 +169,19 @@
             <span class="font-code-sm text-[11px] text-slate-400" data-i18n="risk.table_hint">Click a row to expand
               exploitable findings · edit context inline</span>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-auto max-h-[70vh]">
             <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-slate-200/70 bg-white/40 font-label-caps text-label-caps text-slate-500">
-                  <th class="px-5 py-4" data-i18n="risk.th_rank">#</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_asset">ASSET</th>
-                  <th class="px-5 py-4 w-48" data-i18n="risk.th_risk">RISK INDEX</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_posture">POSTURE</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_env">ENVIRONMENT</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_inet">INTERNET</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_crit">CRITICALITY</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_kev">KEV</th>
-                  <th class="px-5 py-4" data-i18n="risk.th_exposed">REACHABLE</th>
+                <tr class="sticky top-0 z-10 border-b border-slate-200/70 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm font-label-caps text-label-caps text-slate-500">
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="risk_index" aria-sort="none"><span data-i18n="risk.th_rank">#</span><span class="risk-sicon" data-sicon="risk_index"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="ip" aria-sort="none"><span data-i18n="risk.th_asset">ASSET</span><span class="risk-sicon" data-sicon="ip"></span></th>
+                  <th class="px-5 py-4 w-48 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="risk_index" aria-sort="none"><span data-i18n="risk.th_risk">RISK INDEX</span><span class="risk-sicon" data-sicon="risk_index2"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="posture_score" aria-sort="none"><span data-i18n="risk.th_posture">POSTURE</span><span class="risk-sicon" data-sicon="posture_score"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="environment" aria-sort="none"><span data-i18n="risk.th_env">ENVIRONMENT</span><span class="risk-sicon" data-sicon="environment"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="internet_facing" aria-sort="none"><span data-i18n="risk.th_inet">INTERNET</span><span class="risk-sicon" data-sicon="internet_facing"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="criticality" aria-sort="none"><span data-i18n="risk.th_crit">CRITICALITY</span><span class="risk-sicon" data-sicon="criticality"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="kev_count" aria-sort="none"><span data-i18n="risk.th_kev">KEV</span><span class="risk-sicon" data-sicon="kev_count"></span></th>
+                  <th class="px-5 py-4 cursor-pointer select-none whitespace-nowrap hover:text-cyan-600" data-sort="exposed_count" aria-sort="none"><span data-i18n="risk.th_exposed">REACHABLE</span><span class="risk-sicon" data-sicon="exposed_count"></span></th>
                 </tr>
               </thead>
               <tbody id="riskBody" class="divide-y divide-slate-100"></tbody>
@@ -328,10 +329,50 @@
       $('kExposed').textContent = s.exposed_findings || 0;
       $('runMeta').textContent = risk.run_id ? `run #${risk.run_id}` : '';
 
-      const body = $('riskBody');
+      lastRiskAssets = assets;
       $('emptyRisk').classList.toggle('hidden', assets.length > 0);
-      body.innerHTML = assets.map((a, i) => assetRow(a, i)).join('');
+      renderRiskBody();
     }
+
+    // Ordine tabella: null = ordine dal server (per risk_index desc).
+    let lastRiskAssets = [];
+    let riskSort = { field: null, dir: 'desc' };
+
+    function renderRiskBody() {
+      const arr = riskSort.field
+        ? sortArray(lastRiskAssets, riskSort.field, riskSort.dir)
+        : lastRiskAssets;
+      $('riskBody').innerHTML = arr.map((a, i) => assetRow(a, i)).join('');
+      updateRiskSortIcons();
+    }
+
+    function updateRiskSortIcons() {
+      document.querySelectorAll('th[data-sort]').forEach((th) => {
+        const active = riskSort.field && th.dataset.sort === riskSort.field;
+        th.setAttribute('aria-sort', active ? (riskSort.dir === 'asc' ? 'ascending' : 'descending') : 'none');
+        const ic = th.querySelector('.risk-sicon');
+        if (ic) ic.innerHTML = sortIcon(th.dataset.sort, riskSort);
+      });
+    }
+
+    // Header ordinabili: click + tastiera (Enter/Space). String -> asc, numeri -> desc.
+    (function wireRiskSort() {
+      const thead = document.querySelector('thead');
+      if (!thead) return;
+      function sortBy(f) {
+        if (riskSort.field === f) riskSort.dir = riskSort.dir === 'asc' ? 'desc' : 'asc';
+        else { riskSort.field = f; riskSort.dir = (f === 'ip' || f === 'environment') ? 'asc' : 'desc'; }
+        renderRiskBody();
+      }
+      thead.querySelectorAll('th[data-sort]').forEach((th) => {
+        th.setAttribute('tabindex', '0');
+        th.setAttribute('role', 'button');
+        th.addEventListener('click', () => sortBy(th.dataset.sort));
+        th.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sortBy(th.dataset.sort); }
+        });
+      });
+    })();
 
     function envSelect(a) {
       const opts = [['unknown', 'Unknown'], ['production', 'Production'], ['staging', 'Staging'], ['dev', 'Dev']];
@@ -346,6 +387,16 @@
         class="bg-white border border-slate-200 rounded-lg px-2 py-1 font-code-sm text-[11px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-300">
         ${[1, 2, 3, 4, 5].map(v => `<option value="${v}" ${Number(a.criticality) === v ? 'selected' : ''}>${v}</option>`).join('')}
       </select>`;
+    }
+
+    // Breakdown dei fattori che alimentano il risk index (tooltip nativo, a11y).
+    function riskTip(a) {
+      return `Risk ${a.risk_index}/100`
+        + ` · posture ${a.posture_score == null ? '—' : a.posture_score}`
+        + ` · KEV ${a.kev_count || 0}`
+        + ` · reachable ${a.exposed_count || 0}`
+        + ` · ${a.internet_facing ? 'internet-facing' : 'internal'}`
+        + ` · criticality ${a.criticality ?? '—'}`;
     }
 
     function assetRow(a, i) {
@@ -373,7 +424,7 @@
             ${esc(a.ip)}
             <div class="font-code-sm text-[10px] text-slate-400 ml-6">${esc(a.os_guess || '')}</div>
           </td>
-          <td class="px-5 py-3">
+          <td class="px-5 py-3" title="${esc(riskTip(a))}">
             <div class="flex items-center gap-2">
               <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden min-w-[80px]">
                 <div class="h-full rounded-full" style="width:${a.risk_index}%;background:${b.bar}"></div>
@@ -386,6 +437,7 @@
           <td class="px-5 py-3" onclick="event.stopPropagation()">${envSelect(a)}</td>
           <td class="px-5 py-3" onclick="event.stopPropagation()">
             <button data-ctx="internet_facing" data-id="${a.asset_id}" data-val="${inet ? '1' : '0'}" ${a.asset_id == null ? 'disabled' : ''}
+              role="switch" aria-checked="${inet ? 'true' : 'false'}" aria-label="${t('risk.th_inet') || 'Internet'} — ${esc(a.ip)}"
               class="w-11 h-6 rounded-full relative transition-colors ${inet ? 'bg-cyan-500' : 'bg-slate-300'} ${a.asset_id == null ? 'opacity-40' : ''}">
               <span class="absolute top-0.5 ${inet ? 'translate-x-5' : 'translate-x-0.5'} w-5 h-5 rounded-full bg-white transition-transform"></span>
             </button>

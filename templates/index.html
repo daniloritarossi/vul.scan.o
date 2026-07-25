@@ -228,7 +228,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
 </head>
 
 <body
@@ -318,7 +318,7 @@
   <div class="flex pt-16 h-screen w-full overflow-hidden">
   {% include 'partials/sidebar.html' %}
     <!-- Main Content Canvas -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
         <!-- Onboarding (shown only when inventory or posture data missing) -->
         <section id="onboarding" class="hidden neural-panel rounded-2xl p-6">
@@ -353,7 +353,7 @@
         <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- KPI 1 -->
           <div
-            class="neural-panel p-6 rounded-2xl relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/5">
+            class="neural-panel p-6 rounded-2xl relative overflow-hidden group border-l-4 border-cyan-400/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-cyan-500/5">
             <div
               class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
             </div>
@@ -410,7 +410,7 @@
           </div>
           <!-- KPI 2 -->
           <div
-            class="neural-panel p-6 rounded-2xl relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/5">
+            class="neural-panel p-6 rounded-2xl relative overflow-hidden group border-l-4 border-blue-400/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-500/5">
             <div
               class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity">
             </div>
@@ -455,7 +455,7 @@
           </div>
           <!-- KPI 3 -->
           <div
-            class="neural-panel p-6 rounded-2xl relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-500/5">
+            class="neural-panel p-6 rounded-2xl relative overflow-hidden group border-l-4 border-rose-400/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-500/5">
             <div
               class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity">
             </div>
@@ -476,6 +476,16 @@
                 class="material-symbols-outlined text-slate-400 text-sm bg-slate-50 p-1 rounded-full">trending_flat</span>
             </div>
             <p id="kpiVulnsTotal" class="hidden font-code-sm text-[11px] text-slate-400 mt-1"></p>
+            <!-- CVE trend sulle ultime run (sparkline SVG condivisa; higher = worse) -->
+            <div id="vulnsTrend" class="hidden mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-label-caps text-[9px] text-slate-400 tracking-wider"
+                  data-i18n="dash.vulns_trend_label">CVE TREND</span>
+                <span id="vulnsTrendDelta" class="font-code-sm text-[10px] font-semibold"></span>
+              </div>
+              <svg id="vulnsTrendSvg" viewBox="0 0 100 24" preserveAspectRatio="none"
+                class="w-full h-6 overflow-visible"></svg>
+            </div>
             <!-- Breakdown severita' (dall'ultima posture run) -->
             <div id="kpiSevChips" class="hidden flex items-center gap-1.5 mt-3 flex-wrap">
               <span id="sevChipC"
@@ -1383,6 +1393,22 @@
     }
     loadLatestPosture();
 
+    // Sparkline SVG riusabile (niente librerie). `fixedMax` numerico -> scala
+    // fissa [0..fixedMax] (es. score 0..100); altrimenti autoscala su min/max.
+    function renderSparkline(svg, values, stroke, fixedMax) {
+      if (!svg || !values || values.length < 2) return;
+      const w = 100, h = 24, pad = 2;
+      const lo = (typeof fixedMax === 'number') ? 0 : Math.min(...values);
+      const hi = (typeof fixedMax === 'number') ? fixedMax : Math.max(...values);
+      const span = (hi - lo) || 1;
+      const xs = values.map((_, i) => pad + (w - 2 * pad) * i / (values.length - 1));
+      const ys = values.map((v) => h - pad - (h - 2 * pad) * (Math.max(lo, Math.min(hi, v)) - lo) / span);
+      const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+      svg.innerHTML =
+        `<polyline points="${pts}" fill="none" stroke="${stroke}" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>` +
+        `<circle cx="${xs[xs.length - 1].toFixed(1)}" cy="${ys[ys.length - 1].toFixed(1)}" r="2" fill="${stroke}"/>`;
+    }
+
     // Trend dello score sulle ultime run (sparkline SVG, niente librerie).
     async function loadPostureTrend() {
       try {
@@ -1393,21 +1419,27 @@
         updateAssetsKpi();
         _vulnsKpi.prevTotal = (d.runs || [])[1]?.total_vulns ?? null;
         updateVulnsKpi();
-        const runs = (d.runs || []).filter((x) => x.avg_score !== null && x.avg_score !== undefined)
-          .slice(0, 12).reverse();
-        if (runs.length < 2) return;
-        const w = 100, h = 24, pad = 2;
-        const xs = runs.map((_, i) => pad + (w - 2 * pad) * i / (runs.length - 1));
-        const ys = runs.map((x) => h - pad - (h - 2 * pad) * (x.avg_score || 0) / 100);
-        const pts = xs.map((x, i) => `${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-        $('postureTrendSvg').innerHTML =
-          `<polyline points="${pts}" fill="none" stroke="#06b6d4" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>` +
-          `<circle cx="${xs[xs.length - 1].toFixed(1)}" cy="${ys[ys.length - 1].toFixed(1)}" r="2" fill="#06b6d4"/>`;
-        const delta = (runs[runs.length - 1].avg_score || 0) - (runs[0].avg_score || 0);
-        const dEl = $('postureTrendDelta');
-        dEl.textContent = (delta >= 0 ? '+' : '') + delta;
-        dEl.className = 'font-code-sm text-[10px] font-semibold ' + (delta >= 0 ? 'text-emerald-600' : 'text-rose-600');
-        $('postureTrend').classList.remove('hidden');
+        const runs = (d.runs || []).slice(0, 12).reverse();
+        // Trend score postura (scala fissa 0..100).
+        const scoreRuns = runs.filter((x) => x.avg_score !== null && x.avg_score !== undefined);
+        if (scoreRuns.length >= 2) {
+          renderSparkline($('postureTrendSvg'), scoreRuns.map((x) => x.avg_score || 0), '#06b6d4', 100);
+          const delta = (scoreRuns[scoreRuns.length - 1].avg_score || 0) - (scoreRuns[0].avg_score || 0);
+          const dEl = $('postureTrendDelta');
+          dEl.textContent = (delta >= 0 ? '+' : '') + delta;
+          dEl.className = 'font-code-sm text-[10px] font-semibold ' + (delta >= 0 ? 'text-emerald-600' : 'text-rose-600');
+          $('postureTrend').classList.remove('hidden');
+        }
+        // Trend vulnerabilita' attive (autoscala; piu' alto = peggio -> scendere e' bene).
+        const vulnRuns = runs.filter((x) => x.total_vulns !== null && x.total_vulns !== undefined);
+        if (vulnRuns.length >= 2) {
+          renderSparkline($('vulnsTrendSvg'), vulnRuns.map((x) => x.total_vulns || 0), '#f43f5e');
+          const vd = (vulnRuns[vulnRuns.length - 1].total_vulns || 0) - (vulnRuns[0].total_vulns || 0);
+          const vEl = $('vulnsTrendDelta');
+          vEl.textContent = (vd > 0 ? '+' : '') + vd;
+          vEl.className = 'font-code-sm text-[10px] font-semibold ' + (vd <= 0 ? 'text-emerald-600' : 'text-rose-600');
+          $('vulnsTrend').classList.remove('hidden');
+        }
       } catch (_) { /* Supabase offline */ }
     }
     loadPostureTrend();

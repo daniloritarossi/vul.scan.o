@@ -49,7 +49,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -70,7 +70,7 @@
   {% include 'partials/sidebar.html' %}
 
     <!-- Main -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8 max-w-[1600px]">
         <!-- Header -->
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -201,8 +201,8 @@
           </div>
         </section>
 
-        <!-- Filters -->
-        <section class="flex flex-wrap items-center gap-3">
+        <!-- Filters (sticky: restano in vista scorrendo la tabella) -->
+        <section class="sticky top-0 z-20 flex flex-wrap items-center gap-3 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
           <select id="fStatus"
             class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300">
             <option value="" data-i18n="find.f_status">ALL STATUSES</option>
@@ -251,12 +251,14 @@
               class="w-full font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
           </div>
           <span id="rowCount" class="font-code-sm text-[11px] text-slate-400 ml-auto"></span>
+          <!-- Chip filtri attivi (rimovibili) -->
+          <div id="activeChips" class="w-full flex flex-wrap items-center gap-2 empty:hidden"></div>
         </section>
 
         <!-- Table -->
         <section class="neural-panel rounded-2xl overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left">
+            <table class="w-full text-left vfa-responsive-table">
               <thead>
                 <tr class="border-b border-slate-200/70 font-label-caps text-[10px] text-slate-400">
                   <th class="px-4 py-3" data-i18n="find.th_sev">SEV</th>
@@ -287,16 +289,9 @@
       const tr = (k, v) => (typeof t === 'function' ? t(k, v) : k);
       let ALL = [];
 
-      let toastTimer = null;
+      // Delega al toast condiviso (vfa-ui.js): stile/posizione/ARIA unificati.
       function showToast(text, ok) {
-        const el = $('toast');
-        el.textContent = text;
-        el.className = 'fixed bottom-6 right-6 z-50 max-w-md px-4 py-3 rounded-xl shadow-2xl '
-          + 'font-code-sm text-[13px] border ' + (ok
-            ? 'bg-emerald-600 text-white border-emerald-500'
-            : 'bg-rose-600 text-white border-rose-500');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { el.className = 'hidden'; }, 6000);
+        return window.vfaToast(text, ok !== false);
       }
 
       const SEV_BADGE = {
@@ -354,10 +349,44 @@
         return `<select data-fid="${r.id}" class="statusSel font-code-sm text-[11px] rounded-lg px-2 py-1 border ${STATUS_STYLE[r.status] || STATUS_STYLE.open} focus:outline-none cursor-pointer">${opts}</select>`;
       }
 
+      // Chip dei filtri attivi: ogni chip ha una ✕ che azzera quel filtro.
+      function renderChips() {
+        const wrap = $('activeChips');
+        if (!wrap) return;
+        const active = [
+          ['fStatus', tr('find.f_status_chip') || 'Status'],
+          ['fSev', tr('find.f_sev_chip') || 'Severity'],
+          ['fSource', tr('find.f_source_chip') || 'Source'],
+          ['fNis2', 'NIS2'],
+          ['fSearch', tr('find.f_search_chip') || 'Search'],
+        ].filter(([id]) => ($(id).value || '').trim() !== '');
+        wrap.innerHTML = active.map(([id, label]) => {
+          const el = $(id);
+          const val = id === 'fNis2' ? (el.options[el.selectedIndex]?.value || el.value) : el.value;
+          return `<span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 font-code-sm text-[11px]">`
+            + `<span class="font-label-caps text-[9px] tracking-wider text-cyan-500">${esc(label)}</span>`
+            + `<span>${esc(val)}</span>`
+            + `<button type="button" data-clear="${id}" aria-label="Clear ${esc(label)}" class="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-cyan-200/60">×</button>`
+            + `</span>`;
+        }).join('') + (active.length > 1
+          ? `<button type="button" id="clearAllChips" class="font-label-caps text-[10px] text-slate-400 hover:text-rose-600 underline decoration-dotted">${esc(tr('find.clear_all') || 'CLEAR ALL')}</button>`
+          : '');
+        wrap.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => {
+          $(b.dataset.clear).value = '';
+          render();
+        }));
+        const clearAll = $('clearAllChips');
+        if (clearAll) clearAll.addEventListener('click', () => {
+          ['fStatus', 'fSev', 'fSource', 'fNis2', 'fSearch'].forEach((id) => { $(id).value = ''; });
+          render();
+        });
+      }
+
       function render() {
         const st = $('fStatus').value, sev = $('fSev').value,
           src = $('fSource').value, nis2 = $('fNis2').value,
           q = $('fSearch').value.trim().toLowerCase();
+        renderChips();
         const rows = ALL.filter((r) =>
           (!st || r.status === st) &&
           (!sev || (r.severity || '').toUpperCase() === sev) &&
@@ -382,19 +411,19 @@
             ...comp.nis2.map((n) => `<span class="px-1.5 py-0.5 rounded bg-teal-50 border border-teal-200 text-teal-600 text-[9px]" title="${esc(n)}">NIS2 ${esc(n.split(' ')[0])}</span>`),
           ].join(' ');
           return `<tr class="border-b border-slate-100 hover:bg-white/60 transition-colors align-top">
-            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${sevCls}">${esc((r.severity || 'UNKNOWN').toUpperCase())}</span></td>
-            <td class="px-4 py-3 max-w-[420px]">
+            <td class="px-4 py-3" data-label="${esc(tr('find.th_sev'))}"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${sevCls}">${esc((r.severity || 'UNKNOWN').toUpperCase())}</span></td>
+            <td class="px-4 py-3 max-w-[420px]" data-label="${esc(tr('find.th_finding'))}">
               <div class="font-semibold text-slate-800 truncate" title="${esc(r.title)}">${esc(r.title)}</div>
               <div class="text-[11px] text-slate-400 truncate">${esc(r.package || '')}${r.version ? ' · ' + esc(r.version) : ''}${r.location ? ' · ' + esc(r.location) : ''}</div>
               <div class="text-[11px]">${cves} ${badges.join(' ')}</div>
               <div class="text-[11px] mt-0.5">${compTags}</div>
             </td>
-            <td class="px-4 py-3 whitespace-nowrap">${esc(r.asset_ip || '—')}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${srcs || '—'}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-500">${fmtDate(r.first_seen)}<br/>${fmtDate(r.last_seen)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${slaBadge(r)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${statusSelect(r)}</td>
-            <td class="px-4 py-3 whitespace-nowrap">${ticketCell(r)}</td>
+            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_asset'))}">${esc(r.asset_ip || '—')}</td>
+            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_source'))}">${srcs || '—'}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-500" data-label="${esc(tr('find.th_seen'))}">${fmtDate(r.first_seen)}<br/>${fmtDate(r.last_seen)}</td>
+            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_sla'))}">${slaBadge(r)}</td>
+            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_status'))}">${statusSelect(r)}</td>
+            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_ticket'))}">${ticketCell(r)}</td>
           </tr>`;
         }).join('');
         document.querySelectorAll('.ticketBtn').forEach((btn) => {

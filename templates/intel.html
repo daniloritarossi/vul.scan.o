@@ -198,11 +198,13 @@
       to { transform: translateX(0); opacity: 1; }
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
   <script src="/static/vendor/d3.min.js"></script>
-  <script src="/static/vendor/3d-force-graph.min.js"></script>
+  <!-- 3d-force-graph.min.js (~1.3MB) NON caricato qui: lazy-load via
+       IntersectionObserver quando il pannello del grafo entra nel viewport
+       (vedi ensureForceGraph in fondo). Migliora il time-to-interactive. -->
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -223,7 +225,7 @@
     {% include 'partials/sidebar.html' %}
 
     <!-- Main -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
         <!-- Header -->
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -366,9 +368,10 @@
                 </button>
               </div>
             </div>
-            <!-- Badge-filtri CONDIVISI col grafo 3D: stesso stato server + severity per entrambi i pannelli -->
+            <!-- Badge-filtri CONDIVISI col grafo 3D: stesso stato server + severity per entrambi i pannelli.
+                 Sticky in cima al pannello: la legenda/severita' resta visibile mentre si scorre la viz. -->
             <div id="cvePackStats"
-              class="shrink-0 border-b border-slate-100/70 px-5 py-2.5 flex items-center gap-2 flex-wrap"></div>
+              class="sticky top-0 z-30 shrink-0 border-b border-slate-100/70 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm px-5 py-2.5 flex items-center gap-2 flex-wrap"></div>
             <div class="relative">
               <div id="packSrvPanel"
                 class="hidden absolute left-5 top-1 w-64 max-h-72 overflow-y-auto neural-panel rounded-xl p-3 z-50 shadow-xl">
@@ -467,17 +470,17 @@
                 No CVE data — run a scan first.</div>
               <!-- Controlli interazione camera/animazione -->
               <div id="cveGraphCtrls" class="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
-                <button type="button" data-gctl="zoomin" title="Zoom in" class="gctl-btn"><span
+                <button type="button" data-gctl="zoomin" title="Zoom in" aria-label="Zoom in" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">add</span></button>
-                <button type="button" data-gctl="zoomout" title="Zoom out" class="gctl-btn"><span
+                <button type="button" data-gctl="zoomout" title="Zoom out" aria-label="Zoom out" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">remove</span></button>
-                <button type="button" data-gctl="fit" title="Fit graph to view" class="gctl-btn"><span
+                <button type="button" data-gctl="fit" title="Fit graph to view" aria-label="Fit graph to view" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">fit_screen</span></button>
-                <button type="button" data-gctl="reset" title="Reset camera" class="gctl-btn"><span
+                <button type="button" data-gctl="reset" title="Reset camera" aria-label="Reset camera" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">restart_alt</span></button>
-                <button type="button" id="gctlRotate" data-gctl="rotate" title="Auto-rotate" class="gctl-btn"><span
+                <button type="button" id="gctlRotate" data-gctl="rotate" title="Auto-rotate" aria-label="Auto-rotate" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">3d_rotation</span></button>
-                <button type="button" id="gctlPause" data-gctl="pause" title="Pause animation" class="gctl-btn"><span
+                <button type="button" id="gctlPause" data-gctl="pause" title="Pause animation" aria-label="Pause animation" class="gctl-btn"><span aria-hidden="true"
                     class="material-symbols-outlined text-[18px]">pause</span></button>
               </div>
             </div>
@@ -1715,6 +1718,34 @@
         ov.querySelector('#qvrSkip').addEventListener('click', close);
       });
     }
+
+    // Lazy-load della libreria del grafo 3D (~1.3MB): caricata solo quando il
+    // pannello sta per entrare nel viewport, poi si renderizza il grafo.
+    // renderCveGraph e' gia' difensivo (no-op se ForceGraph3D non e' pronto),
+    // quindi le chiamate anticipate dal flusso dati non falliscono.
+    let _fgLoading = null;
+    function ensureForceGraph() {
+      if (typeof ForceGraph3D !== 'undefined') return Promise.resolve();
+      if (_fgLoading) return _fgLoading;
+      _fgLoading = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = '/static/vendor/3d-force-graph.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('3d-force-graph load failed'));
+        document.head.appendChild(s);
+      });
+      return _fgLoading;
+    }
+    (function observeCveGraph() {
+      const wrap = document.getElementById('cveGraphWrap');
+      if (!wrap) return;
+      const boot = () => ensureForceGraph().then(() => renderCveGraph(assetsData)).catch(() => { });
+      if (!('IntersectionObserver' in window)) { boot(); return; }
+      const io = new IntersectionObserver((entries, obs) => {
+        if (entries.some((e) => e.isIntersecting)) { obs.disconnect(); boot(); }
+      }, { rootMargin: '200px' });
+      io.observe(wrap);
+    })();
 
     loadAssetPicker();
     loadLatest();

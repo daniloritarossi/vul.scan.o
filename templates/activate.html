@@ -41,7 +41,8 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
+  <script src="/static/vfa-auth.js?v=1" defer></script>
 </head>
 
 <body class="font-body-md text-body-md text-slate-900 antialiased min-h-screen flex items-center justify-center p-4">
@@ -62,7 +63,7 @@
       <div>
         <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="password"
           data-i18n="act.new_pw">NEW PASSWORD</label>
-        <input id="password" type="password" required autofocus autocomplete="new-password"
+        <input id="password" type="password" required autofocus autocomplete="new-password" data-vfa-strength
           class="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
       </div>
       <div>

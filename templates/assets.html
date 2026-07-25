@@ -93,7 +93,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -170,7 +170,7 @@
   <div class="flex pt-16 h-screen w-full overflow-hidden">
   {% include 'partials/sidebar.html' %}
     <!-- Main Content Canvas -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
         <!-- Page header -->
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -330,14 +330,9 @@
       });
     }
 
+    // Delega al toast condiviso (vfa-ui.js): stile/posizione/ARIA unificati.
     function showToast(msg, ok = true) {
-      toast.textContent = msg;
-      toast.className = 'font-code-sm text-code-sm px-4 py-2 rounded-lg ' +
-        (ok ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-          : 'bg-rose-50 text-rose-700 border border-rose-200');
-      toast.classList.remove('hidden');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.classList.add('hidden'), 2600);
+      return window.vfaToast(msg, ok !== false);
     }
 
     const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');

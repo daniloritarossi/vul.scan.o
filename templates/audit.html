@@ -113,7 +113,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -190,7 +190,7 @@
   <div class="flex pt-16 h-screen w-full overflow-hidden">
   {% include 'partials/sidebar.html' %}
     <!-- Main Content Canvas -->
-    <main class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
+    <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
         <!-- Page header -->
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -278,8 +278,8 @@
           </div>
         </section>
 
-        <!-- Sort + Export toolbar -->
-        <div class="flex items-center justify-between flex-wrap gap-3 -mb-2">
+        <!-- Sort + Export toolbar (sticky: resta in vista scorrendo la lista) -->
+        <div class="sticky top-0 z-20 flex items-center justify-between flex-wrap gap-3 -mb-2 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
           <div id="auditSortBar" class="flex items-center gap-2">
             <span class="font-label-caps text-[10px] text-slate-400">SORT:</span>
           </div>
@@ -393,15 +393,15 @@
         : '<span class="text-slate-300">—</span>';
       return `
       <tr class="hover:bg-white/60 transition-colors">
-        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-900 font-semibold">${esc(r.ip)}</td>
-        <td class="px-4 py-3 font-code-sm text-[11px] text-slate-500">${esc(r.method || '—')}</td>
-        <td class="px-4 py-3">${auth}</td>
-        <td class="px-4 py-3">${osChip(r.os_type, r.os_major_version)}</td>
-        <td class="px-4 py-3">${matchBadge(r.vuln_match)}${advisoryBadge(r)}</td>
-        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-700">${found}</td>
-        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-700">${ver}</td>
-        <td class="px-4 py-3">${cveChips(r.cve_ids, r.cve_count, product || r.product, r.detected_version)}</td>
-        <td class="px-4 py-3">${evidence}</td>
+        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-900 font-semibold" data-label="IP">${esc(r.ip)}</td>
+        <td class="px-4 py-3 font-code-sm text-[11px] text-slate-500" data-label="${esc(t('audit.th_method'))}">${esc(r.method || '—')}</td>
+        <td class="px-4 py-3" data-label="${esc(t('common.auth'))}">${auth}</td>
+        <td class="px-4 py-3" data-label="OS">${osChip(r.os_type, r.os_major_version)}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.th_outcome'))}">${matchBadge(r.vuln_match)}${advisoryBadge(r)}</td>
+        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('audit.th_found'))}">${found}</td>
+        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('audit.th_version'))}">${ver}</td>
+        <td class="px-4 py-3" data-label="CVE">${cveChips(r.cve_ids, r.cve_count, product || r.product, r.detected_version)}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.th_evidence'))}">${evidence}</td>
       </tr>`;
     }
 
@@ -445,7 +445,7 @@
           </div>` : ''}
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse vfa-responsive-table">
             <thead>
               <tr class="border-b border-slate-200/70 bg-white/40">
                 <th data-isort="ip" class="font-label-caps text-label-caps text-slate-500 px-4 py-3 cursor-pointer select-none hover:text-slate-700 whitespace-nowrap">IP${sortIcon('ip', innerSort)}</th>

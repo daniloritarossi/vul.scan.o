@@ -44,7 +44,8 @@
       background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
     }
   </style>
-  <script src="/static/i18n.js?v=19"></script>
+  <script src="/static/i18n.js?v=20"></script>
+  <script src="/static/vfa-auth.js?v=1" defer></script>
 </head>
 
 <body class="font-body-md text-body-md text-slate-900 antialiased min-h-screen flex items-center justify-center p-4">
@@ -89,6 +90,18 @@
           data-i18n="login.forgot">Forgot password?</a>
       </p>
     </form>
+    <!-- Recupero password inline (sostituisce window.prompt): coerente col form, con validazione email. -->
+    <div id="forgotBox" class="hidden mt-3">
+      <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="forgotEmail"
+        data-i18n="login.forgot_label">RECOVERY EMAIL</label>
+      <div class="flex gap-2">
+        <input id="forgotEmail" type="email" autocomplete="email" placeholder="you@example.com"
+          class="flex-1 min-w-0 bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+        <button type="button" id="forgotSend"
+          class="bg-slate-900 text-white hover:bg-slate-800 px-4 rounded-xl font-label-caps text-label-caps transition-all disabled:opacity-40 shrink-0"
+          data-i18n="login.forgot_send">SEND</button>
+      </div>
+    </div>
     <p class="font-code-sm text-[11px] text-slate-400 mt-6 text-center">
       Vulnerability Feed Aggregator <span class="text-slate-500">{{ app_version }}</span>
     </p>
@@ -124,20 +137,36 @@
       }
     });
 
-    document.getElementById('forgotLink').addEventListener('click', async (e) => {
+    const forgotBox = document.getElementById('forgotBox');
+    document.getElementById('forgotLink').addEventListener('click', (e) => {
       e.preventDefault();
-      const email = window.prompt(t('login.forgot_prompt'));
-      if (!email) return;
+      forgotBox.classList.toggle('hidden');
+      if (!forgotBox.classList.contains('hidden')) document.getElementById('forgotEmail').focus();
+    });
+    async function sendForgot() {
+      const emailEl = document.getElementById('forgotEmail');
+      const email = emailEl.value.trim();
+      if (!email) { emailEl.focus(); return; }
+      const sendBtn = document.getElementById('forgotSend');
+      sendBtn.disabled = true;
       try {
         const r = await fetch('/api/forgot', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: email.trim() }),
+          body: JSON.stringify({ email }),
         });
         const d = await r.json();
         const info = document.getElementById('info');
-        info.textContent = d.message || 'Richiesta inviata.';
+        info.textContent = d.message || t('login.forgot_sent');
         info.classList.remove('hidden');
-      } catch (_) { }
+        forgotBox.classList.add('hidden');
+      } catch (_) {
+        errEl.textContent = t('login.unreachable');
+        errEl.classList.remove('hidden');
+      } finally { sendBtn.disabled = false; }
+    }
+    document.getElementById('forgotSend').addEventListener('click', sendForgot);
+    document.getElementById('forgotEmail').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); sendForgot(); }
     });
   </script>
 </body>
