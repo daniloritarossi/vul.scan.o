@@ -1,14 +1,14 @@
 {# Shared desktop navigation drawer. Expects: active_page. #}
 {% set nav_items = [
-  {'page': 'dashboard', 'href': '/',         'icon': 'dashboard',    'key': 'nav.dashboard', 'text': 'DASHBOARD'},
-  {'page': 'assets',    'href': '/assets',   'icon': 'inventory_2',  'key': 'nav.assets',    'text': 'ASSETS'},
-  {'page': 'intel',     'href': '/intel',    'icon': 'psychology',   'key': 'nav.posture',   'text': 'SECURITY POSTURE'},
-  {'page': 'risk',      'href': '/risk',     'icon': 'gpp_maybe',    'key': 'nav.risk',      'text': 'RISK'},
-  {'page': 'findings',  'href': '/findings', 'icon': 'bug_report',   'key': 'nav.findings',  'text': 'FINDINGS'},
-  {'page': 'audit',     'href': '/audit',    'icon': 'fact_check',   'key': 'nav.audit',     'text': 'AUDIT'},
+  {'page': 'dashboard', 'href': '/',         'icon': 'dashboard',    'key': 'nav.dashboard', 'text': 'Dashboard'},
+  {'page': 'assets',    'href': '/assets',   'icon': 'inventory_2',  'key': 'nav.assets',    'text': 'Assets'},
+  {'page': 'intel',     'href': '/intel',    'icon': 'psychology',   'key': 'nav.posture',   'text': 'Security posture'},
+  {'page': 'risk',      'href': '/risk',     'icon': 'gpp_maybe',    'key': 'nav.risk',      'text': 'Risk'},
+  {'page': 'findings',  'href': '/findings', 'icon': 'bug_report',   'key': 'nav.findings',  'text': 'Findings'},
+  {'page': 'audit',     'href': '/audit',    'icon': 'fact_check',   'key': 'nav.audit',     'text': 'Audit'},
   {'page': 'sbom',      'href': '/sbom',     'icon': 'receipt_long', 'key': 'nav.sbom',      'text': 'SBOM'},
-  {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',  'text': 'ADMIN'},
-  {'page': 'settings',  'href': '/settings', 'icon': 'settings',     'key': 'nav.settings',  'text': 'SETTINGS'}
+  {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',  'text': 'Admin'},
+  {'page': 'settings',  'href': '/settings', 'icon': 'settings',     'key': 'nav.settings',  'text': 'Settings'}
 ] %}
 <!-- NavigationDrawer (Web) -->
 <nav
@@ -20,13 +20,13 @@
     {% for it in nav_items %}
     <li>
       {% if it.page == active_page %}
-      <a class="flex items-center gap-3 px-4 py-3 text-white bg-slate-900 rounded-xl font-label-caps text-label-caps shadow-lg shadow-slate-900/10 transition-transform hover:scale-[1.02]"
+      <a aria-current="page" class="flex items-center gap-3 px-4 py-3 text-white bg-slate-900 rounded-xl font-body-md text-[13px] font-semibold shadow-lg shadow-slate-900/10 transition-colors"
         href="{{ it.href }}">
         <span class="material-symbols-outlined text-cyan-400">{{ it.icon }}</span>
         <span data-i18n="{{ it.key }}">{{ it.text }}</span>
       </a>
       {% else %}
-      <a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-white/60 rounded-xl transition-all font-label-caps text-label-caps"
+      <a class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:text-slate-900 hover:bg-white/60 rounded-xl transition-colors font-body-md text-[13px]"
         href="{{ it.href }}">
         <span class="material-symbols-outlined">{{ it.icon }}</span>
         <span data-i18n="{{ it.key }}">{{ it.text }}</span>

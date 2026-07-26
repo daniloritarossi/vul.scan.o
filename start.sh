@@ -905,6 +905,18 @@ echo "==> installing/updating dependencies (requirements.txt)"
 "$PYBIN" -m pip install -q --upgrade pip
 "$PYBIN" -m pip install -q -r requirements.txt
 
+# ── 1b) UI CSS (Tailwind, compiled) ───────────────────────────────────────────
+# Templates load static/vendor/tailwind.css (committed). Rebuild it when npm is
+# available so class changes take effect; otherwise the committed file is served
+# as-is. Never fatal — the app runs on the committed CSS.
+if command -v npm >/dev/null 2>&1; then
+  echo "==> building UI CSS (tailwind)"
+  [ -d node_modules ] || npm install --no-audit --no-fund --silent || true
+  npm run css --silent || echo "   (tailwind build skipped — using committed static/vendor/tailwind.css)"
+else
+  echo "==> npm not found — using committed static/vendor/tailwind.css"
+fi
+
 # ── 2) Stack Supabase (Docker) ────────────────────────────────────────────────
 
 if [ "$WITH_SUPABASE" = "1" ]; then

@@ -1,0 +1,169 @@
+/*
+ * app.css — Tailwind entry point. Compiled to static/vendor/tailwind.css.
+ * Build: `npm run css` (start.sh runs it automatically).
+ *
+ * Theming (replaces the old 130-line theme-dark.css !important map):
+ *   Core colours (white, slate-50..300, accent 50/100/200/300/600/700/800) are
+ *   routed through CSS variables in tailwind.config.js as rgb(var(--c-x)/<a>).
+ *   :root holds the LIGHT values (identical to stock Tailwind, so light mode is
+ *   unchanged); .dark flips them. Because every bg/border/hover/divide/opacity
+ *   utility reads the same variable, they all re-theme automatically — no
+ *   per-utility override needed.
+ *
+ *   The only rules that CANNOT be a colour variable are role-divergent ones:
+ *   the neutral text scale (slate-400..900) must invert to light in dark mode
+ *   while bg-slate-900 (docks/console) must STAY dark — same shade, opposite
+ *   treatment. Those few text inversions + component classes live in the .dark
+ *   block below.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light palette (stock Tailwind values → no visual change in light mode) ── */
+:root {
+  --c-white: 255 255 255;
+  --c-slate-50: 248 250 252;
+  --c-slate-100: 241 245 249;
+  --c-slate-200: 226 232 240;
+  --c-slate-300: 203 213 225;
+  --c-cyan-50: 236 254 255;
+  --c-cyan-100: 207 250 254;
+  --c-cyan-200: 165 243 252;
+  --c-cyan-300: 103 232 249;
+  --c-cyan-600: 8 145 178;
+  --c-cyan-700: 14 116 144;
+  --c-cyan-800: 21 94 117;
+  --c-emerald-50: 236 253 245;
+  --c-emerald-100: 209 250 229;
+  --c-emerald-200: 167 243 208;
+  --c-emerald-600: 5 150 105;
+  --c-emerald-700: 4 120 87;
+  --c-rose-50: 255 241 242;
+  --c-rose-100: 255 228 230;
+  --c-rose-200: 254 205 211;
+  --c-rose-300: 253 164 175;
+  --c-rose-600: 225 29 72;
+  --c-rose-700: 190 18 60;
+  --c-red-50: 254 242 242;
+  --c-red-200: 254 202 202;
+  --c-red-700: 185 28 28;
+  --c-amber-50: 255 251 235;
+  --c-amber-200: 253 230 138;
+  --c-amber-700: 180 83 9;
+  --c-orange-50: 255 247 237;
+  --c-orange-200: 254 215 170;
+  --c-orange-700: 194 65 12;
+  --c-blue-50: 239 246 255;
+  --c-blue-100: 219 234 254;
+  --c-blue-200: 191 219 254;
+  --c-blue-600: 37 99 235;
+  --c-blue-700: 29 78 216;
+  --c-indigo-50: 238 242 255;
+  --c-indigo-100: 224 231 255;
+  --c-indigo-200: 199 210 254;
+  --c-indigo-300: 165 180 252;
+  --c-indigo-600: 79 70 229;
+  --c-indigo-700: 67 56 202;
+  --c-indigo-800: 55 48 163;
+  --c-purple-50: 250 245 255;
+  --c-purple-200: 233 213 255;
+  --c-purple-700: 126 34 206;
+  --c-yellow-50: 254 252 232;
+  --c-yellow-200: 254 240 138;
+  --c-yellow-700: 161 98 7;
+}
+
+/* ── Dark palette (surfaces darkened, *-50 tints pre-blended to solids,
+      accent text lightened). Flip a variable here and every utility follows. ── */
+.dark {
+  --c-white: 20 20 31;
+  --c-slate-50: 26 26 40;
+  --c-slate-100: 34 34 47;
+  --c-slate-200: 43 43 61;
+  --c-slate-300: 52 52 77;
+  --c-cyan-50: 18 39 53;
+  --c-cyan-100: 15 77 94;
+  --c-cyan-200: 15 77 94;
+  --c-cyan-300: 15 77 94;
+  --c-cyan-600: 34 211 238;
+  --c-cyan-700: 34 211 238;
+  --c-cyan-800: 34 211 238;
+  --c-emerald-50: 20 40 43;
+  --c-emerald-100: 19 78 65;
+  --c-emerald-200: 19 78 65;
+  --c-emerald-600: 52 211 153;
+  --c-emerald-700: 52 211 153;
+  --c-rose-50: 47 25 39;
+  --c-rose-100: 98 35 53;
+  --c-rose-200: 98 35 53;
+  --c-rose-300: 98 35 53;
+  --c-rose-600: 251 113 133;
+  --c-rose-700: 251 113 133;
+  --c-red-50: 46 26 35;
+  --c-red-200: 97 37 44;
+  --c-red-700: 248 113 113;
+  --c-amber-50: 47 37 29;
+  --c-amber-200: 99 68 24;
+  --c-amber-700: 251 191 36;
+  --c-orange-50: 47 31 30;
+  --c-orange-200: 100 53 28;
+  --c-orange-700: 251 146 60;
+  --c-blue-50: 25 33 57;
+  --c-blue-100: 34 59 106;
+  --c-blue-200: 34 59 106;
+  --c-blue-600: 96 165 250;
+  --c-blue-700: 96 165 250;
+  --c-indigo-50: 29 30 56;
+  --c-indigo-100: 48 49 105;
+  --c-indigo-200: 48 49 105;
+  --c-indigo-300: 48 49 105;
+  --c-indigo-600: 129 140 248;
+  --c-indigo-700: 129 140 248;
+  --c-indigo-800: 129 140 248;
+  --c-purple-50: 38 28 57;
+  --c-purple-200: 72 43 107;
+  --c-purple-700: 192 132 252;
+  --c-yellow-50: 46 39 28;
+  --c-yellow-200: 95 76 23;
+  --c-yellow-700: 250 204 21;
+}
+
+/* ── Irreducible dark rules (cannot be expressed as a colour variable) ─────── */
+html.dark body { color: #e2e8f0; background: #0b0b14; }
+/* Fullscreen shader/background layers behind every page. */
+html.dark .shader-bg { background: #0b0b14 !important; }
+html.dark .bg-canvas { background-color: #0b0b14 !important; }
+/* Main wrapper under the topbar (sidebar + main), all pages. */
+html.dark body > .flex.pt-16 { background-color: rgba(42, 42, 63, 0.6) !important; }
+/* Glass panels (KPI / section cards) — component class, not a utility. */
+html.dark .neural-panel {
+  background: rgba(20, 20, 32, 0.75) !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+  box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4) !important;
+}
+/* Neutral TEXT scale inverts to light — while bg-slate-900 stays dark (stock).
+   Same shade, opposite treatment: only expressible per-utility, not per-var. */
+html.dark .text-slate-900 { color: #f1f5f9 !important; }
+html.dark .text-slate-800 { color: #e2e8f0 !important; }
+html.dark .text-slate-700 { color: #cbd5e1 !important; }
+html.dark .text-slate-600 { color: #b6c2d4 !important; }
+html.dark .text-slate-500 { color: #94a3b8 !important; }
+html.dark .text-slate-400 { color: #7c8aa0 !important; }
+html.dark .text-slate-300 { color: #4b5568 !important; }
+html.dark .text-on-background { color: #e2e8f0 !important; }
+/* white-as-TEXT is an on-dark/on-colour label (buttons, active nav, badges) →
+   always stays white, even though bg-white (surface) darkens via --c-white. */
+html.dark .text-white { color: #fff !important; }
+html.dark .hover\:text-white:hover { color: #fff !important; }
+html.dark .hover\:text-slate-700:hover { color: #e2e8f0 !important; }
+html.dark .hover\:text-slate-900:hover { color: #f1f5f9 !important; }
+html.dark .placeholder\:text-slate-400::placeholder { color: #64748b !important; }
+html.dark .placeholder\:text-slate-300::placeholder { color: #4b5568 !important; }
+/* Consoles keep a dark surface in BOTH themes → their slate-300 text stays light. */
+html.dark #console,
+html.dark #console .text-slate-300,
+html.dark .overflow-y-auto.flex-1.text-slate-300,
+html.dark .overflow-y-auto.flex-1.text-slate-300 .text-slate-300 { color: #cbd5e1 !important; }
+/* Theme toggle active tint. */
+html.dark #themeToggle { color: #22d3ee; }

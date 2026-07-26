@@ -24,6 +24,11 @@ docker-test-machine-windows
 *.log
 *.pid
 
+# ── UI build (Tailwind) ──
+# node_modules is dev-only; static/vendor/tailwind.css is committed (served
+# fallback when npm is unavailable) so it is intentionally NOT ignored.
+node_modules/
+
 # ── Segreti runtime: MAI committare ──
 .vfa_auth_secret
 assets.txt.migrated

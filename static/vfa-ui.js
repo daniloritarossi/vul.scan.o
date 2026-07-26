@@ -87,4 +87,42 @@
       (o.hint ? '<p class="font-code-sm text-[12px] text-slate-400">' + o.hint + '</p>' : '') +
       '</div>';
   };
+
+  // ── Severity → distinct shape (WCAG 1.4.1: severity not conveyed by colour
+  //    alone). Each level maps to a differently-shaped Material Symbol so it is
+  //    tellable apart without relying on hue (red/orange confusion). ──────────
+  var SEV_GLYPH = {
+    CRITICAL: 'error', HIGH: 'warning', MEDIUM: 'arrow_upward',
+    LOW: 'arrow_downward', UNKNOWN: 'help'
+  };
+  window.vfaSevGlyph = function (sev) {
+    return SEV_GLYPH[String(sev == null ? 'UNKNOWN' : sev).toUpperCase()] || 'help';
+  };
+  // Leading icon span meant to prefix a severity badge's text label.
+  window.vfaSevIcon = function (sev) {
+    return '<span class="material-symbols-outlined text-[11px] leading-none align-middle mr-0.5" ' +
+      'aria-hidden="true" style="font-variation-settings:\'FILL\' 1">' +
+      window.vfaSevGlyph(sev) + '</span>';
+  };
+
+  // ── Loading skeleton. Fills a table <tbody> with shimmer rows (cols > 0) or a
+  //    generic block with shimmer lines (cols = 0) while data is in flight, so a
+  //    pending page reads as "loading", not "broken/empty". render() overwrites. */
+  window.vfaSkeleton = function (el, o) {
+    if (!el) return;
+    o = o || {};
+    var rows = o.rows || 5, cols = o.cols == null ? 1 : o.cols, html = '';
+    var cell = '<span class="vfa-skel"></span>';
+    for (var i = 0; i < rows; i++) {
+      if (cols > 0) {
+        html += '<tr class="vfa-skel-row" aria-hidden="true">';
+        for (var c = 0; c < cols; c++) html += '<td class="px-4 py-3">' + cell + '</td>';
+        html += '</tr>';
+      } else {
+        html += '<div class="py-2" aria-hidden="true">' + cell + '</div>';
+      }
+    }
+    el.setAttribute('aria-busy', 'true');
+    el.innerHTML = html;
+  };
 })();

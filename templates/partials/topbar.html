@@ -6,15 +6,16 @@ Expects one of:
 <a href="#main" class="skip-link" data-i18n="a11y.skip">Skip to content</a>
 <!-- Shared UI primitives: focus-visible, toast unificato, reduced-motion. -->
 <link rel="stylesheet" href="/static/vfa-ui.css" />
-<script src="/static/vfa-ui.js?v=1" defer></script>
-<!-- Dark theme (opt-in): default light. Restore prima del paint per evitare flash. -->
-<link rel="stylesheet" href="/static/theme-dark.css" />
+<script src="/static/vfa-ui.js?v=2" defer></script>
+<!-- Dark theme (opt-in): default light. Palette flips via CSS variables in the
+     compiled tailwind.css. Restore the class before paint to avoid a flash. -->
 <script>
   (function () {
     try {
       var q = new URLSearchParams(location.search).get('theme');
-      var t = q || localStorage.getItem('theme');
-      if (t === 'dark') document.documentElement.classList.add('dark');
+      var mode = q || localStorage.getItem('theme') || 'system';
+      var sysDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (mode === 'dark' || (mode === 'system' && sysDark)) document.documentElement.classList.add('dark');
     } catch (e) { }
   })();
 </script>
@@ -31,17 +32,16 @@ Expects one of:
       <span class="text-dark-400">O</span>
     </h1>
     {% if crumbs is defined %}
-    <nav aria-label="breadcrumb"
-      class="ml-4 hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-cyan-50 rounded-full border border-cyan-100/50">
+    <nav aria-label="breadcrumb" class="ml-4 hidden md:flex items-center gap-1.5">
       {% for c in crumbs %}
       {% if not loop.last %}
       <a href="{{ c.href }}"
-        class="font-label-caps text-label-caps text-slate-500 tracking-[0.2em] hover:text-cyan-600 transition-colors"
+        class="font-label-caps text-label-caps text-slate-400 tracking-[0.15em] hover:text-cyan-600 transition-colors"
         data-i18n="{{ c.key }}">{{ c.text }}</a>
-      <span class="material-symbols-outlined text-[13px] text-cyan-300 leading-none select-none"
+      <span class="material-symbols-outlined text-[13px] text-slate-300 leading-none select-none"
         aria-hidden="true">chevron_right</span>
       {% else %}
-      <span class="font-label-caps text-label-caps text-cyan-600 tracking-[0.2em]" aria-current="page"
+      <span class="font-label-caps text-label-caps text-slate-700 tracking-[0.15em]" aria-current="page"
         data-i18n="{{ c.key }}">{{ c.text }}</span>
       {% endif %}
       {% endfor %}
@@ -64,32 +64,156 @@ Expects one of:
         <span class="material-symbols-outlined text-[15px]">logout</span>
       </a>
     </div>
+    <!-- Command palette trigger (also opens with Ctrl/Cmd + K) -->
+    <button id="cmdkTrigger" type="button" aria-label="Search (Ctrl+K)" title="Search — Ctrl/Cmd K"
+      class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg pl-2 pr-2 py-1.5 transition-colors">
+      <span class="material-symbols-outlined text-[16px]">search</span>
+      <span class="font-label-caps text-[10px] hidden md:inline" data-i18n="cmdk.btn">Search</span>
+      <kbd class="font-code-sm text-[10px] text-slate-400 border border-slate-300 rounded px-1 hidden md:inline">⌘K</kbd>
+    </button>
     <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
       <button data-lang-btn="en" class="px-2 py-1 rounded-md font-label-caps text-[10px] transition-colors">EN</button>
       <button data-lang-btn="it" class="px-2 py-1 rounded-md font-label-caps text-[10px] transition-colors">IT</button>
     </div>
-    <button id="themeToggle" type="button" aria-label="Toggle dark theme" aria-pressed="false" title="Light / Dark"
+    <button id="themeToggle" type="button" aria-label="Theme" aria-pressed="false" title="Light / Dark / System"
       class="text-slate-500 hover:text-cyan-600 hover:glow-sm transition-all duration-150 cursor-pointer flex items-center">
-      <span class="material-symbols-outlined">sensors</span>
+      <span class="material-symbols-outlined">brightness_auto</span>
     </button>
   </div>
 </header>
+<!-- Command palette (Ctrl/Cmd + K). Entries are built from the visible nav
+     links in the DOM, so role-based hiding is inherited automatically. -->
+<div id="cmdk" class="hidden fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label="Command palette">
+  <div id="cmdkBackdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+  <div
+    class="absolute left-1/2 top-24 -translate-x-1/2 w-[min(92vw,32rem)] bg-white rounded-2xl shadow-2xl border border-slate-200/70 overflow-hidden">
+    <div class="flex items-center gap-2 px-4 border-b border-slate-200/70">
+      <span class="material-symbols-outlined text-slate-400" aria-hidden="true">search</span>
+      <input id="cmdkInput" type="text" role="combobox" aria-expanded="true" aria-controls="cmdkList"
+        aria-autocomplete="list" autocomplete="off" spellcheck="false" data-i18n-ph="cmdk.ph"
+        placeholder="Jump to a page or action…"
+        class="flex-1 bg-transparent py-3.5 font-code-sm text-[14px] text-slate-800 placeholder:text-slate-400 focus:outline-none" />
+      <kbd class="font-label-caps text-[9px] text-slate-400 border border-slate-300 rounded px-1.5 py-0.5">ESC</kbd>
+    </div>
+    <ul id="cmdkList" role="listbox" aria-label="Results" class="max-h-80 overflow-y-auto py-2"></ul>
+    <div id="cmdkEmpty" class="hidden px-4 py-6 text-center font-code-sm text-[12px] text-slate-400"
+      data-i18n="cmdk.none">No results</div>
+  </div>
+</div>
+<script>
+  (function () {
+    var overlay = document.getElementById('cmdk');
+    if (!overlay) return;
+    var input = document.getElementById('cmdkInput');
+    var list = document.getElementById('cmdkList');
+    var emptyEl = document.getElementById('cmdkEmpty');
+    var backdrop = document.getElementById('cmdkBackdrop');
+    var trigger = document.getElementById('cmdkTrigger');
+    var items = [], filtered = [], active = 0;
+
+    function buildItems() {
+      var seen = {}, out = [];
+      // Nav destinations already present (and role-filtered) in the DOM.
+      document.querySelectorAll('nav a[href]').forEach(function (a) {
+        var href = a.getAttribute('href');
+        if (!href || href.charAt(0) === '#' || seen[href]) return;
+        if (a.closest('li') && a.closest('li').style.display === 'none') return;
+        var label = (a.textContent || '').trim().replace(/\s+/g, ' ');
+        if (!label) return;
+        seen[href] = 1;
+        var ic = a.querySelector('.material-symbols-outlined');
+        out.push({ label: label, icon: ic ? ic.textContent.trim() : 'arrow_forward', run: function () { location.href = href; } });
+      });
+      out.push({ label: (window.t ? t('cmdk.act_theme') : 'Toggle theme'), icon: 'contrast', run: function () { var b = document.getElementById('themeToggle'); if (b) b.click(); } });
+      out.push({ label: (window.t ? t('cmdk.act_logout') : 'Log out'), icon: 'logout', run: function () { location.href = '/logout'; } });
+      return out;
+    }
+
+    function paint() {
+      for (var i = 0; i < list.children.length; i++) {
+        var on = i === active, li = list.children[i];
+        li.setAttribute('aria-selected', on ? 'true' : 'false');
+        li.classList.toggle('bg-cyan-50', on);
+      }
+      var cur = list.children[active];
+      if (cur) { cur.scrollIntoView({ block: 'nearest' }); input.setAttribute('aria-activedescendant', cur.id); }
+      else input.removeAttribute('aria-activedescendant');
+    }
+
+    function render() {
+      var q = input.value.trim().toLowerCase();
+      filtered = items.filter(function (it) { return !q || it.label.toLowerCase().indexOf(q) >= 0; });
+      active = 0;
+      list.innerHTML = filtered.map(function (it, i) {
+        return '<li role="option" id="cmdk-opt-' + i + '" data-i="' + i + '" aria-selected="false" ' +
+          'class="flex items-center gap-3 px-4 py-2.5 cursor-pointer">' +
+          '<span class="material-symbols-outlined text-[18px] text-slate-400" aria-hidden="true">' + it.icon + '</span>' +
+          '<span class="font-code-sm text-[13px] text-slate-700">' + it.label + '</span></li>';
+      }).join('');
+      for (var i = 0; i < list.children.length; i++) {
+        (function (li) {
+          var idx = parseInt(li.getAttribute('data-i'), 10);
+          li.addEventListener('click', function () { choose(idx); });
+          li.addEventListener('mousemove', function () { if (active !== idx) { active = idx; paint(); } });
+        })(list.children[i]);
+      }
+      emptyEl.classList.toggle('hidden', filtered.length > 0);
+      paint();
+    }
+
+    function open() { items = buildItems(); input.value = ''; render(); overlay.classList.remove('hidden'); setTimeout(function () { input.focus(); }, 0); }
+    function close() { overlay.classList.add('hidden'); }
+    function choose(i) { var it = filtered[i]; close(); if (it) it.run(); }
+
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, filtered.length - 1); paint(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); paint(); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
+    });
+    backdrop.addEventListener('click', close);
+    if (trigger) trigger.addEventListener('click', open);
+    document.addEventListener('keydown', function (e) {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); overlay.classList.contains('hidden') ? open() : close(); }
+      else if (e.key === 'Escape' && !overlay.classList.contains('hidden')) { close(); }
+    });
+  })();
+</script>
 <script>
   (function () {
     var btn = document.getElementById('themeToggle');
     if (!btn) return;
-    function sync() {
-      var dark = document.documentElement.classList.contains('dark');
+    var icon = btn.querySelector('.material-symbols-outlined') || btn;
+    var mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    var GLYPH = { light: 'light_mode', dark: 'dark_mode', system: 'brightness_auto' };
+    function stored() { try { return localStorage.getItem('theme') || 'system'; } catch (e) { return 'system'; } }
+    function apply(mode) {
+      var sysDark = mq && mq.matches;
+      var dark = mode === 'dark' || (mode === 'system' && sysDark);
+      document.documentElement.classList.toggle('dark', dark);
+      icon.textContent = GLYPH[mode] || 'brightness_auto';
+      var name = window.t ? t('theme.' + mode) : mode;
+      btn.setAttribute('aria-label', (window.t ? t('theme.toggle') : 'Theme') + ': ' + name);
+      btn.setAttribute('title', name);
       btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    }
-    sync();
-    btn.addEventListener('click', function () {
-      var dark = document.documentElement.classList.toggle('dark');
-      try { localStorage.setItem('theme', dark ? 'dark' : 'light'); } catch (e) { }
-      sync();
       // Notifica le pagine con grafici canvas/SVG (colori non gestibili via CSS).
       window.dispatchEvent(new Event('themechange'));
+    }
+    apply(stored());
+    // Cicla light -> dark -> system.
+    btn.addEventListener('click', function () {
+      var order = ['light', 'dark', 'system'];
+      var next = order[(order.indexOf(stored()) + 1) % order.length];
+      try { localStorage.setItem('theme', next); } catch (e) { }
+      apply(next);
     });
+    // In modalita' 'system' segui i cambi OS in tempo reale.
+    if (mq) {
+      var onSys = function () { if (stored() === 'system') apply('system'); };
+      mq.addEventListener ? mq.addEventListener('change', onSys) : mq.addListener(onSys);
+    }
+    // Ri-etichetta al cambio lingua (aria-label/title tradotti).
+    window.addEventListener('langchange', function () { apply(stored()); });
   })();
 </script>
 <script>
@@ -130,8 +254,9 @@ Expects one of:
         } catch (e) { }
         var el = document.createElement('div');
         el.id = 'updateBanner';
-        el.className = 'fixed bottom-4 left-4 z-50 flex items-center gap-2 bg-slate-900 text-slate-100 ' +
-          'rounded-xl shadow-2xl border border-slate-700/50 pl-3 pr-1.5 py-2 font-code-sm text-[12px]';
+        // bottom-24 on mobile clears the floating bottom-nav dock; bottom-4 on desktop.
+        el.className = 'fixed bottom-24 md:bottom-4 left-4 right-4 md:right-auto z-50 flex items-center gap-2 ' +
+          'bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700/50 pl-3 pr-1.5 py-2 font-code-sm text-[12px]';
         el.innerHTML =
           '<span class="material-symbols-outlined text-[16px] text-cyan-400">system_update_alt</span>' +
           '<span>' + (window.t ? t('ver.available', { v: v.latest }) : 'New version ' + v.latest + ' available') + '</span>' +

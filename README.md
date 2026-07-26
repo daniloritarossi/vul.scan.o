@@ -1,4 +1,4 @@
-# Vulnerability Feed Aggregator
+# VUL.SCAN.O
 
 <p align="center">
   <img src="static/logo-icon-animated.svg" alt="Home" width="128">
