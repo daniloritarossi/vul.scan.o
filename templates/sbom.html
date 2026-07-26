@@ -107,9 +107,9 @@
         <!-- Filters (sticky: restano in vista scorrendo la tabella) -->
         <div class="sticky top-0 z-20 flex flex-wrap gap-3 items-center bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
           <input id="sbom-filter-asset" type="text" data-i18n-ph="sbom.filter_asset" placeholder="Filter by asset IP…"
-            class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition w-52" />
+            class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition w-52" />
           <input id="sbom-filter-pkg" type="text" data-i18n-ph="sbom.filter_pkg" placeholder="Filter by package…"
-            class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition w-52" />
+            class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition w-52" />
           <select id="sbom-filter-vuln"
             class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2 font-code-sm text-code-sm text-slate-900 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition">
             <option value="" data-i18n="sbom.filter_all">All</option>
@@ -136,19 +136,19 @@
               <tbody id="sbom-rows" class="divide-y divide-slate-100/70"></tbody>
             </table>
           </div>
-          <div id="sbom-empty" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-400" data-i18n="sbom.empty">
+          <div id="sbom-empty" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-500" data-i18n="sbom.empty">
             No SBOM data. Run a posture scan from the dashboard.
           </div>
-          <div id="sbom-loading" class="p-10 text-center font-code-sm text-code-sm text-slate-400 flex items-center justify-center gap-2">
+          <div id="sbom-loading" class="p-10 text-center font-code-sm text-code-sm text-slate-500 flex items-center justify-center gap-2">
             <span class="material-symbols-outlined animate-spin text-cyan-400">progress_activity</span> <span data-i18n="sbom.loading">Loading…</span>
           </div>
         </section>
 
         <!-- Pager -->
         <div id="sbom-pager" class="hidden mt-4 flex flex-wrap items-center justify-between gap-3">
-          <span id="sbom-range" class="font-code-sm text-code-sm text-slate-400"></span>
+          <span id="sbom-range" class="font-code-sm text-code-sm text-slate-500"></span>
           <div class="flex items-center gap-2">
-            <label class="font-code-sm text-code-sm text-slate-400 flex items-center gap-1.5">
+            <label class="font-code-sm text-code-sm text-slate-500 flex items-center gap-1.5">
               <span data-i18n="sbom.per_page">Per page</span>
               <select id="sbom-pagesize"
                 class="rounded-lg border border-slate-200 bg-white/70 px-2 py-1 font-code-sm text-code-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-cyan-400/40">

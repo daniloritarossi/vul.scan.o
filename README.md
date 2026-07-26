@@ -30,6 +30,7 @@ Backend **FastAPI** · Frontend **HTML + Tailwind** (CDN) · real-time results v
 ![Home](static/screens/home1.png)
 ![Home](static/screens/home2.png)
 ![Home](static/screens/home3.png)
+![Home](static/screens/home4.png)
 
 ---
 

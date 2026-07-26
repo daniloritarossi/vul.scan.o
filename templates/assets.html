@@ -200,11 +200,11 @@
           </h3>
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input id="new-ip" type="text" data-i18n-ph="assets.ph_ip" placeholder="IP / hostname"
-              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
             <input id="new-user" type="text" data-i18n-ph="assets.ph_user" placeholder="username (optional)"
-              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
             <input id="new-pass" type="text" data-i18n-ph="assets.ph_pass" placeholder="password (optional)"
-              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
             <button id="create"
               class="bg-slate-900 text-white hover:bg-slate-800 px-6 py-2.5 rounded-lg font-label-caps text-label-caps transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 group disabled:opacity-40">
               <span
@@ -220,14 +220,14 @@
               <option value="windows">Windows</option>
             </select>
             <input id="new-osver" type="text" data-i18n-ph="assets.ph_osver" placeholder="Operating system version (e.g. Ubuntu 22.04, Windows 11)"
-              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+              class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
             <label class="flex items-center gap-2 px-2 font-code-sm text-code-sm text-slate-600 cursor-pointer select-none">
               <input id="new-enabled" type="checkbox" checked
                 class="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-300" />
               <span data-i18n="assets.th_scan">SCAN</span>
             </label>
           </div>
-          <p class="font-code-sm text-[11px] text-slate-400 mt-3" data-i18n="assets.help">Without username and password
+          <p class="font-code-sm text-[11px] text-slate-500 mt-3" data-i18n="assets.help">Without username and password
             the asset is <span class="text-slate-600">NOT REQUIRED</span> (unauthenticated banner-grab).</p>
         </section>
 
@@ -267,7 +267,7 @@
                       <span data-i18n="assets.th_active">ACTIVE</span>
                       <span class="relative group inline-flex items-center">
                         <span
-                          class="material-symbols-outlined text-[15px] text-slate-400 hover:text-cyan-600 cursor-help">info</span>
+                          class="material-symbols-outlined text-[15px] text-slate-500 hover:text-cyan-600 cursor-help">info</span>
                         <span
                           class="hidden pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal z-50 shadow-xl group-hover:block"
                           data-i18n="assets.active_tooltip">Live reachability check.</span>
@@ -280,7 +280,7 @@
                       <span data-i18n="assets.th_scan">SCAN</span>
                       <span class="relative group inline-flex items-center">
                         <span
-                          class="material-symbols-outlined text-[15px] text-slate-400 hover:text-cyan-600 cursor-help">info</span>
+                          class="material-symbols-outlined text-[15px] text-slate-500 hover:text-cyan-600 cursor-help">info</span>
                         <span
                           class="hidden pointer-events-none absolute top-full left-1/2 -translate-x-1/2 mt-2 w-80 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal z-50 shadow-xl group-hover:block"
                           data-i18n="assets.scan_tooltip">Enable or disable this asset for scans.</span>
@@ -297,7 +297,7 @@
               <tbody id="rows" class="divide-y divide-slate-100/70"></tbody>
             </table>
           </div>
-          <div id="empty" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-400"
+          <div id="empty" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-500"
             data-i18n="assets.empty">Inventory empty. Add the first asset.</div>
           <div id="assetsPager"></div>
         </section>
@@ -363,7 +363,7 @@
       const knob = on ? 'translate-x-4 bg-white' : 'translate-x-0.5 bg-white';
       const track = on ? 'bg-cyan-500' : 'bg-slate-300';
       const label = on ? t('assets.scan_on') : t('assets.scan_off');
-      const labelCls = on ? 'text-cyan-700' : 'text-slate-400';
+      const labelCls = on ? 'text-cyan-700' : 'text-slate-500';
       return `<button data-act="toggle" data-i="${a.index}" role="switch" aria-checked="${on}"
         class="inline-flex items-center gap-2 group" title="${label}">
         <span class="relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${track}">
@@ -390,10 +390,10 @@
       const editing = editingIndex === a.index;
       if (editing) {
         return `
-        <td class="px-3 py-3 font-code-sm text-code-sm text-slate-400">${a.index}</td>
+        <td class="px-3 py-3 font-code-sm text-code-sm text-slate-500">${a.index}</td>
         <td class="px-3 py-3">${inputCell(a.ip, 'edit-ip')}</td>
         <td class="px-3 py-3">${inputCell(a.username, 'edit-user')}</td>
-        <td class="px-3 py-3"><input value="" placeholder="${a.has_password ? '••••••••' : ''}" class="edit-pass bg-white border border-cyan-200 rounded-lg px-3 py-1.5 font-code-sm text-code-sm text-slate-900 w-full focus:outline-none focus:ring-1 focus:ring-cyan-300 placeholder:text-slate-400" /></td>
+        <td class="px-3 py-3"><input value="" placeholder="${a.has_password ? '••••••••' : ''}" class="edit-pass bg-white border border-cyan-200 rounded-lg px-3 py-1.5 font-code-sm text-code-sm text-slate-900 w-full focus:outline-none focus:ring-1 focus:ring-cyan-300 placeholder:text-slate-500" /></td>
         <td class="px-3 py-3 text-slate-300 font-code-sm text-[11px]">${t('assets.auto')}</td>
         <td class="px-3 py-3">
           <div class="flex flex-col gap-1.5">${osSelectHtml(a.os_type)}${inputCell(a.os_major_version, 'edit-osver')}</div>
@@ -421,10 +421,10 @@
         : '<span class="text-slate-300">—</span>';
       const user = a.username ? esc(a.username) : '<span class="text-slate-300">—</span>';
       return `
-      <td class="px-3 py-3 font-code-sm text-code-sm text-slate-400">${a.index}</td>
+      <td class="px-3 py-3 font-code-sm text-code-sm text-slate-500">${a.index}</td>
       <td class="px-3 py-3 font-code-sm text-code-sm text-slate-900 font-semibold max-w-[160px] truncate" title="${esc(a.ip)}">${esc(a.ip)}</td>
       <td class="px-3 py-3 font-code-sm text-code-sm text-slate-600">${user}</td>
-      <td class="px-3 py-3 font-code-sm text-code-sm text-slate-400 tracking-widest" title="${a.has_password ? (a.password_encrypted ? 'encrypted' : 'plain text — NOT ENCRYPTED') : 'empty'}">${pass}</td>
+      <td class="px-3 py-3 font-code-sm text-code-sm text-slate-500 tracking-widest" title="${a.has_password ? (a.password_encrypted ? 'encrypted' : 'plain text — NOT ENCRYPTED') : 'empty'}">${pass}</td>
       <td class="px-3 py-3">${authBadge(a.auth_required)}</td>
       <td class="px-3 py-3">${osBadge(a.os_type, a.os_major_version)}</td>
       <td class="px-3 py-3" id="act-${a.index}">${statusCell(a)}</td>
@@ -450,7 +450,7 @@
       ).join('') || `<span class="text-slate-300 font-code-sm text-[11px]">${t('assets.unassigned')}</span>`;
       const editBtn = canAssign
         ? `<button data-act="assign" data-i="${a.index}" title="${t('assets.assign_edit')}"
-             class="align-middle text-slate-400 hover:text-cyan-600 transition-colors"><span class="material-symbols-outlined text-[15px]">edit_note</span></button>`
+             class="align-middle text-slate-500 hover:text-cyan-600 transition-colors"><span class="material-symbols-outlined text-[15px]">edit_note</span></button>`
         : '';
       return `<div class="flex items-center flex-wrap max-w-[220px]">${chips}${editBtn}</div>`;
     }
@@ -470,7 +470,7 @@
     function statusCell(a) {
       const key = a.index;
       if (key in healthCache) return statusBadge(healthCache[key].reachable, healthCache[key].ssh_ok);
-      return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-400"><span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>${t('assets.checking')}</span>`;
+      return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-500"><span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>${t('assets.checking')}</span>`;
     }
     async function runHealthChecks() {
       for (const a of assets) {
@@ -595,13 +595,13 @@
         <label class="flex items-center gap-2 font-code-sm text-[13px] text-slate-700 cursor-pointer select-none py-0.5">
           <input type="checkbox" class="am-user h-4 w-4 rounded border-slate-300 text-cyan-600" value="${u.id}" ${curUsers.has(u.id) ? 'checked' : ''} />
           <span class="material-symbols-outlined text-[14px] text-cyan-500">person</span>${esc(u.username)}
-          <span class="font-label-caps text-[9px] text-slate-400">${esc(u.role)}</span>
-        </label>`).join('') || `<p class="font-code-sm text-[12px] text-slate-400">${t('assets.assign_no_users')}</p>`;
+          <span class="font-label-caps text-[9px] text-slate-500">${esc(u.role)}</span>
+        </label>`).join('') || `<p class="font-code-sm text-[12px] text-slate-500">${t('assets.assign_no_users')}</p>`;
       const gChecks = allGroups.map(g => `
         <label class="flex items-center gap-2 font-code-sm text-[13px] text-slate-700 cursor-pointer select-none py-0.5">
           <input type="checkbox" class="am-group h-4 w-4 rounded border-slate-300 text-violet-600" value="${g.id}" ${curGroups.has(g.id) ? 'checked' : ''} />
           <span class="material-symbols-outlined text-[14px] text-violet-500">group</span>${esc(g.name)}
-        </label>`).join('') || `<p class="font-code-sm text-[12px] text-slate-400">${t('assets.assign_no_groups')}</p>`;
+        </label>`).join('') || `<p class="font-code-sm text-[12px] text-slate-500">${t('assets.assign_no_groups')}</p>`;
       const overlay = document.createElement('div');
       overlay.id = 'assignModal';
       overlay.className = 'fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4';
@@ -610,8 +610,8 @@
           <h3 class="font-label-caps text-label-caps text-slate-500 mb-1">${t('assets.assign_title')}</h3>
           <p class="font-code-sm text-code-sm text-slate-900 font-semibold mb-4">${esc(a.ip)}</p>
           <div class="grid grid-cols-2 gap-4 max-h-64 overflow-y-auto">
-            <div><p class="font-label-caps text-[10px] text-slate-400 mb-2">${t('assets.assign_users')}</p>${uChecks}</div>
-            <div><p class="font-label-caps text-[10px] text-slate-400 mb-2">${t('assets.assign_groups')}</p>${gChecks}</div>
+            <div><p class="font-label-caps text-[10px] text-slate-500 mb-2">${t('assets.assign_users')}</p>${uChecks}</div>
+            <div><p class="font-label-caps text-[10px] text-slate-500 mb-2">${t('assets.assign_groups')}</p>${gChecks}</div>
           </div>
           <div class="flex items-center justify-end gap-2 mt-6">
             <button id="am-cancel" class="text-slate-500 bg-slate-50 border border-slate-200 px-4 py-2 rounded-lg font-label-caps text-[10px] hover:bg-slate-100 transition">${t('common.cancel')}</button>

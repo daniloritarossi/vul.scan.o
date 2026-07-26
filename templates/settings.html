@@ -198,7 +198,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="font-code-sm text-code-sm text-slate-700 font-semibold" data-i18n="settings.provider">Provider</p>
-              <p class="font-code-sm text-code-sm text-slate-400 mt-0.5" data-i18n="settings.se_provider_hint">Web search engine used for OSINT enrichment</p>
+              <p class="font-code-sm text-code-sm text-slate-500 mt-0.5" data-i18n="settings.se_provider_hint">Web search engine used for OSINT enrichment</p>
             </div>
             <div class="flex gap-2">
               <button id="providerDdg"
@@ -216,7 +216,7 @@
           <div id="serperBlock" class="hidden space-y-1">
             <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.serper_key">Serper API Key</label>
             <input id="serperKey" type="password" class="setting-input" data-i18n-ph="settings.serper_key_ph" placeholder="Enter Serper API key…" />
-            <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.serper_hint">Get a key at serper.dev — free tier: 2500 queries/month</p>
+            <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.serper_hint">Get a key at serper.dev — free tier: 2500 queries/month</p>
           </div>
 
           <!-- Advanced thresholds -->
@@ -224,12 +224,12 @@
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.min_hits">Min OSINT Hits</label>
               <input id="minOsintHits" type="number" min="1" max="20" class="setting-input" />
-              <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.min_hits_hint">Product must appear ≥ N times in results</p>
+              <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.min_hits_hint">Product must appear ≥ N times in results</p>
             </div>
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.min_query">Min Query Length</label>
               <input id="minOsintQuery" type="number" min="1" max="20" class="setting-input" />
-              <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.min_query_hint">Min alphanumeric chars to trust OSINT</p>
+              <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.min_query_hint">Min alphanumeric chars to trust OSINT</p>
             </div>
           </div>
         </section>
@@ -245,7 +245,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="font-code-sm text-code-sm text-slate-700 font-semibold" data-i18n="settings.provider">Provider</p>
-              <p class="font-code-sm text-code-sm text-slate-400 mt-0.5" data-i18n="settings.ai_provider_hint">Used for CVE summaries and advisory extraction</p>
+              <p class="font-code-sm text-code-sm text-slate-500 mt-0.5" data-i18n="settings.ai_provider_hint">Used for CVE summaries and advisory extraction</p>
             </div>
             <div class="flex gap-2">
               <button id="aiOllama"
@@ -277,7 +277,7 @@
                     <span class="material-symbols-outlined" style="font-size:18px">refresh</span>
                   </button>
                 </div>
-                <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.ollama_hint">Models pulled on local Ollama instance</p>
+                <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.ollama_hint">Models pulled on local Ollama instance</p>
               </div>
             </div>
           </div>
@@ -288,7 +288,7 @@
               <div class="space-y-1">
                 <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.claude_key">Claude API Key</label>
                 <input id="claudeKey" type="password" class="setting-input" placeholder="sk-ant-…" />
-                <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.claude_hint">Get a key at console.anthropic.com</p>
+                <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.claude_hint">Get a key at console.anthropic.com</p>
               </div>
               <div class="space-y-1">
                 <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.claude_model">Claude Model</label>
@@ -306,12 +306,12 @@
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.summary_to">Summary Timeout (s)</label>
               <input id="summaryTimeout" type="number" min="5" max="300" class="setting-input" />
-              <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.summary_to_hint">CVE summary generation</p>
+              <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.summary_to_hint">CVE summary generation</p>
             </div>
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.advisory_to">Advisory Timeout (s)</label>
               <input id="advisoryTimeout" type="number" min="5" max="300" class="setting-input" />
-              <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.advisory_to_hint">Affected version extraction</p>
+              <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.advisory_to_hint">Affected version extraction</p>
             </div>
           </div>
         </section>
@@ -327,7 +327,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="font-code-sm text-code-sm text-slate-700 font-semibold" data-i18n="settings.sim_auth">Simulate Authenticated Scans</p>
-              <p class="font-code-sm text-code-sm text-slate-400 mt-0.5" data-i18n="settings.sim_auth_hint">
+              <p class="font-code-sm text-code-sm text-slate-500 mt-0.5" data-i18n="settings.sim_auth_hint">
                 When enabled, SSH logins are simulated — no real connections. Disable only on assets you own.
               </p>
             </div>
@@ -341,7 +341,7 @@
           <div class="space-y-1 max-w-xs">
             <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.socket_to">Socket Timeout (s)</label>
             <input id="socketTimeout" type="number" min="0.5" max="30" step="0.5" class="setting-input" />
-            <p class="font-code-sm text-code-sm text-slate-400" data-i18n="settings.socket_to_hint">TCP connection timeout for banner grabbing</p>
+            <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.socket_to_hint">TCP connection timeout for banner grabbing</p>
           </div>
         </section>
 
@@ -355,7 +355,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="font-code-sm text-code-sm text-slate-700 font-semibold" data-i18n="settings.provider">Provider</p>
-              <p class="font-code-sm text-code-sm text-slate-400 mt-0.5" data-i18n="settings.ticketing_hint">Create remediation tickets from findings (page FINDINGS)</p>
+              <p class="font-code-sm text-code-sm text-slate-500 mt-0.5" data-i18n="settings.ticketing_hint">Create remediation tickets from findings (page FINDINGS)</p>
             </div>
             <div class="flex gap-2">
               <button id="tkOff" class="px-4 py-1.5 rounded-lg font-label-caps text-label-caps border transition-all" data-i18n="settings.ticketing_off">OFF</button>
@@ -401,7 +401,7 @@
             <span class="material-symbols-outlined text-cyan-500">outgoing_mail</span>
             <h3 class="font-label-caps text-label-caps text-slate-800 tracking-[0.15em]">EMAIL (SMTP) &amp; AUTH POLICY</h3>
           </div>
-          <p class="font-code-sm text-code-sm text-slate-400">
+          <p class="font-code-sm text-code-sm text-slate-500">
             SMTP per inviti di attivazione account e reset password. Host vuoto =
             email disabilitate (i link one-time vengono mostrati all'admin per la
             consegna manuale).
@@ -436,7 +436,7 @@
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold">Password rotation (giorni)</label>
               <input id="authRotation" type="number" min="0" max="3650" class="setting-input" />
-              <p class="font-code-sm text-code-sm text-slate-400">0 = disattivata (NIST 800-63B)</p>
+              <p class="font-code-sm text-code-sm text-slate-500">0 = disattivata (NIST 800-63B)</p>
             </div>
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold">Lunghezza minima password</label>

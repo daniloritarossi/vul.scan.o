@@ -209,9 +209,9 @@
                 <span class="material-symbols-outlined text-[20px]">search</span>
               </button>
               <input id="searchInput" type="text" data-i18n-ph="audit.search_ph" placeholder="Search CVE, IP, version…"
-                class="search-box bg-transparent font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none" />
+                class="search-box bg-transparent font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none" />
               <button id="searchClear" type="button" aria-label="Clear"
-                class="hidden items-center justify-center w-9 h-10 text-slate-400 hover:text-rose-500 transition-colors shrink-0">
+                class="hidden items-center justify-center w-9 h-10 text-slate-500 hover:text-rose-500 transition-colors shrink-0">
                 <span class="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
@@ -231,7 +231,7 @@
             <h3 class="font-label-caps text-label-caps text-slate-500 mb-2 flex items-center gap-1.5">
               <span data-i18n="audit.kpi_scans">TOTAL SCANS</span>
               <span class="relative group inline-flex items-center">
-                <span class="material-symbols-outlined text-[14px] text-slate-400 hover:text-cyan-600 cursor-help"
+                <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600 cursor-help"
                   style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
                 <span
                   class="pointer-events-none absolute bottom-full left-0 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 shadow-xl">
@@ -248,7 +248,7 @@
             <h3 class="font-label-caps text-label-caps text-slate-500 mb-2 flex items-center gap-1.5">
               <span data-i18n="audit.kpi_results">ASSET RESULTS</span>
               <span class="relative group inline-flex items-center">
-                <span class="material-symbols-outlined text-[14px] text-slate-400 hover:text-cyan-600 cursor-help"
+                <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600 cursor-help"
                   style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
                 <span
                   class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 shadow-xl">
@@ -265,7 +265,7 @@
               <span class="w-2 h-2 rounded-full bg-error animate-pulse shrink-0"></span>
               <span data-i18n="audit.kpi_vuln">VULNERABLE OUTCOMES</span>
               <span class="relative group inline-flex items-center ml-auto">
-                <span class="material-symbols-outlined text-[14px] text-slate-400 hover:text-cyan-600 cursor-help"
+                <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600 cursor-help"
                   style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
                 <span
                   class="pointer-events-none absolute bottom-full right-0 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 shadow-xl">
@@ -281,7 +281,7 @@
         <!-- Sort + Export toolbar (sticky: resta in vista scorrendo la lista) -->
         <div class="sticky top-0 z-20 flex items-center justify-between flex-wrap gap-3 -mb-2 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
           <div id="auditSortBar" class="flex items-center gap-2">
-            <span class="font-label-caps text-[10px] text-slate-400">SORT:</span>
+            <span class="font-label-caps text-[10px] text-slate-500">SORT:</span>
           </div>
           <div class="flex items-center gap-2">
             <button id="exportAuditCSV"
@@ -294,7 +294,7 @@
         </div>
         <!-- Scans list -->
         <section id="list" class="space-y-6">
-          <div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-400"
+          <div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-500"
             data-i18n="audit.loading">Loading history…</div>
         </section>
         <div id="auditPager"></div>
@@ -384,7 +384,7 @@
       const ver = r.detected_version ? esc(r.detected_version) : '<span class="text-slate-300">—</span>';
       const found = r.product_found
         ? `<span class="text-emerald-600">${t('common.yes')}</span>`
-        : `<span class="text-slate-400">${t('common.no')}</span>`;
+        : `<span class="text-slate-500">${t('common.no')}</span>`;
       const auth = r.auth_required
         ? `<span class="px-2 py-0.5 border border-cyan-100 bg-cyan-50 text-cyan-700 font-label-caps text-[10px] rounded-full">${t('common.auth')}</span>`
         : `<span class="px-2 py-0.5 border border-slate-100 bg-slate-50 text-slate-500 font-label-caps text-[10px] rounded-full">${t('common.noauth')}</span>`;
@@ -417,7 +417,7 @@
         : `<span class="font-label-caps text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">${t('audit.cve_n', { n: 0 })}</span>`;
       const rowsHtml = results.length
         ? results.map((r) => resultRow(r, s.product)).join('')
-        : `<tr><td colspan="9" class="px-4 py-6 text-center font-code-sm text-code-sm text-slate-400">${t('audit.no_results')}</td></tr>`;
+        : `<tr><td colspan="9" class="px-4 py-6 text-center font-code-sm text-code-sm text-slate-500">${t('audit.no_results')}</td></tr>`;
 
       return `
       <div class="neural-panel rounded-2xl overflow-hidden">
@@ -432,12 +432,12 @@
               ${s.description ? `<p class="font-code-sm text-[11px] text-slate-500 mt-2">“${esc(s.description)}”</p>` : ''}
             </div>
             <div class="text-right">
-              <div class="font-code-sm text-[11px] text-slate-400">#${esc(s.id)} · ${fmtDate(s.created_at)}</div>
-              <div class="font-code-sm text-[11px] text-slate-400 mt-1">${t('audit.assets_n', { n: results.length })}</div>
+              <div class="font-code-sm text-[11px] text-slate-500">#${esc(s.id)} · ${fmtDate(s.created_at)}</div>
+              <div class="font-code-sm text-[11px] text-slate-500 mt-1">${t('audit.assets_n', { n: results.length })}</div>
             </div>
           </div>
           <div class="mt-4 flex items-center gap-2 flex-wrap">
-            <span class="font-label-caps text-label-caps text-slate-400">${t('audit.deps')}</span> ${depChips}
+            <span class="font-label-caps text-label-caps text-slate-500">${t('audit.deps')}</span> ${depChips}
           </div>
           ${s.cve_summary ? `<div class="mt-4 bg-indigo-50/50 border border-indigo-100 p-3 rounded-lg">
             <p class="font-body-md text-sm text-slate-600 leading-relaxed">${esc(s.cve_summary)}</p>
@@ -470,7 +470,7 @@
       <div class="neural-panel rounded-2xl p-10 text-center">
         <span class="material-symbols-outlined text-4xl text-rose-400">cloud_off</span>
         <p class="font-code-sm text-code-sm text-rose-600 mt-3">${esc(msg)}</p>
-        <p class="font-code-sm text-[11px] text-slate-400 mt-2">${t('audit.start_supabase')} <span class="bg-slate-100 px-1.5 py-0.5 rounded">cd supabase &amp;&amp; ./setup.sh</span></p>
+        <p class="font-code-sm text-[11px] text-slate-500 mt-2">${t('audit.start_supabase')} <span class="bg-slate-100 px-1.5 py-0.5 rounded">cd supabase &amp;&amp; ./setup.sh</span></p>
       </div>`;
     }
 
@@ -478,7 +478,7 @@
       list.innerHTML = `
       <div class="neural-panel rounded-2xl p-10 text-center">
         <span class="material-symbols-outlined text-4xl text-slate-300">history</span>
-        <p class="font-code-sm text-code-sm text-slate-400 mt-3">${t('audit.empty')}</p>
+        <p class="font-code-sm text-code-sm text-slate-500 mt-3">${t('audit.empty')}</p>
       </div>`;
     }
 
@@ -490,7 +490,7 @@
 
     const ASORTS = [{ f: 'created_at', l: 'DATE' }, { f: 'product', l: 'PRODUCT' }, { f: 'cve_count', l: 'CVEs' }, { f: 'results_count', l: 'ASSETS' }];
     function renderAuditSortBar() {
-      $('auditSortBar').innerHTML = '<span class="font-label-caps text-[10px] text-slate-400">SORT:</span>'
+      $('auditSortBar').innerHTML = '<span class="font-label-caps text-[10px] text-slate-500">SORT:</span>'
         + ASORTS.map(s => {
           const act = s.f === auditSort.field;
           const arrow = act ? (auditSort.dir === 'asc' ? ' ↑' : ' ↓') : '';
@@ -516,7 +516,7 @@
         list.innerHTML = `
         <div class="neural-panel rounded-2xl p-10 text-center">
           <span class="material-symbols-outlined text-4xl text-slate-300">${q ? 'search_off' : 'history'}</span>
-          <p class="font-code-sm text-code-sm text-slate-400 mt-3">${q ? t('audit.no_match') : t('audit.empty')}</p>
+          <p class="font-code-sm text-code-sm text-slate-500 mt-3">${q ? t('audit.no_match') : t('audit.empty')}</p>
         </div>`;
         $('auditPager').innerHTML = '';
         return;
@@ -559,7 +559,7 @@
     }
 
     async function load() {
-      list.innerHTML = `<div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-400">${t('audit.loading')}</div>`;
+      list.innerHTML = `<div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-500">${t('audit.loading')}</div>`;
       let resp;
       try {
         resp = await fetch('/api/audit');

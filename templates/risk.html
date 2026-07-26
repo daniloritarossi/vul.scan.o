@@ -84,7 +84,7 @@
               re-scored with EPSS &amp; CISA KEV exploitability, live reachability and asset business context.</p>
           </div>
           <div class="flex items-center gap-3">
-            <span id="runMeta" class="font-code-sm text-[11px] text-slate-400"></span>
+            <span id="runMeta" class="font-code-sm text-[11px] text-slate-500"></span>
             <select id="runSelect"
               class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300"></select>
             <label class="flex items-center gap-2 font-code-sm text-[11px] text-slate-600 cursor-pointer select-none"
@@ -156,7 +156,7 @@
                   <div class="font-label-caps text-[10px] text-slate-500" data-i18n="risk.delta_resolved">RESOLVED</div>
                 </div>
               </div>
-              <div class="font-code-sm text-[11px] text-slate-400" id="deltaNote"></div>
+              <div class="font-code-sm text-[11px] text-slate-500" id="deltaNote"></div>
             </div>
           </div>
         </section>
@@ -166,7 +166,7 @@
           <div class="px-6 py-4 border-b border-slate-200/70 flex items-center justify-between">
             <h3 class="font-label-caps text-label-caps text-slate-500" data-i18n="risk.table_title">ASSET RISK RANKING
             </h3>
-            <span class="font-code-sm text-[11px] text-slate-400" data-i18n="risk.table_hint">Click a row to expand
+            <span class="font-code-sm text-[11px] text-slate-500" data-i18n="risk.table_hint">Click a row to expand
               exploitable findings · edit context inline</span>
           </div>
           <div class="overflow-auto max-h-[70vh]">
@@ -187,12 +187,13 @@
               <tbody id="riskBody" class="divide-y divide-slate-100"></tbody>
             </table>
           </div>
-          <div id="emptyRisk" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-400"
+          <div id="emptyRisk" class="hidden p-10 text-center font-code-sm text-code-sm text-slate-500"
             data-i18n="risk.empty">No posture data yet. Run a posture scan first.</div>
         </section>
       </div>
     </main>
   </div>
+  {% include 'partials/bottomnav.html' %}
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -282,7 +283,7 @@
     function showRiskLoader() {
       $('emptyRisk').classList.add('hidden');
       $('riskBody').innerHTML = `<tr><td colspan="9" class="px-5 py-14 text-center">
-        <span class="inline-flex items-center gap-3 font-code-sm text-code-sm text-slate-400">
+        <span class="inline-flex items-center gap-3 font-code-sm text-code-sm text-slate-500">
           <span class="material-symbols-outlined animate-spin text-cyan-500" style="font-size:20px">progress_activity</span>
           ${t('risk.loading')}
         </span></td></tr>`;
@@ -310,7 +311,7 @@
       b.classList.remove('hidden');
       const chip = (ok, on, off) => ok
         ? `<span class="inline-flex items-center gap-1 text-emerald-700"><span class="material-symbols-outlined text-[14px]">check_circle</span>${on}</span>`
-        : `<span class="inline-flex items-center gap-1 text-slate-400"><span class="material-symbols-outlined text-[14px]">cloud_off</span>${off}</span>`;
+        : `<span class="inline-flex items-center gap-1 text-slate-500"><span class="material-symbols-outlined text-[14px]">cloud_off</span>${off}</span>`;
       b.innerHTML =
         chip(meta.epss, (t('risk.src_epss') || 'EPSS live'), (t('risk.src_epss_off') || 'EPSS offline'))
         + chip(meta.kev, `CISA KEV (${(meta.kev_total || 0).toLocaleString()})`, 'KEV offline')
@@ -410,19 +411,19 @@
         const cves = (f.cve_ids || []).slice(0, 4).map(c => `<a href="${cveUrl(c)}" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">${esc(c)}</a>`).join(', ');
         return `<div class="flex items-center gap-3 py-1.5 px-4 border-b border-slate-100/60 last:border-0">
           <span class="w-2 h-2 rounded-full shrink-0" style="background:${sc}"></span>
-          <span class="font-code-sm text-[12px] text-slate-800 font-semibold w-40 truncate" title="${esc(f.package)} ${esc(f.version)}">${esc(f.package)} <span class="text-slate-400">${esc(f.version || '')}</span></span>
+          <span class="font-code-sm text-[12px] text-slate-800 font-semibold w-40 truncate" title="${esc(f.package)} ${esc(f.version)}">${esc(f.package)} <span class="text-slate-500">${esc(f.version || '')}</span></span>
           <span class="font-label-caps text-[9px] px-1.5 py-0.5 rounded-full border" style="color:${sc};border-color:${sc}55">${esc(f.max_severity)}</span>
           ${kev} ${exposed} ${epss}
           <span class="font-code-sm text-[10px] text-slate-500 ml-auto truncate max-w-[40%]">${cves}</span>
         </div>`;
-      }).join('') || `<div class="py-3 px-4 font-code-sm text-[11px] text-slate-400">${t('risk.no_findings') || 'No vulnerable findings.'}</div>`;
+      }).join('') || `<div class="py-3 px-4 font-code-sm text-[11px] text-slate-500">${t('risk.no_findings') || 'No vulnerable findings.'}</div>`;
 
       return `<tr class="hover:bg-white/60 transition-colors cursor-pointer risk-row" data-row="${i}">
-          <td class="px-5 py-3 font-code-sm text-code-sm text-slate-400">${i + 1}</td>
+          <td class="px-5 py-3 font-code-sm text-code-sm text-slate-500">${i + 1}</td>
           <td class="px-5 py-3 font-code-sm text-code-sm text-slate-900 font-semibold">
-            <span class="material-symbols-outlined text-[15px] text-slate-400 align-middle mr-1 chevron" data-row="${i}">chevron_right</span>
+            <span class="material-symbols-outlined text-[15px] text-slate-500 align-middle mr-1 chevron" data-row="${i}">chevron_right</span>
             ${esc(a.ip)}
-            <div class="font-code-sm text-[10px] text-slate-400 ml-6">${esc(a.os_guess || '')}</div>
+            <div class="font-code-sm text-[10px] text-slate-500 ml-6">${esc(a.os_guess || '')}</div>
           </td>
           <td class="px-5 py-3" title="${esc(riskTip(a))}">
             <div class="flex items-center gap-2">

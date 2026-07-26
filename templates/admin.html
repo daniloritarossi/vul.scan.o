@@ -96,7 +96,7 @@
               <span class="material-symbols-outlined text-sm text-cyan-400">outgoing_mail</span> <span data-i18n="admin.invite_btn">INVITE USER</span>
             </button>
           </div>
-          <p class="font-code-sm text-[11px] text-slate-400 mb-6" data-i18n="admin.invite_hint">
+          <p class="font-code-sm text-[11px] text-slate-500 mb-6" data-i18n="admin.invite_hint">
             The user receives a one-time link to choose their own password
             (opening the link also verifies the email). No password ever
             travels by email or through the administrator. Without SMTP
@@ -149,7 +149,7 @@
               <span data-i18n="rolem.title">Role visibility matrix</span>
             </h3>
             <button id="roleMatrixClose" aria-label="Close"
-              class="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+              class="w-8 h-8 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors">
               <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
@@ -237,7 +237,7 @@
           ? `<button data-act="reset" data-uid="${u.id}" class="text-cyan-600 bg-cyan-50 border border-cyan-100 px-3 py-1.5 rounded-lg font-label-caps text-[10px] hover:bg-cyan-100 transition flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">lock_reset</span>${t('admin.send_reset')}</button>`
           : `<button data-act="invite" data-uid="${u.id}" class="text-amber-600 bg-amber-50 border border-amber-100 px-3 py-1.5 rounded-lg font-label-caps text-[10px] hover:bg-amber-100 transition flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">outgoing_mail</span>${t('admin.resend_invite')}</button>`;
         tr.innerHTML = `
-          <td class="px-5 py-3 font-code-sm text-code-sm text-slate-400">${u.id}</td>
+          <td class="px-5 py-3 font-code-sm text-code-sm text-slate-500">${u.id}</td>
           <td class="px-5 py-3 font-code-sm text-code-sm font-semibold">${esc(u.username)}</td>
           <td class="px-5 py-3 font-code-sm text-[12px] text-slate-500">${u.email ? esc(u.email) : '<span class="text-slate-300">—</span>'}</td>
           <td class="px-5 py-3 whitespace-nowrap">${statusBadge(u)}</td>
@@ -269,7 +269,7 @@
       const list = $('g-list');
       list.innerHTML = '';
       if (!groups.length) {
-        list.innerHTML = `<p class="font-code-sm text-code-sm text-slate-400">${t('admin.no_groups')}</p>`;
+        list.innerHTML = `<p class="font-code-sm text-code-sm text-slate-500">${t('admin.no_groups')}</p>`;
         return;
       }
       groups.forEach(g => {
@@ -285,11 +285,11 @@
           <div class="flex items-center justify-between mb-2">
             <span class="font-label-caps text-label-caps text-slate-700 flex items-center gap-2">
               <span class="material-symbols-outlined text-[16px] text-cyan-500">group</span>${esc(g.name)}
-              <span class="text-slate-400">(${(g.member_ids || []).length})</span>
+              <span class="text-slate-500">(${(g.member_ids || []).length})</span>
             </span>
             <button data-act="gdel" data-gid="${g.id}" class="text-rose-600 bg-rose-50 border border-rose-100 px-3 py-1 rounded-lg font-label-caps text-[10px] hover:bg-rose-100 transition">${t('common.delete')}</button>
           </div>
-          <div>${checks || `<span class="font-code-sm text-[12px] text-slate-400">${t('admin.no_users')}</span>`}</div>`;
+          <div>${checks || `<span class="font-code-sm text-[12px] text-slate-500">${t('admin.no_users')}</span>`}</div>`;
         list.appendChild(div);
       });
     }

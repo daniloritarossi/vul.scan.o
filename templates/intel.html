@@ -236,7 +236,7 @@
               software-composition posture per asset — packages vs OSV.</p>
           </div>
           <div class="flex items-center gap-3">
-            <span id="runMeta" class="font-code-sm text-[11px] text-slate-400"></span>
+            <span id="runMeta" class="font-code-sm text-[11px] text-slate-500"></span>
             <!-- Asset picker -->
             <div class="relative">
               <button id="assetPickBtn" type="button"
@@ -249,12 +249,12 @@
               <div id="assetPickPanel"
                 class="hidden absolute right-0 mt-2 w-72 max-h-80 overflow-y-auto neural-panel rounded-xl p-3 z-50 shadow-xl">
                 <div class="flex items-center justify-between mb-2 px-1">
-                  <span class="font-label-caps text-[10px] text-slate-400" data-i18n="intel.pick_title">TARGET
+                  <span class="font-label-caps text-[10px] text-slate-500" data-i18n="intel.pick_title">TARGET
                     ASSETS</span>
                   <div class="flex gap-2">
                     <button id="assetAll" class="font-label-caps text-[10px] text-cyan-600 hover:underline"
                       data-i18n="intel.select_all">ALL</button>
-                    <button id="assetNone" class="font-label-caps text-[10px] text-slate-400 hover:underline"
+                    <button id="assetNone" class="font-label-caps text-[10px] text-slate-500 hover:underline"
                       data-i18n="intel.select_none">NONE</button>
                   </div>
                 </div>
@@ -314,7 +314,7 @@
             <div class="relative h-56 flex items-center justify-center"><canvas id="chartGauge"></canvas>
               <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"><span
                   id="gaugeVal" class="font-display-lg text-4xl text-slate-900">—</span><span
-                  class="font-label-caps text-[10px] text-slate-400">/ 100</span></div>
+                  class="font-label-caps text-[10px] text-slate-500">/ 100</span></div>
             </div>
           </div>
           <div class="neural-panel p-6 rounded-2xl">
@@ -356,11 +356,11 @@
             <div class="p-5 border-b border-slate-100/70 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 class="font-label-caps text-label-caps text-slate-500">CVE IMPACT MAP</h3>
-                <p class="font-code-sm text-[11px] text-slate-400 mt-0.5">Each circle = one CVE · inner circles =
+                <p class="font-code-sm text-[11px] text-slate-500 mt-0.5">Each circle = one CVE · inner circles =
                   affected assets · colour = severity</p>
               </div>
               <div class="flex items-center gap-3">
-                <span class="font-code-sm text-[11px] text-slate-400 hidden md:block">Click CVE → zoom in ·
+                <span class="font-code-sm text-[11px] text-slate-500 hidden md:block">Click CVE → zoom in ·
                   Click background → zoom out</span>
                 <button type="button" data-max-target="cvePackPanel" title="Expand view"
                   class="panel-max-btn font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white w-8 h-8 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center justify-center">
@@ -376,18 +376,18 @@
               <div id="packSrvPanel"
                 class="hidden absolute left-5 top-1 w-64 max-h-72 overflow-y-auto neural-panel rounded-xl p-3 z-50 shadow-xl">
                 <div class="flex items-center justify-between mb-2 px-1">
-                  <span class="font-label-caps text-[10px] text-slate-400">GRAPH SERVERS</span>
+                  <span class="font-label-caps text-[10px] text-slate-500">GRAPH SERVERS</span>
                   <div class="flex gap-2">
                     <button id="packSrvAll" class="font-label-caps text-[10px] text-cyan-600 hover:underline">ALL</button>
                     <button id="packSrvNone"
-                      class="font-label-caps text-[10px] text-slate-400 hover:underline">NONE</button>
+                      class="font-label-caps text-[10px] text-slate-500 hover:underline">NONE</button>
                   </div>
                 </div>
                 <div class="flex items-center bg-white border border-slate-200 rounded-lg mb-2 overflow-hidden">
-                  <span class="flex items-center justify-center w-7 h-7 text-slate-400"><span
+                  <span class="flex items-center justify-center w-7 h-7 text-slate-500"><span
                       class="material-symbols-outlined text-[14px]">search</span></span>
                   <input id="packSrvSearch" type="text" placeholder="Filter servers…"
-                    class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-400 focus:outline-none pr-2 w-full" />
+                    class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-500 focus:outline-none pr-2 w-full" />
                 </div>
                 <div id="packSrvList" class="space-y-1"></div>
               </div>
@@ -397,16 +397,16 @@
             </div>
             <div class="shrink-0 border-t border-slate-100/70 flex flex-col">
               <div class="px-4 py-3 border-b border-slate-100/70 flex items-center justify-between gap-3">
-                <span class="font-label-caps text-[10px] text-slate-400 shrink-0">VULNERABLE CVES · MOST CRITICAL
+                <span class="font-label-caps text-[10px] text-slate-500 shrink-0">VULNERABLE CVES · MOST CRITICAL
                   FIRST</span>
                 <div class="flex items-center gap-2 min-w-0">
                   <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden">
-                    <span class="flex items-center justify-center w-7 h-7 text-slate-400"><span
+                    <span class="flex items-center justify-center w-7 h-7 text-slate-500"><span
                         class="material-symbols-outlined text-[14px]">search</span></span>
                     <input id="cveSearch" type="text" placeholder="Find CVE…"
-                      class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-400 focus:outline-none pr-2 w-32" />
+                      class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-500 focus:outline-none pr-2 w-32" />
                   </div>
-                  <span id="cveListCount" class="font-code-sm text-[11px] text-slate-400 shrink-0"></span>
+                  <span id="cveListCount" class="font-code-sm text-[11px] text-slate-500 shrink-0"></span>
                 </div>
               </div>
               <div id="cveList" class="overflow-y-auto divide-y divide-slate-100/70" style="max-height:200px"></div>
@@ -418,11 +418,11 @@
             <div class="p-5 border-b border-slate-100/70 flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 class="font-label-caps text-label-caps text-slate-500">CVE EXPOSURE GRAPH · 3D</h3>
-                <p class="font-code-sm text-[11px] text-slate-400 mt-0.5">Node = CVE (colour = severity, size = blast
+                <p class="font-code-sm text-[11px] text-slate-500 mt-0.5">Node = CVE (colour = severity, size = blast
                   radius) or asset (cyan) · animated link = exposure path</p>
               </div>
               <div class="flex items-center gap-3">
-                <span class="font-code-sm text-[11px] text-slate-400 hidden md:block">Drag → rotate · Click node →
+                <span class="font-code-sm text-[11px] text-slate-500 hidden md:block">Drag → rotate · Click node →
                   focus</span>
                 <!-- Server picker (multi-select) -->
                 <div class="relative">
@@ -436,19 +436,19 @@
                   <div id="graphSrvPanel"
                     class="hidden absolute right-0 mt-2 w-64 max-h-72 overflow-y-auto neural-panel rounded-xl p-3 z-50 shadow-xl">
                     <div class="flex items-center justify-between mb-2 px-1">
-                      <span class="font-label-caps text-[10px] text-slate-400">GRAPH SERVERS</span>
+                      <span class="font-label-caps text-[10px] text-slate-500">GRAPH SERVERS</span>
                       <div class="flex gap-2">
                         <button id="graphSrvAll"
                           class="font-label-caps text-[10px] text-cyan-600 hover:underline">ALL</button>
                         <button id="graphSrvNone"
-                          class="font-label-caps text-[10px] text-slate-400 hover:underline">NONE</button>
+                          class="font-label-caps text-[10px] text-slate-500 hover:underline">NONE</button>
                       </div>
                     </div>
                     <div class="flex items-center bg-white border border-slate-200 rounded-lg mb-2 overflow-hidden">
-                      <span class="flex items-center justify-center w-7 h-7 text-slate-400"><span
+                      <span class="flex items-center justify-center w-7 h-7 text-slate-500"><span
                           class="material-symbols-outlined text-[14px]">search</span></span>
                       <input id="graphSrvSearch" type="text" placeholder="Filter servers…"
-                        class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-400 focus:outline-none pr-2 w-full" />
+                        class="bg-transparent font-code-sm text-[12px] text-slate-900 placeholder:text-slate-500 focus:outline-none pr-2 w-full" />
                     </div>
                     <div id="graphSrvList" class="space-y-1"></div>
                   </div>
@@ -466,7 +466,7 @@
             <div id="cveGraphWrap" class="relative flex-1 min-w-0 overflow-hidden" style="min-height:420px">
               <div id="cveGraphContainer" class="absolute inset-0"></div>
               <div id="cveGraphEmpty"
-                class="absolute inset-0 hidden items-center justify-center font-code-sm text-[13px] text-slate-400">
+                class="absolute inset-0 hidden items-center justify-center font-code-sm text-[13px] text-slate-500">
                 No CVE data — run a scan first.</div>
               <!-- Controlli interazione camera/animazione -->
               <div id="cveGraphCtrls" class="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
@@ -508,10 +508,10 @@
                     class="material-symbols-outlined text-[14px]">table_view</span>XLS</button>
               </div>
               <div class="flex items-center bg-white border border-slate-200 rounded-full shadow-sm overflow-hidden">
-                <span class="flex items-center justify-center w-9 h-9 text-slate-400"><span
+                <span class="flex items-center justify-center w-9 h-9 text-slate-500"><span
                     class="material-symbols-outlined text-[18px]">search</span></span>
                 <input id="fSearch" type="text" data-i18n-ph="intel.search_ph" placeholder="Filter package, CVE, asset…"
-                  class="bg-transparent font-code-sm text-code-sm text-slate-900 placeholder:text-slate-400 focus:outline-none pr-3 w-44 md:w-64" />
+                  class="bg-transparent font-code-sm text-code-sm text-slate-900 placeholder:text-slate-500 focus:outline-none pr-3 w-44 md:w-64" />
               </div>
             </div>
           </div>
@@ -521,7 +521,7 @@
               <tbody id="fRows" class="divide-y divide-slate-100/70"></tbody>
             </table>
           </div>
-          <div id="fEmpty" class="p-10 text-center font-code-sm text-code-sm text-slate-400" data-i18n="intel.empty">No
+          <div id="fEmpty" class="p-10 text-center font-code-sm text-code-sm text-slate-500" data-i18n="intel.empty">No
             posture data yet. Run a scan.</div>
           <div id="findingsPager"></div>
         </section>
@@ -676,7 +676,7 @@
       });
       const verEntries = Object.entries(osVerMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
       $('osVersionTable').innerHTML = verEntries.length
-        ? verEntries.map(([k, n]) => `<div class="flex items-center justify-between font-code-sm text-[11px]"><span class="text-slate-600 uppercase">${esc(k)}</span><span class="text-slate-400">${n}</span></div>`).join('')
+        ? verEntries.map(([k, n]) => `<div class="flex items-center justify-between font-code-sm text-[11px]"><span class="text-slate-600 uppercase">${esc(k)}</span><span class="text-slate-500">${n}</span></div>`).join('')
         : '';
 
       renderFindings(findings);
@@ -880,7 +880,7 @@
         ${a.auth_required ? '<span class="ml-auto font-label-caps text-[9px] text-cyan-600 bg-cyan-50 px-1.5 rounded-full">AUTH</span>' : ''}
         ${a.os_type === 'linux' ? '<span class="font-label-caps text-[9px] text-cyan-700 bg-cyan-50 border border-cyan-100 px-1.5 rounded-full">LNX</span>' : a.os_type === 'windows' ? '<span class="font-label-caps text-[9px] text-blue-700 bg-blue-50 border border-blue-100 px-1.5 rounded-full">WIN</span>' : ''}
       </label>`).join('')
-        : '<p class="font-code-sm text-[11px] text-slate-400 px-1">No assets.</p>';
+        : '<p class="font-code-sm text-[11px] text-slate-500 px-1">No assets.</p>';
       $('assetPickCount').textContent = selectedIps.size;
       $('runScan').disabled = isViewer || selectedIps.size === 0;
     }
@@ -991,7 +991,7 @@
         const msg = !hasSrv ? 'No servers selected — pick at least one.'
           : data.allCves > 0 ? 'No CVEs match the severity filter — toggle a severity badge above.'
             : 'No CVE data — run a scan first.';
-        container.innerHTML = `<div class="flex items-center justify-center font-code-sm text-[13px] text-slate-400" style="height:300px">${msg}</div>`;
+        container.innerHTML = `<div class="flex items-center justify-center font-code-sm text-[13px] text-slate-500" style="height:300px">${msg}</div>`;
         packListState = null;
         $('cveList').innerHTML = '';
         $('cveListCount').textContent = '';
@@ -1125,11 +1125,11 @@
           <a href="${cveUrl(c.name)}" target="_blank" rel="noopener noreferrer"
             class="font-code-sm text-[11px] text-indigo-700 hover:underline truncate">${esc(c.name)}</a>
           <span class="ml-auto flex items-center gap-2 shrink-0">
-            <span class="font-code-sm text-[10px] text-slate-400" title="assets affected">${c.children.length}×</span>
+            <span class="font-code-sm text-[10px] text-slate-500" title="assets affected">${c.children.length}×</span>
             ${sevChip(c.severity)}
           </span>
         </div>`).join('')
-        : '<p class="font-code-sm text-[11px] text-slate-400 px-4 py-3">No match.</p>';
+        : '<p class="font-code-sm text-[11px] text-slate-500 px-4 py-3">No match.</p>';
     }
     $('cveSearch').addEventListener('input', renderCveList);
     $('cveList').addEventListener('click', (e) => {
@@ -1150,7 +1150,7 @@
       const sevBadges = SEV.map(s => {
         const off = graphSevOff.has(s);
         const cls = off
-          ? 'text-slate-400 bg-slate-50/60 border-slate-200 opacity-70 hover:opacity-100'
+          ? 'text-slate-500 bg-slate-50/60 border-slate-200 opacity-70 hover:opacity-100'
           : SEV_CHIP[s] + ' hover:brightness-95';
         return `<button type="button" data-sev="${s}" title="Toggle ${s} CVEs"
             class="flex items-center gap-1.5 px-2.5 py-1 border rounded-full font-code-sm text-[10px] ${cls} transition-all cursor-pointer">
@@ -1159,7 +1159,7 @@
             <span class="font-semibold">${data.sevAvail[s]}</span>
           </button>`;
       }).join('');
-      const info = `<span class="ml-auto font-code-sm text-[11px] text-slate-400">
+      const info = `<span class="ml-auto font-code-sm text-[11px] text-slate-500">
           CVE <span class="font-semibold text-slate-900">${data.shownCves}</span></span>`;
       $('cvePackStats').innerHTML = srvBadge + sevBadges + info;
     }
@@ -1284,7 +1284,7 @@
           <input type="checkbox" class="graph-srv-cb accent-cyan-500" data-ip="${esc(ip)}" ${graphExcludedIps.has(ip) ? '' : 'checked'}/>
           <span class="font-code-sm text-[12px] text-slate-700 truncate">${esc(ip)}</span>
         </label>`).join('')
-        : `<p class="font-code-sm text-[11px] text-slate-400 px-1">${ips.length ? 'No match.' : 'No servers.'}</p>`;
+        : `<p class="font-code-sm text-[11px] text-slate-500 px-1">${ips.length ? 'No match.' : 'No servers.'}</p>`;
     }
     function renderSrvPickers(assets) {
       const ips = [...new Set(assets.map(a => a.ip))];
@@ -1369,7 +1369,7 @@
       const sevBadges = SEV.map(s => {
         const off = graphSevOff.has(s);
         const cls = off
-          ? 'text-slate-400 bg-slate-50/60 border-slate-200 opacity-70 hover:opacity-100'
+          ? 'text-slate-500 bg-slate-50/60 border-slate-200 opacity-70 hover:opacity-100'
           : SEV_CHIP[s] + ' hover:brightness-95';
         return `<button type="button" data-sev="${s}" title="Toggle ${s} CVEs"
             class="flex items-center gap-1.5 px-2.5 py-1 border rounded-full font-code-sm text-[10px] ${cls} transition-all cursor-pointer">
@@ -1378,7 +1378,7 @@
             <span class="font-semibold">${data.sevAvail[s]}</span>
           </button>`;
       }).join('');
-      const info = `<span class="ml-auto font-code-sm text-[11px] text-slate-400">
+      const info = `<span class="ml-auto font-code-sm text-[11px] text-slate-500">
           CVE <span class="font-semibold text-slate-900">${data.shownCves}</span>${data.totalCves > data.shownCves ? ` / ${data.totalCves} (top most critical)` : ''}${data.servers > 1 && data.sharedCves ? ` · SHARED <span class="font-semibold text-slate-900">${data.sharedCves}</span> on 2+ servers` : ''}
         </span>`;
       $('cveGraphStats').innerHTML = srvBadge + sevBadges + info;

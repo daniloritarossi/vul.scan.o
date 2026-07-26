@@ -1,24 +1,69 @@
-{# Shared mobile bottom navigation. Expects: active_page. Active item = elevated pill. #}
-{% set nav_items = [
-  {'page': 'dashboard', 'href': '/',         'icon': 'dashboard'},
-  {'page': 'assets',    'href': '/assets',   'icon': 'inventory_2'},
-  {'page': 'intel',     'href': '/intel',    'icon': 'psychology'},
-  {'page': 'findings',  'href': '/findings', 'icon': 'bug_report'},
-  {'page': 'audit',     'href': '/audit',    'icon': 'fact_check'},
-  {'page': 'sbom',      'href': '/sbom',     'icon': 'receipt_long'},
-  {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts'},
-  {'page': 'settings',  'href': '/settings', 'icon': 'settings'}
+{# Shared mobile bottom navigation. Expects: active_page.
+   Primary destinations sit in the bar (icon + label); the rest live in a
+   "More" sheet. All items are labelled (Nielsen H6, recognition over recall)
+   with >=44px touch targets (WCAG 2.5.5). Role-based hiding still works: the
+   sheet items are <a href> inside a <nav>, matched by topbar.html. #}
+{% set primary = [
+  {'page': 'dashboard', 'href': '/',         'icon': 'dashboard',  'key': 'navm.dashboard', 'text': 'DASH'},
+  {'page': 'assets',    'href': '/assets',   'icon': 'inventory_2', 'key': 'navm.assets',    'text': 'ASSETS'},
+  {'page': 'intel',     'href': '/intel',    'icon': 'psychology',  'key': 'navm.posture',   'text': 'POSTURE'},
+  {'page': 'findings',  'href': '/findings', 'icon': 'bug_report',  'key': 'navm.findings',  'text': 'FINDINGS'}
 ] %}
-<!-- BottomNavBar (Mobile) -->
+{% set all_items = [
+  {'page': 'dashboard', 'href': '/',         'icon': 'dashboard',       'key': 'nav.dashboard', 'text': 'DASHBOARD'},
+  {'page': 'assets',    'href': '/assets',   'icon': 'inventory_2',     'key': 'nav.assets',    'text': 'ASSETS'},
+  {'page': 'intel',     'href': '/intel',    'icon': 'psychology',      'key': 'nav.posture',   'text': 'SECURITY POSTURE'},
+  {'page': 'risk',      'href': '/risk',     'icon': 'gpp_maybe',       'key': 'nav.risk',      'text': 'RISK'},
+  {'page': 'findings',  'href': '/findings', 'icon': 'bug_report',      'key': 'nav.findings',  'text': 'FINDINGS'},
+  {'page': 'audit',     'href': '/audit',    'icon': 'fact_check',      'key': 'nav.audit',     'text': 'AUDIT'},
+  {'page': 'sbom',      'href': '/sbom',     'icon': 'receipt_long',    'key': 'nav.sbom',      'text': 'SBOM'},
+  {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',     'text': 'ADMIN'},
+  {'page': 'settings',  'href': '/settings', 'icon': 'settings',        'key': 'nav.settings',  'text': 'SETTINGS'}
+] %}
+<!-- "More" sheet (hidden until toggled) -->
+<div id="mnavSheet" class="md:hidden hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Navigation">
+  <div id="mnavBackdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
+  <nav
+    class="absolute bottom-24 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 rounded-2xl shadow-2xl p-3 grid grid-cols-3 gap-2">
+    {% for it in all_items %}
+    <a href="{{ it.href }}"
+      class="flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl transition-colors {{ 'bg-slate-900 text-cyan-400' if it.page == active_page else 'text-slate-600 hover:bg-slate-100' }}"
+      {% if it.page == active_page %}aria-current="page"{% endif %}>
+      <span class="material-symbols-outlined">{{ it.icon }}</span>
+      <span class="font-label-caps text-[9px] tracking-wide text-center" data-i18n="{{ it.key }}">{{ it.text }}</span>
+    </a>
+    {% endfor %}
+  </nav>
+</div>
+<!-- Bottom bar -->
 <nav
-  class="md:hidden fixed bottom-6 left-4 right-4 flex justify-around items-center px-1 py-2 bg-white/90 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-2xl z-50">
-  {% for it in nav_items %}
-  {% if it.page == active_page %}
-  <a class="flex flex-col items-center justify-center bg-slate-900 text-cyan-400 shadow-xl rounded-xl p-3 -mt-6 border-4 border-white"
-    href="{{ it.href }}"><span class="material-symbols-outlined">{{ it.icon }}</span></a>
-  {% else %}
-  <a class="flex flex-col items-center justify-center text-slate-400 p-3 hover:text-cyan-600 transition-all"
-    href="{{ it.href }}"><span class="material-symbols-outlined">{{ it.icon }}</span></a>
-  {% endif %}
+  class="md:hidden fixed bottom-4 left-4 right-4 flex justify-around items-stretch px-1 py-1.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/50 rounded-2xl shadow-2xl z-40">
+  {% for it in primary %}
+  <a href="{{ it.href }}"
+    class="flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[48px] rounded-xl transition-colors {{ 'text-cyan-500' if it.page == active_page else 'text-slate-500 hover:text-cyan-600' }}"
+    {% if it.page == active_page %}aria-current="page"{% endif %}>
+    <span class="material-symbols-outlined text-[22px]">{{ it.icon }}</span>
+    <span class="font-label-caps text-[9px] tracking-wide" data-i18n="{{ it.key }}">{{ it.text }}</span>
+  </a>
   {% endfor %}
+  <button type="button" id="mnavMore" aria-label="More" aria-expanded="false" aria-controls="mnavSheet"
+    class="flex flex-col items-center justify-center gap-0.5 flex-1 min-h-[48px] rounded-xl transition-colors {{ 'text-cyan-500' if active_page in ['risk', 'audit', 'sbom', 'admin', 'settings'] else 'text-slate-500 hover:text-cyan-600' }}">
+    <span class="material-symbols-outlined text-[22px]">more_horiz</span>
+    <span class="font-label-caps text-[9px] tracking-wide" data-i18n="navm.more">MORE</span>
+  </button>
 </nav>
+<script>
+  (function () {
+    var sheet = document.getElementById('mnavSheet');
+    var moreBtn = document.getElementById('mnavMore');
+    var backdrop = document.getElementById('mnavBackdrop');
+    if (!sheet || !moreBtn) return;
+    function openSheet() { sheet.classList.remove('hidden'); moreBtn.setAttribute('aria-expanded', 'true'); }
+    function closeSheet() { sheet.classList.add('hidden'); moreBtn.setAttribute('aria-expanded', 'false'); }
+    moreBtn.addEventListener('click', function () {
+      sheet.classList.contains('hidden') ? openSheet() : closeSheet();
+    });
+    if (backdrop) backdrop.addEventListener('click', closeSheet);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSheet(); });
+  })();
+</script>

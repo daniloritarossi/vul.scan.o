@@ -97,12 +97,12 @@
           </h3>
           <div class="flex flex-wrap items-end gap-4">
             <div class="flex flex-col gap-1">
-              <label class="font-label-caps text-[10px] text-slate-400" data-i18n="find.import_file">REPORT FILE (JSON / JSONL)</label>
+              <label class="font-label-caps text-[10px] text-slate-500" data-i18n="find.import_file">REPORT FILE (JSON / JSONL)</label>
               <input id="impFile" type="file" accept=".json,.jsonl,application/json,text/plain"
                 class="font-code-sm text-[12px] text-slate-600 file:mr-3 file:px-4 file:py-2 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white file:font-label-caps file:text-label-caps file:cursor-pointer" />
             </div>
             <div class="flex flex-col gap-1">
-              <label class="font-label-caps text-[10px] text-slate-400" data-i18n="find.import_tool">TOOL</label>
+              <label class="font-label-caps text-[10px] text-slate-500" data-i18n="find.import_tool">TOOL</label>
               <select id="impTool"
                 class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300">
                 <option value="auto">AUTO-DETECT</option>
@@ -115,7 +115,7 @@
               </select>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="font-label-caps text-[10px] text-slate-400">ASSET</label>
+              <label class="font-label-caps text-[10px] text-slate-500">ASSET</label>
               <input id="impAsset" type="text" data-i18n-ph="find.import_asset_ph" placeholder="Asset IP (optional)"
                 class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
             </div>
@@ -135,7 +135,7 @@
             </h3>
             <div class="flex flex-wrap items-end gap-4">
               <div class="flex flex-col gap-1">
-                <label class="font-label-caps text-[10px] text-slate-400" data-i18n="find.local_type">TYPE</label>
+                <label class="font-label-caps text-[10px] text-slate-500" data-i18n="find.local_type">TYPE</label>
                 <select id="lsType"
                   class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300">
                   <option value="secrets" data-i18n="find.local_secrets">SECRETS (gitleaks · directory)</option>
@@ -143,13 +143,13 @@
                 </select>
               </div>
               <div class="flex flex-col gap-1 flex-1 min-w-[240px] max-w-xl">
-                <label class="font-label-caps text-[10px] text-slate-400" data-i18n="find.local_target">TARGET</label>
+                <label class="font-label-caps text-[10px] text-slate-500" data-i18n="find.local_target">TARGET</label>
                 <input id="lsTarget" type="text" data-i18n-ph="find.local_target_ph"
                   placeholder="/path/to/repo  ·  nginx:1.25"
                   class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
               </div>
               <div class="flex flex-col gap-1">
-                <label class="font-label-caps text-[10px] text-slate-400">ASSET</label>
+                <label class="font-label-caps text-[10px] text-slate-500">ASSET</label>
                 <input id="lsAsset" type="text" data-i18n-ph="find.import_asset_ph" placeholder="Asset IP (optional)"
                   class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 w-44 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
               </div>
@@ -246,11 +246,11 @@
             <option value="21.2.j">21.2.j — MFA &amp; secured comms</option>
           </select>
           <div class="relative flex-1 min-w-[220px] max-w-md">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-base">search</span>
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base">search</span>
             <input id="fSearch" type="text" data-i18n-ph="find.search_ph" placeholder="Search package, CVE, asset…"
               class="w-full font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
           </div>
-          <span id="rowCount" class="font-code-sm text-[11px] text-slate-400 ml-auto"></span>
+          <span id="rowCount" class="font-code-sm text-[11px] text-slate-500 ml-auto"></span>
           <!-- Chip filtri attivi (rimovibili) -->
           <div id="activeChips" class="w-full flex flex-wrap items-center gap-2 empty:hidden"></div>
         </section>
@@ -260,7 +260,7 @@
           <div class="overflow-x-auto">
             <table class="w-full text-left vfa-responsive-table">
               <thead>
-                <tr class="border-b border-slate-200/70 font-label-caps text-[10px] text-slate-400">
+                <tr class="border-b border-slate-200/70 font-label-caps text-[10px] text-slate-500">
                   <th class="px-4 py-3" data-i18n="find.th_sev">SEV</th>
                   <th class="px-4 py-3" data-i18n="find.th_finding">FINDING</th>
                   <th class="px-4 py-3" data-i18n="find.th_asset">ASSET</th>
@@ -274,7 +274,7 @@
               <tbody id="tbody" class="font-code-sm text-[12px] text-slate-700"></tbody>
             </table>
           </div>
-          <div id="emptyMsg" class="hidden p-8 text-center font-code-sm text-[12px] text-slate-400"
+          <div id="emptyMsg" class="hidden p-8 text-center font-code-sm text-[12px] text-slate-500"
             data-i18n="find.no_rows">No findings. Run a posture scan or import a scanner report.</div>
         </section>
       </div>
@@ -299,7 +299,7 @@
         HIGH: 'bg-amber-100 text-amber-700 border-amber-200',
         MEDIUM: 'bg-yellow-50 text-yellow-700 border-yellow-200',
         LOW: 'bg-slate-100 text-slate-500 border-slate-200',
-        UNKNOWN: 'bg-slate-50 text-slate-400 border-slate-200',
+        UNKNOWN: 'bg-slate-50 text-slate-500 border-slate-200',
       };
       const SRC_BADGE = {
         posture: 'bg-cyan-50 text-cyan-700 border-cyan-200',
@@ -369,7 +369,7 @@
             + `<button type="button" data-clear="${id}" aria-label="Clear ${esc(label)}" class="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-cyan-200/60">×</button>`
             + `</span>`;
         }).join('') + (active.length > 1
-          ? `<button type="button" id="clearAllChips" class="font-label-caps text-[10px] text-slate-400 hover:text-rose-600 underline decoration-dotted">${esc(tr('find.clear_all') || 'CLEAR ALL')}</button>`
+          ? `<button type="button" id="clearAllChips" class="font-label-caps text-[10px] text-slate-500 hover:text-rose-600 underline decoration-dotted">${esc(tr('find.clear_all') || 'CLEAR ALL')}</button>`
           : '');
         wrap.querySelectorAll('[data-clear]').forEach((b) => b.addEventListener('click', () => {
           $(b.dataset.clear).value = '';
@@ -401,7 +401,7 @@
             `<span class="px-2 py-0.5 rounded border text-[10px] ${SRC_BADGE[s] || 'bg-slate-50 text-slate-500 border-slate-200'}">${esc(s)}</span>`).join(' ');
           const cves = (r.cve_ids || []).slice(0, 3).map((c) =>
             `<span class="text-cyan-700">${esc(c)}</span>`).join(', ') +
-            ((r.cve_ids || []).length > 3 ? ` <span class="text-slate-400">+${r.cve_ids.length - 3}</span>` : '');
+            ((r.cve_ids || []).length > 3 ? ` <span class="text-slate-500">+${r.cve_ids.length - 3}</span>` : '');
           const badges = [];
           if (r.reopened > 0) badges.push(`<span class="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-[9px]">${esc(tr('find.reopened_badge', { n: r.reopened }))}</span>`);
           if (r.times_seen > 1) badges.push(`<span class="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-[9px]">${esc(tr('find.seen_badge', { n: r.times_seen }))}</span>`);
@@ -414,7 +414,7 @@
             <td class="px-4 py-3" data-label="${esc(tr('find.th_sev'))}"><span class="px-2 py-0.5 rounded border text-[10px] font-bold ${sevCls}">${esc((r.severity || 'UNKNOWN').toUpperCase())}</span></td>
             <td class="px-4 py-3 max-w-[420px]" data-label="${esc(tr('find.th_finding'))}">
               <div class="font-semibold text-slate-800 truncate" title="${esc(r.title)}">${esc(r.title)}</div>
-              <div class="text-[11px] text-slate-400 truncate">${esc(r.package || '')}${r.version ? ' · ' + esc(r.version) : ''}${r.location ? ' · ' + esc(r.location) : ''}</div>
+              <div class="text-[11px] text-slate-500 truncate">${esc(r.package || '')}${r.version ? ' · ' + esc(r.version) : ''}${r.location ? ' · ' + esc(r.location) : ''}</div>
               <div class="text-[11px]">${cves} ${badges.join(' ')}</div>
               <div class="text-[11px] mt-0.5">${compTags}</div>
             </td>
