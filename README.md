@@ -83,12 +83,12 @@ On Debian/Ubuntu: `sudo apt install python3-pip python3-venv curl git golang doc
 
 ```bash
 git clone <repo>
-cd vuln.scan.o
+cd vul.scan.o
 chmod +x start.sh stop.sh
 ./start.sh
 ```
 
-As an alternative to `clone`, you can always download the artifact for a **tag/release** as a `.zip` package (repo *Tags* page → *Download ZIP*, or `<repo>/archive/refs/tags/<tag>.zip`): extract it and continue from `cd vuln.scan.o` onward.
+As an alternative to `clone`, you can always download the artifact for a **tag/release** as a `.zip` package (repo *Tags* page → *Download ZIP*, or `<repo>/archive/refs/tags/<tag>.zip`): extract it and continue from `cd vul.scan.o` onward.
 
 To update an existing installation, see [Application updates](#application-updates) (`./start.sh update` → option 4).
 

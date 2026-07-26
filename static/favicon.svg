@@ -1,12 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <!-- Stratofeed — favicon -->
-  <circle cx="16" cy="16" r="15.5" fill="#ffffff" stroke="#f97316" stroke-width="1"/>
-  <!-- Summit -->
-  <path d="M13.4 8 H18.6" stroke="#f97316" stroke-width="3.5" stroke-linecap="round" fill="none"/>
-  <!-- Strata -->
-  <g stroke="#1e293b" stroke-width="3.5" stroke-linecap="round" fill="none">
-    <path d="M10.9 14 H21.1"/>
-    <path d="M8.3 20 H23.7"/>
-    <path d="M6.5 26 H25.5"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32">
+  <!-- Stratofeed — favicon · "Gradient strata" -->
+  <defs>
+    <linearGradient id="strata" gradientUnits="userSpaceOnUse" x1="50" y1="24" x2="50" y2="88">
+      <stop offset="0" stop-color="#fb923c"/>
+      <stop offset=".38" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="100" height="100" rx="16" fill="#ffffff"/>
+  <g stroke="url(#strata)" stroke-width="10" stroke-linecap="round" fill="none">
+    <path d="M42 30 H58"/>
+    <path d="M35 48 H65"/>
+    <path d="M27 66 H73"/>
+    <path d="M19 84 H81"/>
   </g>
 </svg>
