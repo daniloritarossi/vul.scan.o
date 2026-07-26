@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <code>&lt;&nbsp;VUL&nbsp;&bull;&nbsp;<b>S</b>CAN&nbsp;&bull;&nbsp;O&nbsp;/&gt;</code>
+</p>
+
+<p align="center">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
   <img alt="Supabase local" src="https://img.shields.io/badge/Supabase-local%20Docker-3FCF8E?logo=supabase&logoColor=white">

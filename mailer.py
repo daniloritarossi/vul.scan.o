@@ -85,8 +85,8 @@ def _html_email(title: str, greeting: str, intro: str, button_label: str,
                style="display:block;border:0;" />
         </td></tr>
         <tr><td align="center" style="padding:0 32px 4px;">
-          <span style="font-size:18px;font-weight:bold;letter-spacing:2px;color:{_BLACK};">
-            VULN<span style="color:{_ORANGE};">.</span>SCAN<span style="color:{_ORANGE};">.</span><span style="color:{_ORANGE};">IO</span>
+          <span style="display:inline-block;padding:8px 14px;border:1px solid #d6dce4;border-radius:10px;background:#f8fafc;font-family:'JetBrains Mono',Consolas,monospace;font-size:16px;font-weight:600;letter-spacing:1px;color:{_BLACK};text-transform:uppercase;">
+            <span style="color:#94a3b8;font-weight:400;">&lt;</span> VUL<span style="color:{_ORANGE};">&bull;</span><span style="color:{_ORANGE};">S</span>CAN<span style="color:{_ORANGE};">&bull;</span>O <span style="color:#94a3b8;font-weight:400;">/&gt;</span>
           </span>
         </td></tr>
         <tr><td style="padding:8px 32px 0;">

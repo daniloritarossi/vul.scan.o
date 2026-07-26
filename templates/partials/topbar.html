@@ -24,13 +24,8 @@ Expects one of:
   class="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-xl border-b border-slate-200/50 flex justify-between items-center px-margin-desktop h-16 transition-all">
   <div class="flex items-center gap-4">
     <img src="/static/logo-icon-animated.svg" class="w-11 h-11" alt="VUL.SCAN.O" />
-    <h1 class="font-headline-md text-headline-md font-bold tracking-tight">
-      <span class="text-dark400">VUL</span>
-      <span class="text-orange-500">.</span>
-      <span class="text-dark-400">SCAN</span>
-      <span class="text-orange-500">.</span>
-      <span class="text-dark-400">O</span>
-    </h1>
+    <h1 class="sr-only">VUL.SCAN.O</h1>
+    {% include 'partials/wordmark.html' %}
     {% if crumbs is defined %}
     <nav aria-label="breadcrumb" class="ml-4 hidden md:flex items-center gap-1.5">
       {% for c in crumbs %}
@@ -69,7 +64,8 @@ Expects one of:
       class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-lg pl-2 pr-2 py-1.5 transition-colors">
       <span class="material-symbols-outlined text-[16px]">search</span>
       <span class="font-label-caps text-[10px] hidden md:inline" data-i18n="cmdk.btn">Search</span>
-      <kbd class="font-code-sm text-[10px] text-slate-400 border border-slate-300 rounded px-1 hidden md:inline">⌘K</kbd>
+      <kbd
+        class="font-code-sm text-[10px] text-slate-400 border border-slate-300 rounded px-1 hidden md:inline">⌘K</kbd>
     </button>
     <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
       <button data-lang-btn="en" class="px-2 py-1 rounded-md font-label-caps text-[10px] transition-colors">EN</button>
