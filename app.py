@@ -1056,6 +1056,67 @@ def api_audit_verify(user: CurrentUser = Depends(_writer)):
     return res
 
 
+def _scan_outcome(scan: dict) -> str:
+    """Esito peggiore fra le righe di una scan (per la timeline attivita')."""
+    vals = {(r.get("vuln_match") or "") for r in (scan.get("scan_results") or [])}
+    if "VULNERABILE" in vals:
+        return "VULNERABILE"
+    if "INCERTO" in vals:
+        return "INCERTO"
+    if "NON VULNERABILE" in vals:
+        return "NON VULNERABILE"
+    return ""
+
+
+@app.get("/api/dashboard")
+def api_dashboard(recent: int = 6, user: CurrentUser = Depends(get_current_user)):
+    """
+    Aggregato leggero per la home: attivita' recente (dal ledger) + sintesi
+    finding con SLA. Una sola chiamata, filtrata sul cono di visibilita' RBAC.
+    Best-effort: le sezioni con DB irraggiungibile tornano vuote/null, non 503,
+    cosi' la dashboard resta utilizzabile a pezzi.
+    """
+    out: dict = {"recent": [], "findings": None, "actor": user.username, "role": user.role}
+
+    # 1) Attivita' recente dal ledger (scoped).
+    audit = fetch_audit(limit=200)
+    if audit is not None:
+        audit = _audit_scope_filter(audit, user)
+        for s in audit[:max(0, recent)]:
+            out["recent"].append({
+                "id": s.get("id"), "product": s.get("product"), "version": s.get("version"),
+                "source": s.get("source"), "actor_name": s.get("actor_name"),
+                "created_at": s.get("created_at"), "signed": bool(s.get("row_hash")),
+                "outcome": _scan_outcome(s), "assets": len(s.get("scan_results") or []),
+            })
+
+    # 2) Finding: sintesi (stati/severita'/SLA) + top scaduti.
+    rows = fetch_findings()
+    if rows is not None:
+        scope_ips = visible_asset_ips(user)
+        if scope_ips is not None:
+            rows = [r for r in rows if (r.get("asset_ip") or "") in scope_ips]
+        summary = summarize(rows)
+        open_rows = [r for r in rows if (r.get("status") or "open") in ("open", "triaged")]
+        for r in open_rows:
+            r["_breached"] = is_breached(r)
+        sev_rank = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
+        open_rows.sort(key=lambda r: (
+            0 if r["_breached"] else 1,
+            sev_rank.get((r.get("severity") or "UNKNOWN").upper(), 4),
+            r.get("sla_due") or "",
+        ))
+        top = [{
+            "package": r.get("package"), "version": r.get("version"),
+            "asset_ip": r.get("asset_ip"), "severity": (r.get("severity") or "UNKNOWN").upper(),
+            "status": r.get("status") or "open", "sla_due": r.get("sla_due"),
+            "first_seen": r.get("first_seen"), "breached": r["_breached"],
+        } for r in open_rows[:max(0, recent)]]
+        out["findings"] = {"summary": summary, "top": top}
+
+    return out
+
+
 def _normalize_host(raw: str) -> str:
     """Estrae l'hostname/IP puro da una stringa asset (toglie schema, path, porta)."""
     raw = (raw or "").strip()

@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=5" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=6" />
   <!-- XLSX export (SheetJS) + shared table/export helpers -->
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
@@ -83,13 +83,24 @@
       box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.25),
         0 0 24px rgba(56, 189, 248, 0.40);
     }
+
+    /* Tooltip a11y: visibile su hover E su focus da tastiera (WCAG 2.1.1). */
+    .tip-wrap:hover .tip-pop,
+    .tip-wrap:focus-within .tip-pop {
+      opacity: 1;
+    }
+
+    /* Dark: superfici traslucide bianche non coperte dagli override globali. */
+    .dark .bg-white\/60 { background-color: rgba(30, 41, 59, .5) !important; }
+    .dark .hover\:bg-white:hover { background-color: rgba(51, 65, 85, .55) !important; }
+    .dark .bg-white\/40 { background-color: rgba(30, 41, 59, .4) !important; }
   </style>
   <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=22"></script>
+  <script src="/static/i18n.js?v=23"></script>
 </head>
 
 <body
@@ -181,6 +192,17 @@
     <!-- Main Content Canvas -->
     <main id="main" tabindex="-1" class="flex-1 md:ml-64 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8 relative w-full h-full">
       <div class="mx-auto space-y-8">
+        <!-- Greeting + RBAC context (popolato da /api/me + /api/dashboard) -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 id="greetHead" class="font-display-lg text-2xl font-bold tracking-tight text-slate-900" data-i18n="dash.greet">Intelligence Center</h2>
+            <p id="greetSub" class="font-code-sm text-[11px] text-slate-500 mt-0.5">&nbsp;</p>
+          </div>
+          <div id="overduePill" class="hidden items-center gap-2 font-label-caps text-[10px] px-3 py-1.5 rounded-full border border-rose-200 bg-rose-50 text-rose-600">
+            <span class="material-symbols-outlined text-[15px]">schedule</span>
+            <a href="/findings" class="hover:underline"><span id="overdueCount">0</span> <span data-i18n="dash.overdue">SLA OVERDUE</span></a>
+          </div>
+        </div>
         <!-- Onboarding (shown only when inventory or posture data missing) -->
         <section id="onboarding" class="hidden neural-panel rounded-2xl p-6">
           <h3 class="font-label-caps text-label-caps text-slate-500 mb-4 flex items-center gap-2">
@@ -278,11 +300,11 @@
             <div class="flex items-center justify-between mb-2">
               <h2 class="font-label-caps text-label-caps text-slate-500 flex items-center gap-1.5">
                 <span data-i18n="dash.verified_title">ASSETS SCANNED</span>
-                <span class="relative group/info inline-flex items-center">
+                <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" aria-label="Info">
                   <span
-                    class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600 cursor-help">info</span>
+                    class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600">info</span>
                   <span
-                    class="pointer-events-none absolute top-full left-0 mt-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover/info:opacity-100 transition-opacity duration-200 z-50 shadow-xl"
+                    class="tip-pop pointer-events-none absolute top-full left-0 mt-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl"
                     data-i18n="dash.verified_tooltip">Assets included in the last posture scan, out of all enabled
                     assets in the inventory.</span>
                 </span>
@@ -398,11 +420,11 @@
                     class="w-9 h-5 rounded-full bg-slate-200 peer-checked:bg-cyan-500 relative transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:bg-white after:rounded-full after:shadow after:transition-all peer-checked:after:translate-x-4"></span>
                   <span class="font-label-caps text-label-caps text-slate-500" data-i18n="dash.deep_label">DEEP VERSION
                     PROBE</span>
-                  <span class="relative group inline-flex items-center">
+                  <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" aria-label="Info">
                     <span
-                      class="material-symbols-outlined text-[16px] text-slate-500 hover:text-cyan-600 cursor-help">info</span>
+                      class="material-symbols-outlined text-[16px] text-slate-500 hover:text-cyan-600">info</span>
                     <span
-                      class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50 shadow-xl"
+                      class="tip-pop pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-80 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl"
                       data-i18n="dash.deep_tooltip">Active deeper probe.</span>
                   </span>
                 </label>
@@ -506,11 +528,11 @@
           <div class="lg:col-span-2 neural-panel p-6 rounded-2xl relative overflow-hidden group transition-all">
             <h2 class="font-label-caps text-label-caps text-slate-500 mb-6 flex items-center gap-1.5">
               <span data-i18n="dash.network_title">DETECTED PRODUCTS NETWORK</span>
-              <span class="relative group/info inline-flex items-center">
+              <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" aria-label="Info">
                 <span
-                  class="material-symbols-outlined text-[16px] text-slate-500 hover:text-cyan-600 cursor-help">info</span>
+                  class="material-symbols-outlined text-[16px] text-slate-500 hover:text-cyan-600">info</span>
                 <span
-                  class="pointer-events-none absolute top-full left-0 mt-2 w-96 max-w-[90vw] p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 group-hover/info:opacity-100 transition-opacity duration-200 z-50 shadow-xl"
+                  class="tip-pop pointer-events-none absolute top-full left-0 mt-2 w-96 max-w-[90vw] p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl"
                   data-i18n="dash.network_tooltip">How the dependency graph is computed.</span>
               </span>
             </h2>
@@ -609,11 +631,14 @@
           <!-- Critical Findings (real data from latest posture run) -->
           <div class="neural-panel rounded-2xl p-6 flex flex-col h-80 relative overflow-hidden">
             <div class="flex justify-between items-center mb-6">
-              <h3 class="font-label-caps text-label-caps text-slate-500" data-i18n="dash.findings_title">CRITICAL
+              <h3 class="font-label-caps text-label-caps text-slate-500 flex items-center gap-2" data-i18n="dash.findings_title">CRITICAL
                 FINDINGS</h3>
-              <a href="/intel"
-                class="text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full font-label-caps text-label-caps hover:bg-cyan-100 transition-colors"
-                data-i18n="dash.inventory_viewall">VIEW ALL</a>
+              <div class="flex items-center gap-2">
+                <span id="findingsSla" class="hidden font-label-caps text-[9px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200"></span>
+                <a href="/intel"
+                  class="text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full font-label-caps text-label-caps hover:bg-cyan-100 transition-colors"
+                  data-i18n="dash.inventory_viewall">VIEW ALL</a>
+              </div>
             </div>
             <div id="criticalFindings" class="flex-1 overflow-y-auto pr-2 space-y-3">
               <div class="flex items-center justify-center h-full text-slate-500 font-code-sm text-code-sm"
@@ -632,6 +657,36 @@
             <div id="assetList" class="flex-1 overflow-y-auto pr-2 space-y-3">
               <div class="flex items-center justify-center h-full text-slate-500 font-code-sm text-code-sm"
                 data-i18n="dash.inventory_loading">Loading inventory…</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Exploitability + Recent Activity Row -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Top Exploitable (KEV / EPSS / reachable — lazy da /api/risk) -->
+          <div class="neural-panel rounded-2xl p-6 flex flex-col h-80 relative overflow-hidden border-l-4 border-rose-400/70">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-label-caps text-label-caps text-slate-500 flex items-center gap-1.5">
+                <span data-i18n="dash.exploit_title">TOP EXPLOITABLE</span>
+                <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" aria-label="Info">
+                  <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600">info</span>
+                  <span class="tip-pop pointer-events-none absolute top-full left-0 mt-2 w-72 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl" data-i18n="dash.exploit_tip">Findings ranked by exploitability: CISA KEV first, then EPSS probability and network reachability.</span>
+                </span>
+              </h3>
+              <a href="/risk" class="text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full font-label-caps text-label-caps hover:bg-cyan-100 transition-colors" data-i18n="dash.inventory_viewall">VIEW ALL</a>
+            </div>
+            <div id="topExploit" class="flex-1 overflow-y-auto pr-2 space-y-3">
+              <div class="flex items-center justify-center h-full text-slate-500 font-code-sm text-code-sm" data-i18n="dash.exploit_loading">Assessing exploitability…</div>
+            </div>
+          </div>
+          <!-- Recent Activity (ledger) -->
+          <div class="neural-panel rounded-2xl p-6 flex flex-col h-80 relative overflow-hidden">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="font-label-caps text-label-caps text-slate-500" data-i18n="dash.activity_title">RECENT ACTIVITY</h3>
+              <a href="/audit" class="text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full font-label-caps text-label-caps hover:bg-cyan-100 transition-colors" data-i18n="dash.inventory_viewall">VIEW ALL</a>
+            </div>
+            <div id="recentActivity" class="flex-1 overflow-y-auto pr-2 space-y-3">
+              <div class="flex items-center justify-center h-full text-slate-500 font-code-sm text-code-sm" data-i18n="dash.inventory_loading">Loading…</div>
             </div>
           </div>
         </section>
@@ -1358,6 +1413,129 @@
       }
     }
     loadAssets();
+
+    // ======================================================================
+    // Dashboard aggregate: Recent Activity (ledger) + SLA + Top Exploitable.
+    // ======================================================================
+    // Tempo relativo ("2h ago"); assoluto nel title.
+    function relTime(iso) {
+      if (!iso) return '';
+      const d = new Date(iso); if (isNaN(d)) return '';
+      const s = Math.floor((Date.now() - d.getTime()) / 1000);
+      if (s < 60) return t('dash.rel_now');
+      const m = Math.floor(s / 60); if (m < 60) return t('dash.rel_m', { n: m });
+      const h = Math.floor(m / 60); if (h < 24) return t('dash.rel_h', { n: h });
+      return t('dash.rel_d', { n: Math.floor(h / 24) });
+    }
+    const OUTCOME_CLS = {
+      'VULNERABILE': 'bg-rose-50 text-rose-700 border-rose-200',
+      'NON VULNERABILE': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      'INCERTO': 'bg-amber-50 text-amber-700 border-amber-200',
+    };
+    function outcomeChip(o) {
+      if (!o) return '';
+      const cls = OUTCOME_CLS[o] || 'bg-slate-50 text-slate-600 border-slate-200';
+      return `<span class="px-2 py-0.5 rounded-full font-label-caps text-[9px] border ${cls} shrink-0">${escHtml(t('vuln.' + o))}</span>`;
+    }
+
+    function renderRecent(list) {
+      const el = $('recentActivity'); if (!el) return;
+      if (!list || !list.length) {
+        el.innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-2 text-slate-500 font-code-sm text-code-sm text-center px-4"><span class="material-symbols-outlined text-slate-300">history</span>${t('dash.activity_none')}</div>`;
+        return;
+      }
+      el.innerHTML = list.map((s) => `
+        <a href="/audit#scan-${encodeURIComponent(s.id)}" class="flex items-center justify-between gap-3 p-3 border border-slate-100 bg-white/60 hover:bg-white hover:border-cyan-200 transition-all rounded-xl">
+          <div class="min-w-0">
+            <div class="font-code-sm text-code-sm text-slate-900 font-semibold truncate flex items-center gap-1.5">
+              ${s.signed ? '<span class="material-symbols-outlined text-[13px] text-emerald-500" title="' + escHtml(t('audit.verified')) + '">verified</span>' : ''}
+              ${escHtml(s.product || t('audit.no_product'))}${s.version ? ' <span class="text-cyan-700 font-normal">v' + escHtml(s.version) + '</span>' : ''}
+            </div>
+            <div class="font-label-caps text-[10px] text-slate-500 mt-0.5 truncate">
+              ${s.actor_name ? '<span class="material-symbols-outlined text-[11px] align-middle">person</span> ' + escHtml(s.actor_name) + ' · ' : ''}${s.assets} ${t('dash.assets_word')} · <span title="${escHtml(new Date(s.created_at).toLocaleString())}">${escHtml(relTime(s.created_at))}</span>
+            </div>
+          </div>
+          ${outcomeChip(s.outcome)}
+        </a>`).join('');
+    }
+
+    function renderFindingsSla(f) {
+      const pill = $('overduePill'), sla = $('findingsSla');
+      const breached = (f && f.summary && f.summary.sla_breached) || 0;
+      if (pill) { pill.classList.toggle('hidden', breached <= 0); pill.classList.toggle('flex', breached > 0); $('overdueCount').textContent = breached; }
+      if (sla) {
+        const open = (f && f.summary && ((f.summary.by_status || {}).open || 0) + ((f.summary.by_status || {}).triaged || 0)) || 0;
+        if (breached > 0) { sla.textContent = t('dash.n_overdue', { n: breached }); sla.classList.remove('hidden'); }
+        else if (open > 0) { sla.textContent = t('dash.n_open', { n: open }); sla.className = 'font-label-caps text-[9px] px-2 py-0.5 rounded-full bg-slate-50 text-slate-500 border border-slate-200'; sla.classList.remove('hidden'); }
+        else sla.classList.add('hidden');
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const r = await fetch('/api/dashboard?recent=6');
+        if (!r.ok) return;
+        const d = await r.json();
+        renderRecent(d.recent || []);
+        if (d.findings) renderFindingsSla(d.findings);
+      } catch (_) { /* best-effort */ }
+    }
+    loadDashboard();
+    // Auto-refresh leggero: attivita' + SLA si aggiornano se un altro utente scannerizza.
+    setInterval(loadDashboard, 60000);
+
+    // Greeting + contesto RBAC (ruolo + n. asset nel cono di visibilita').
+    (window.vfaUser || Promise.resolve(null)).then((u) => {
+      if (!u) return;
+      const sub = $('greetSub'); if (!sub) return;
+      const role = (u.role || '').toUpperCase();
+      let s = `${escHtml(u.username || '')} · ${escHtml(role)}`;
+      if (Array.isArray(u.asset_ids)) s += ` · ${u.asset_ids.length} ${t('dash.in_scope')}`;
+      sub.textContent = s;
+    });
+
+    // --- Top Exploitable (lazy: /api/risk fa rete su KEV/EPSS) --------------
+    function exploitRow(f) {
+      const cves = (f.cve_ids || []);
+      const kev = f.kev
+        ? `<span class="px-1.5 py-0.5 rounded font-label-caps text-[9px] bg-rose-600 text-white shrink-0" title="CISA KEV">KEV</span>` : '';
+      const epss = (typeof f.epss === 'number' && f.epss > 0)
+        ? `<span class="font-code-sm text-[10px] text-slate-500">EPSS ${(f.epss * 100).toFixed(0)}%</span>` : '';
+      const exp = f.exposed
+        ? `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" title="${escHtml(t('dash.exposed'))}"></span>`
+        : `<span class="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" title="${escHtml(t('dash.not_exposed'))}"></span>`;
+      return `
+        <div class="flex items-center justify-between gap-3 p-3 border border-slate-100 bg-white/60 hover:bg-white hover:border-rose-200 transition-all rounded-xl">
+          <div class="min-w-0">
+            <div class="font-code-sm text-code-sm text-slate-900 font-semibold truncate flex items-center gap-1.5">${exp}${escHtml(f.package || '')} <span class="text-slate-500 font-normal">${escHtml(f.version || '')}</span></div>
+            <div class="font-label-caps text-[10px] text-slate-500 mt-0.5 truncate">${escHtml(f.ip || '')} · ${cves.length} CVE ${epss ? '· ' + epss : ''}</div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">${kev}<span class="font-code-sm text-[11px] font-semibold text-rose-600">${(f.finding_risk != null ? f.finding_risk.toFixed(1) : '')}</span></div>
+        </div>`;
+    }
+    async function loadExploitable() {
+      const el = $('topExploit'); if (!el) return;
+      try {
+        const r = await fetch('/api/risk?probe=false');
+        if (!r.ok) throw 0;
+        const d = await r.json();
+        // I finding sono annidati per-asset: appiattisco e porto giu' l'IP.
+        const rows = [];
+        for (const a of ((d.risk || {}).assets || []))
+          for (const f of (a.findings || [])) rows.push({ ...f, ip: a.ip });
+        rows.sort((a, b) => ((b.kev ? 1 : 0) - (a.kev ? 1 : 0)) || ((b.finding_risk || 0) - (a.finding_risk || 0)));
+        const top = rows.filter((f) => f.kev || (f.epss || 0) > 0.05 || (f.finding_risk || 0) > 0).slice(0, 8);
+        if (!top.length) {
+          el.innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-2 text-emerald-600 font-code-sm text-code-sm text-center px-4"><span class="material-symbols-outlined">verified</span>${t('dash.exploit_none')}</div>`;
+          return;
+        }
+        el.innerHTML = top.map(exploitRow).join('');
+      } catch (_) {
+        el.innerHTML = `<div class="flex flex-col items-center justify-center h-full gap-2 text-slate-500 font-code-sm text-code-sm text-center px-4"><span class="material-symbols-outlined text-slate-300">radar</span>${t('dash.exploit_unavail')}</div>`;
+      }
+    }
+    loadExploitable();
+    window.addEventListener('langchange', () => { loadDashboard(); loadExploitable(); });
 
     // --- Security posture score --------------------------------------------
     // Posture = media pesata sull'esito di matching di tutti gli asset scansionati.
