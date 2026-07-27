@@ -16,11 +16,29 @@ Variabili d'ambiente (con default per il locale):
     SUPABASE_PERSIST      "0" per disabilitare del tutto la scrittura
 """
 
+import datetime
+import hashlib
+import json
 import logging
 import os
 from typing import Optional
 
 logger = logging.getLogger("vfa.db")
+
+# Campi immutabili di una 'scans' che entrano nella catena hash. version e cve_*
+# sono esclusi: update_scan_summary li riscrive a fine scansione.
+_HASH_FIELDS = ("description", "product", "source", "actor_id", "hash_ts")
+
+
+def _scan_hash(payload: dict, prev_hash: str) -> str:
+    """sha256 deterministico su (prev_hash | campi immutabili canonicalizzati)."""
+    canon = json.dumps(
+        {k: payload.get(k) for k in _HASH_FIELDS},
+        sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+    )
+    return hashlib.sha256(
+        (str(prev_hash or "") + "|" + canon).encode("utf-8")
+    ).hexdigest()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "http://localhost:8001")
 # Chiave demo service_role (firmata con il JWT_SECRET demo). Solo per uso locale.
@@ -54,19 +72,34 @@ def _get_client():
     return _client
 
 
+def _last_row_hash(client) -> str:
+    """row_hash della scansione piu' recente (per linkare la catena). '' se nessuna."""
+    try:
+        resp = (client.table("scans").select("row_hash")
+                .order("id", desc=True).limit(1).execute())
+        if resp.data:
+            return resp.data[0].get("row_hash") or ""
+    except Exception as exc:
+        logger.warning("_last_row_hash fallita: %s", exc)
+    return ""
+
+
 def persist_scan(description: str, target: dict, cve: dict,
-                 advisory: Optional[dict] = None) -> Optional[int]:
+                 advisory: Optional[dict] = None,
+                 actor: Optional[dict] = None) -> Optional[int]:
     """
     Inserisce la riga 'scans' (target identificato + sintesi CVE + advisory AI).
     Ritorna l'id della scansione, oppure None se la persistenza fallisce.
 
     'advisory' (opzionale): {affected_version, affected_source}. Tenuto DISTINTO
     dai campi CVE.
+    'actor' (opzionale): {id, name} dell'utente autore -> ledger tamper-evident.
     """
     client = _get_client()
     if client is None:
         return None
     advisory = advisory or {}
+    actor = actor or {}
     row = {
         "description": description,
         "product": target.get("product"),
@@ -81,13 +114,57 @@ def persist_scan(description: str, target: dict, cve: dict,
         "cve_error": cve.get("error"),
         "affected_version": advisory.get("affected_version"),
         "affected_source": advisory.get("affected_source"),
+        # Attore + catena hash (ledger). hash_ts deterministico lato client cosi'
+        # la verifica ricalcola lo stesso digest indipendentemente dal DB.
+        "actor_id": actor.get("id"),
+        "actor_name": actor.get("name"),
+        "hash_ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
+    prev_hash = _last_row_hash(client)
+    row["prev_hash"] = prev_hash
+    row["row_hash"] = _scan_hash(row, prev_hash)
     try:
         resp = client.table("scans").insert(row).execute()
         return resp.data[0]["id"] if resp.data else None
     except Exception as exc:
         logger.warning("persist_scan fallita: %s", exc)
         return None
+
+
+def verify_audit_chain() -> Optional[dict]:
+    """
+    Ricalcola la catena hash del ledger e riporta le rotture.
+
+    Ritorna {total, verified, legacy, broken:[id...], ok} oppure None se il DB
+    non e' raggiungibile. Le righe precedenti alla migrazione (row_hash NULL)
+    sono contate come 'legacy' e non rompono la catena.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("scans")
+                .select("id,description,product,source,actor_id,hash_ts,prev_hash,row_hash")
+                .order("id").execute())
+    except Exception as exc:
+        logger.warning("verify_audit_chain fallita: %s", exc)
+        return None
+    rows = resp.data or []
+    broken, verified, legacy = [], 0, 0
+    prev = ""                      # row_hash dell'ultima riga hashata
+    for r in rows:
+        if not r.get("row_hash"):  # riga legacy pre-migrazione
+            legacy += 1
+            continue
+        expect = _scan_hash(r, r.get("prev_hash") or "")
+        linked = (r.get("prev_hash") or "") == prev
+        if r["row_hash"] == expect and linked:
+            verified += 1
+        else:
+            broken.append(r["id"])
+        prev = r["row_hash"]
+    return {"total": len(rows), "verified": verified,
+            "legacy": legacy, "broken": broken, "ok": not broken}
 
 
 def persist_result(scan_id: Optional[int], rd: dict) -> None:
@@ -121,10 +198,14 @@ def persist_result(scan_id: Optional[int], rd: dict) -> None:
         logger.warning("persist_result fallita (ip=%s): %s", rd.get("ip"), exc)
 
 
-def fetch_audit(limit: int = 200):
+def fetch_audit(limit: int = 2000, date_from: Optional[str] = None,
+                date_to: Optional[str] = None):
     """
     Legge lo storico scansioni con i risultati per-asset annidati (embedding
     PostgREST sulla FK scan_results.scan_id -> scans.id), piu' recenti prima.
+
+    'date_from'/'date_to' (ISO date/datetime, opzionali) filtrano su created_at
+    lato DB, riducendo il volume prima del filtro RBAC/facet applicato in app.
 
     Ritorna:
       - lista di scans (ognuna con chiave 'scan_results')  se il DB risponde
@@ -134,13 +215,12 @@ def fetch_audit(limit: int = 200):
     if client is None:
         return None
     try:
-        resp = (
-            client.table("scans")
-            .select("*, scan_results(*)")
-            .order("created_at", desc=True)
-            .limit(limit)
-            .execute()
-        )
+        q = client.table("scans").select("*, scan_results(*)")
+        if date_from:
+            q = q.gte("created_at", date_from)
+        if date_to:
+            q = q.lte("created_at", date_to)
+        resp = q.order("created_at", desc=True).limit(limit).execute()
         return resp.data or []
     except Exception as exc:
         logger.warning("fetch_audit fallita: %s", exc)

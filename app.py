@@ -43,6 +43,7 @@ from cve import (query_osv, summarize_cves, query_osv_ids, extract_affected_vers
                  query_osv_ecosystem, os_ecosystem, generate_remediation,
                  generate_triage_report, compute_fix_plan)
 from db import (persist_scan, persist_result, update_scan_summary, fetch_audit,
+                verify_audit_chain,
                 create_posture_run, persist_posture_asset, finalize_posture_run,
                 fetch_posture, fetch_posture_runs, fetch_posture_sbom,
                 fetch_findings, fetch_findings_by_fps, upsert_findings,
@@ -925,30 +926,134 @@ async def api_assets_context(index: int, request: Request,
     return {"ok": True, **row}
 
 
+def _audit_scope_filter(data: list, user: CurrentUser) -> list:
+    """Applica il cono di visibilita' RBAC: l'editor vede solo i propri asset."""
+    scope_ips = visible_asset_ips(user)
+    if scope_ips is None:
+        return data
+    out = []
+    for scan in data:
+        results = [r for r in (scan.get("scan_results") or [])
+                   if (r.get("ip") or "") in scope_ips]
+        if results:
+            out.append({**scan, "scan_results": results})
+    return out
+
+
+def _audit_facets(data: list, outcome: str | None, source: str | None,
+                  os_type: str | None, actor: str | None) -> list:
+    """Filtri sfaccettati server-side. outcome/os filtrano le righe; una scan
+    resta solo se conserva almeno una riga. source/actor filtrano la scan."""
+    out = []
+    for scan in data:
+        if source and (scan.get("source") or "").lower() != source.lower():
+            continue
+        if actor and (scan.get("actor_name") or "").lower() != actor.lower():
+            continue
+        rows = scan.get("scan_results") or []
+        if outcome:
+            rows = [r for r in rows if (r.get("vuln_match") or "") == outcome]
+        if os_type:
+            rows = [r for r in rows if (r.get("os_type") or "").lower() == os_type.lower()]
+        if (outcome or os_type) and not rows:
+            continue
+        out.append({**scan, "scan_results": rows} if (outcome or os_type) else scan)
+    return out
+
+
+def _audit_search(data: list, q: str) -> list:
+    """Ricerca full-text su header scan + righe risultato. Una scan resta con le
+    sole righe che matchano; se l'header matcha, tutte le righe restano."""
+    q = q.strip().lower()
+    if not q:
+        return data
+    out = []
+    for s in data:
+        head = " ".join(str(x) for x in [
+            s.get("product"), s.get("version"), s.get("source"), s.get("description"),
+            s.get("actor_name"), " ".join(s.get("cve_ids") or []), s.get("cve_summary"),
+        ] if x).lower()
+        head_match = q in head
+        rows = []
+        for r in (s.get("scan_results") or []):
+            if head_match:
+                rows.append(r); continue
+            hay = " ".join(str(x) for x in [
+                r.get("ip"), r.get("method"), r.get("vuln_match"), r.get("detected_version"),
+                r.get("raw_evidence"), " ".join(r.get("cve_ids") or []), r.get("affected_version"),
+                r.get("match_basis"), r.get("os_type"), r.get("os_major_version"),
+                "found" if r.get("product_found") else "not found",
+                "auth" if r.get("auth_required") else "no-auth",
+            ] if x).lower()
+            if q in hay:
+                rows.append(r)
+        if rows:
+            out.append({**s, "scan_results": rows})
+    return out
+
+
+def _audit_kpis(data: list) -> dict:
+    """Aggregati calcolati sul set filtrato (non paginato)."""
+    results = [r for s in data for r in (s.get("scan_results") or [])]
+    vuln = sum(1 for r in results if r.get("vuln_match") == "VULNERABILE")
+    assets = len({r.get("ip") for r in results if r.get("ip")})
+    last = max((s.get("created_at") or "" for s in data), default="") or None
+    return {"scans": len(data), "results": len(results),
+            "vuln": vuln, "assets": assets, "last_scan": last}
+
+
 @app.get("/api/audit")
-def api_audit(user: CurrentUser = Depends(_writer)):
+def api_audit(
+    user: CurrentUser = Depends(_writer),
+    page: int = 0, page_size: int = 20,
+    date_from: str | None = None, date_to: str | None = None,
+    outcome: str | None = None, source: str | None = None,
+    os_type: str | None = None, actor: str | None = None,
+    q: str | None = None,
+):
     """
     Storico scansioni (scans + scan_results annidati) letto da Supabase.
     Admin e manager: tutto. Editor: solo i risultati relativi agli asset del
     proprio cono di visibilita'. Viewer: 403.
-    503 se il DB non e' raggiungibile (la UI mostra un messaggio dedicato).
+
+    Filtri (tutti opzionali): date_from/date_to (ISO, lato DB), outcome, source,
+    os_type, actor (lato server). Paginazione: page/page_size (page_size=0 = tutto).
+    KPI e 'total' sono calcolati sul set filtrato COMPLETO, poi si ritorna solo
+    la pagina richiesta. 503 se il DB non e' raggiungibile.
     """
-    data = fetch_audit()
+    data = fetch_audit(date_from=date_from, date_to=date_to)
     if data is None:
         return JSONResponse(
             {"error": "Supabase unreachable", "scans": []},
             status_code=503,
         )
-    scope_ips = visible_asset_ips(user)
-    if scope_ips is not None:
-        filtered = []
-        for scan in data:
-            results = [r for r in (scan.get("scan_results") or [])
-                       if (r.get("ip") or "") in scope_ips]
-            if results:
-                filtered.append({**scan, "scan_results": results})
-        data = filtered
-    return {"scans": data}
+    data = _audit_scope_filter(data, user)
+    # Opzioni facet dal set in-scope COMPLETO (prima dei filtri) cosi' i menu non
+    # si svuotano quando un filtro e' attivo.
+    sources = sorted({(s.get("source") or "").strip() for s in data if s.get("source")})
+    actors = sorted({(s.get("actor_name") or "").strip() for s in data if s.get("actor_name")})
+    data = _audit_facets(data, outcome, source, os_type, actor)
+    if q:
+        data = _audit_search(data, q)
+    kpis = _audit_kpis(data)
+    total = len(data)
+    if page_size and page_size > 0:
+        start = max(page, 0) * page_size
+        page_slice = data[start:start + page_size]
+    else:
+        page_slice = data
+    return {"scans": page_slice, "total": total, "page": page,
+            "page_size": page_size, "kpis": kpis,
+            "sources": sources, "actors": actors}
+
+
+@app.get("/api/audit/verify")
+def api_audit_verify(user: CurrentUser = Depends(_writer)):
+    """Verifica la catena hash del ledger (tamper-evidence). 503 se DB assente."""
+    res = verify_audit_chain()
+    if res is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    return res
 
 
 def _normalize_host(raw: str) -> str:
@@ -1592,6 +1697,7 @@ def api_scan(description: str, use_osint: bool = True, lang: str = "en",
             description, target.to_dict(), {},
             advisory={"affected_version": advisory_expr or None,
                       "affected_source": affected_source},
+            actor={"id": user.id, "name": user.username},
         )
 
         # 3. Scansione asset per asset (risultati in tempo reale), con

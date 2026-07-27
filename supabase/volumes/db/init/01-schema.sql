@@ -53,8 +53,23 @@ ALTER TABLE public.scan_results
   ADD COLUMN IF NOT EXISTS os_type           text,   -- 'linux' | 'windows' (da inventario)
   ADD COLUMN IF NOT EXISTS os_major_version  text;   -- es. '22.04', '10', '2019'
 
+-- Audit ledger: attore (chi ha lanciato la scansione) + catena hash tamper-evident.
+--   actor_id/actor_name  -> utente autore (snapshot), immutabili
+--   hash_ts              -> timestamp usato nel calcolo hash (deterministico)
+--   prev_hash            -> row_hash della scansione precedente (linkatura catena)
+--   row_hash             -> sha256(prev_hash | campi immutabili) alla creazione
+-- Solo i campi immutabili entrano nell'hash (description/product/source/actor_id/
+-- hash_ts): version e cve_* vengono aggiornati a fine scan e NON sono coperti.
+ALTER TABLE public.scans
+  ADD COLUMN IF NOT EXISTS actor_id   bigint,
+  ADD COLUMN IF NOT EXISTS actor_name text,
+  ADD COLUMN IF NOT EXISTS hash_ts    text,
+  ADD COLUMN IF NOT EXISTS prev_hash  text,
+  ADD COLUMN IF NOT EXISTS row_hash   text;
+
 CREATE INDEX IF NOT EXISTS idx_scan_results_scan_id ON public.scan_results(scan_id);
 CREATE INDEX IF NOT EXISTS idx_scan_results_ip      ON public.scan_results(ip);
+CREATE INDEX IF NOT EXISTS idx_scans_created_at     ON public.scans(created_at DESC);
 
 -- 3) Permessi (locale: nessuna RLS; service_role bypassa comunque).
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
