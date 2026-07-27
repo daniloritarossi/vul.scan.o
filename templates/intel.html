@@ -563,62 +563,84 @@
       findings.forEach(f => { compMap[f.package] = (compMap[f.package] || 0) + (f.vuln_count || 0); });
       const top = Object.entries(compMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-      destroyCharts();
       const th = chartTheme();
       Chart.defaults.color = th.text;          // tick + label legenda
       Chart.defaults.borderColor = th.grid;    // griglie assi/radiale
+      const ANIM = { duration: 550, easing: 'easeOutQuart' };
       const cut = { cutout: '72%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false };
+
+      // Prima volta: crea il chart. Dopo: aggiorna i dati in-place e chiama
+      // update() così Chart.js interpola la transizione (niente scatti durante
+      // lo scan streaming). Il cambio tema/lingua fa destroyCharts() prima, così
+      // i colori legati al tema vengono ricalcolati dalla factory.
+      const paint = (key, factory, patch) => {
+        const ch = charts[key];
+        if (!ch) { charts[key] = factory(); return; }
+        patch(ch); ch.update();
+      };
+
       // gauge
-      charts.g = new Chart($('chartGauge'), {
-        type: 'doughnut',
-        data: { datasets: [{ data: [avg || 0, 100 - (avg || 0)], backgroundColor: [gaugeColor(avg || 0), th.trough], borderWidth: 0 }] },
-        options: { ...cut, rotation: -90, circumference: 180, cutout: '78%' }
-      });
+      const gv = avg || 0;
+      paint('g',
+        () => new Chart($('chartGauge'), {
+          type: 'doughnut',
+          data: { datasets: [{ data: [gv, 100 - gv], backgroundColor: [gaugeColor(gv), th.trough], borderWidth: 0 }] },
+          options: { ...cut, rotation: -90, circumference: 180, cutout: '78%', animation: ANIM }
+        }),
+        ch => { const d = ch.data.datasets[0]; d.data = [gv, 100 - gv]; d.backgroundColor[0] = gaugeColor(gv); });
       // severity donut
-      charts.s = new Chart($('chartSev'), {
-        type: 'doughnut',
-        data: { labels: SEV, datasets: [{ data: SEV.map(s => sev[s]), backgroundColor: SEV.map(s => sevColor(s)), borderWidth: 2, borderColor: th.panel }] },
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: '62%',
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } },
-          onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('sev', SEV[els[0].index]); }
-        }
-      });
+      paint('s',
+        () => new Chart($('chartSev'), {
+          type: 'doughnut',
+          data: { labels: SEV, datasets: [{ data: SEV.map(s => sev[s]), backgroundColor: SEV.map(s => sevColor(s)), borderWidth: 2, borderColor: th.panel }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '62%', animation: ANIM,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } },
+            onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('sev', SEV[els[0].index]); }
+          }
+        }),
+        ch => { ch.data.datasets[0].data = SEV.map(s => sev[s]); });
       // category polar
       const catL = Object.keys(catMap);
-      charts.c = new Chart($('chartCat'), {
-        type: 'polarArea',
-        data: { labels: catL, datasets: [{ data: catL.map(k => catMap[k]), backgroundColor: catL.map((_, i) => `hsl(${(i * 47) % 360} 70% 60% / 0.7)`) }] },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } },
-          // In dark il backdrop bianco dietro i numeri della scala radiale stona.
-          scales: { r: { ticks: { backdropColor: isDark() ? 'transparent' : 'rgba(255,255,255,0.75)' } } },
-          onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('cat', catL[els[0].index]); }
-        }
-      });
+      paint('c',
+        () => new Chart($('chartCat'), {
+          type: 'polarArea',
+          data: { labels: catL, datasets: [{ data: catL.map(k => catMap[k]), backgroundColor: catL.map((_, i) => `hsl(${(i * 47) % 360} 70% 60% / 0.7)`) }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: ANIM,
+            plugins: { legend: { position: 'right', labels: { font: { size: 10 }, boxWidth: 12 } } },
+            // In dark il backdrop bianco dietro i numeri della scala radiale stona.
+            scales: { r: { ticks: { backdropColor: isDark() ? 'transparent' : 'rgba(255,255,255,0.75)' } } },
+            onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('cat', catL[els[0].index]); }
+          }
+        }),
+        ch => { ch.data.labels = catL; ch.data.datasets[0].data = catL.map(k => catMap[k]); ch.data.datasets[0].backgroundColor = catL.map((_, i) => `hsl(${(i * 47) % 360} 70% 60% / 0.7)`); });
       // top components bar (horizontal)
-      charts.t = new Chart($('chartTop'), {
-        type: 'bar',
-        data: { labels: top.map(t => t[0]), datasets: [{ label: 'CVEs', data: top.map(t => t[1]), backgroundColor: isDark() ? '#818cf8' : '#6366f1' }] },
-        options: {
-          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } },
-          onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('pkg', top[els[0].index][0]); }
-        }
-      });
+      paint('t',
+        () => new Chart($('chartTop'), {
+          type: 'bar',
+          data: { labels: top.map(t => t[0]), datasets: [{ label: 'CVEs', data: top.map(t => t[1]), backgroundColor: isDark() ? '#818cf8' : '#6366f1' }] },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: ANIM,
+            plugins: { legend: { display: false } },
+            scales: { x: { ticks: { font: { size: 10 } } }, y: { ticks: { font: { size: 10 } } } },
+            onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('pkg', top[els[0].index][0]); }
+          }
+        }),
+        ch => { ch.data.labels = top.map(t => t[0]); ch.data.datasets[0].data = top.map(t => t[1]); });
       // severity by asset (stacked)
-      charts.a = new Chart($('chartAsset'), {
-        type: 'bar',
-        data: { labels: assets.map(a => a.ip), datasets: SEV.map(s => ({ label: s, data: assets.map(a => a['sev_' + s.toLowerCase()] || 0), backgroundColor: sevColor(s) })) },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 10 } } },
-          scales: { x: { stacked: true, ticks: { font: { size: 9 } } }, y: { stacked: true, ticks: { font: { size: 10 } } } },
-          onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('asset', assets[els[0].index].ip); }
-        }
-      });
+      paint('a',
+        () => new Chart($('chartAsset'), {
+          type: 'bar',
+          data: { labels: assets.map(a => a.ip), datasets: SEV.map(s => ({ label: s, data: assets.map(a => a['sev_' + s.toLowerCase()] || 0), backgroundColor: sevColor(s) })) },
+          options: {
+            responsive: true, maintainAspectRatio: false, animation: ANIM,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, boxWidth: 10 } } },
+            scales: { x: { stacked: true, ticks: { font: { size: 9 } } }, y: { stacked: true, ticks: { font: { size: 10 } } } },
+            onClick: (_, els) => { if (!els.length) { setFilter(null, null); return; } setFilter('asset', assets[els[0].index].ip); }
+          }
+        }),
+        ch => { ch.data.labels = assets.map(a => a.ip); SEV.forEach((s, i) => { ch.data.datasets[i].data = assets.map(a => a['sev_' + s.toLowerCase()] || 0); }); });
 
       // OS breakdown
       const osCount = { linux: 0, windows: 0, other: 0 };
@@ -634,21 +656,23 @@
           osVerMap[key] = (osVerMap[key] || 0) + 1;
         }
       });
-      charts.os = new Chart($('chartOS'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Linux', 'Windows', 'Unknown'],
-          datasets: [{
-            data: [osCount.linux, osCount.windows, osCount.other],
-            backgroundColor: isDark() ? ['#22d3ee', '#60a5fa', '#64748b'] : ['#0891b2', '#2563eb', '#94a3b8'],
-            borderWidth: 2, borderColor: th.panel
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, cutout: '60%',
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } }
-        }
-      });
+      paint('os',
+        () => new Chart($('chartOS'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Linux', 'Windows', 'Unknown'],
+            datasets: [{
+              data: [osCount.linux, osCount.windows, osCount.other],
+              backgroundColor: isDark() ? ['#22d3ee', '#60a5fa', '#64748b'] : ['#0891b2', '#2563eb', '#94a3b8'],
+              borderWidth: 2, borderColor: th.panel
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%', animation: ANIM,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, boxWidth: 12 } } }
+          }
+        }),
+        ch => { ch.data.datasets[0].data = [osCount.linux, osCount.windows, osCount.other]; });
       const verEntries = Object.entries(osVerMap).sort((a, b) => b[1] - a[1]).slice(0, 6);
       $('osVersionTable').innerHTML = verEntries.length
         ? verEntries.map(([k, n]) => `<div class="flex items-center justify-between font-code-sm text-[11px]"><span class="text-slate-600 uppercase">${esc(k)}</span><span class="text-slate-500">${n}</span></div>`).join('')
@@ -915,9 +939,10 @@
         $('runScan').style.display = 'none';
       }
     });
-    window.addEventListener('langchange', () => { if (assetsData.length) render(); });
-    // Toggle tema: i colori dei canvas/SVG sono calcolati in JS → serve ridisegnare.
-    window.addEventListener('themechange', () => { if (assetsData.length) render(); });
+    // Cambio lingua/tema: colori e label dipendono da JS. destroyCharts() forza
+    // la ricostruzione dalla factory (i colori tema stanno lì), poi render().
+    window.addEventListener('langchange', () => { if (assetsData.length) { destroyCharts(); render(); } });
+    window.addEventListener('themechange', () => { if (assetsData.length) { destroyCharts(); render(); } });
 
     // === CVE Impact Map — Zoomable Circle Packing (D3 v7) ===
     function buildCvePackData(assets) {
