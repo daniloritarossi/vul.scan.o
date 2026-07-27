@@ -49,7 +49,8 @@ from db import (persist_scan, persist_result, update_scan_summary, fetch_audit,
                 fetch_findings, fetch_findings_by_fps, upsert_findings,
                 set_finding_status, close_stale_posture_findings)
 from posture import scan_asset_posture
-from sbom_export import sbom_rows, build_cyclonedx, build_spdx
+from sbom_export import (sbom_rows, build_cyclonedx, build_spdx,
+                         filter_rows, group_by_component, sort_rows, summarize_sbom)
 from risk import assess_run_risk, compute_trend
 from ingest import ingest_report, IngestError, SUPPORTED_TOOLS
 from findings import (fingerprint, merge_findings, posture_findings,
@@ -417,18 +418,40 @@ def sbom_page(request: Request, user: CurrentUser = Depends(get_current_user)):
 
 @app.get("/api/sbom")
 def api_sbom(run_id: int | None = None,
+             page: int = 0, page_size: int = 25,
+             asset: str = "", pkg: str = "", q: str = "",
+             vuln: str = "", license: str = "", group: str = "",
+             sort: str = "", dir: str = "asc",
              user: CurrentUser = Depends(get_current_user)):
     """
-    Inventario software COMPLETO dell'ultima run di postura (tutti i componenti,
-    non solo i vulnerabili). Ogni riga porta gli identificatori SBOM
-    (purl, cpe, licenza, fornitore, sha256, relazioni).
-    Editor: limitato agli asset del proprio cono di visibilita'.
+    Inventario software della run di postura (tutti i componenti, non solo i
+    vulnerabili). Ogni riga porta gli identificatori SBOM (purl, cpe, licenza,
+    fornitore, sha256, relazioni) + classe di licenza.
+
+    Server-side: filtri (asset/pkg/q/vuln/license), grouping per componente,
+    ordinamento, paginazione, KPI di sintesi + elenco run. page_size=0 = tutto
+    (usato dall'export). Editor: solo gli asset del proprio cono di visibilita'.
     """
     run = fetch_posture_sbom(run_id)
+    runs_meta = fetch_posture_runs() or []
+    runs = [{"id": r.get("id"), "created_at": r.get("created_at"),
+             "assets_scanned": r.get("assets_scanned")} for r in runs_meta]
     if not run:
-        return {"rows": []}
+        return {"rows": [], "total": 0, "summary": summarize_sbom([]),
+                "runs": runs, "page": page, "page_size": page_size, "group": group}
     run = _filter_posture_run(run, visible_asset_ips(user))
-    return {"rows": sbom_rows(run)}
+    rows = sbom_rows(run)
+    rows = filter_rows(rows, asset=asset, pkg=pkg, q=q, vuln=vuln, license=license)
+    summary = summarize_sbom(rows)          # KPI sul set filtrato (componenti reali)
+    display = group_by_component(rows) if group == "component" else rows
+    display = sort_rows(display, sort, dir)
+    total = len(display)
+    if page_size and page_size > 0:
+        start = max(page, 0) * page_size
+        display = display[start:start + page_size]
+    return {"rows": display, "total": total, "summary": summary, "runs": runs,
+            "page": page, "page_size": page_size, "group": group,
+            "run_id": run.get("id")}
 
 
 @app.get("/api/sbom/export")

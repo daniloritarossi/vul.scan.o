@@ -49,10 +49,112 @@ def sbom_rows(run: dict) -> list:
                 "cpe":       c.get("cpe") or "",
                 "sha256":    c.get("sha256") or "",
                 "cve_count": c.get("vuln_count") or 0,
-                "max_severity": c.get("max_severity") or "NONE",
+                "max_severity": (c.get("max_severity") or "NONE").upper(),
                 "depends_on": c.get("depends_on") or [],
+                "license_class": license_class(c.get("license")),
             })
     return rows
+
+
+# --- classificazione licenze + filtri/gruppi/sort/summary (UI) ------------
+
+SEV_ORDER = ("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN", "NONE")
+_SEV_RANK = {s: i for i, s in enumerate(SEV_ORDER)}
+# Marcatori copyleft (case-insensitive). MIT/BSD/Apache/ISC ecc. = permissive.
+_COPYLEFT = ("GPL", "AGPL", "LGPL", "MPL", "EPL", "CDDL", "OSL", "EUPL", "CECILL")
+
+
+def license_class(lic) -> str:
+    """'unknown' | 'copyleft' | 'permissive' — per badge e filtro compliance."""
+    s = (lic or "").strip().upper()
+    if not s or s == "NOASSERTION" or s.startswith("LICENSEREF-"):
+        return "unknown"
+    if any(tok in s for tok in _COPYLEFT):
+        return "copyleft"
+    return "permissive"
+
+
+def filter_rows(rows: list, asset: str = "", pkg: str = "", q: str = "",
+                vuln: str = "", license: str = "") -> list:
+    """Filtra le righe SBOM. 'q' = ricerca ampia (pkg/purl/cpe/licenza/eco/cve)."""
+    a, p, ql = asset.lower(), pkg.lower(), q.lower()
+    out = []
+    for r in rows:
+        if a and a not in (r.get("asset_ip") or "").lower():
+            continue
+        if p and p not in (r.get("package") or "").lower():
+            continue
+        cc = r.get("cve_count") or 0
+        if vuln == "vuln" and cc <= 0:
+            continue
+        if vuln == "safe" and cc > 0:
+            continue
+        if license and r.get("license_class") != license:
+            continue
+        if ql:
+            hay = " ".join(str(r.get(k) or "") for k in (
+                "package", "purl", "cpe", "license", "ecosystem", "asset_ip",
+                "version", "supplier")).lower()
+            if ql not in hay:
+                continue
+        out.append(r)
+    return out
+
+
+def group_by_component(rows: list) -> list:
+    """Collassa per (package, version, ecosystem): 1 riga, N asset."""
+    groups: dict = {}
+    for r in rows:
+        key = (r.get("package"), r.get("version"), r.get("ecosystem"))
+        g = groups.get(key)
+        if g is None:
+            g = {**r, "assets": set(), "cve_count": 0, "max_severity": "NONE"}
+            groups[key] = g
+        if r.get("asset_ip"):
+            g["assets"].add(r["asset_ip"])
+        g["cve_count"] = max(g["cve_count"], r.get("cve_count") or 0)
+        if _SEV_RANK.get((r.get("max_severity") or "NONE"), 99) < _SEV_RANK.get(g["max_severity"], 99):
+            g["max_severity"] = r.get("max_severity") or "NONE"
+    out = []
+    for g in groups.values():
+        assets = sorted(g.pop("assets"))
+        g["asset_count"] = len(assets)
+        g["assets"] = assets
+        g["asset_ip"] = assets[0] if len(assets) == 1 else f"{len(assets)} assets"
+        out.append(g)
+    return out
+
+
+def sort_rows(rows: list, field: str, dir: str = "asc") -> list:
+    """Ordina in-place-safe. 'max_severity' usa l'ordine di gravita'."""
+    if not field:
+        return rows
+    rev = (dir == "desc")
+    if field == "max_severity":
+        keyf = lambda r: _SEV_RANK.get(r.get("max_severity") or "NONE", 99)
+    elif field in ("cve_count", "asset_count"):
+        keyf = lambda r: r.get(field) or 0
+    else:
+        keyf = lambda r: str(r.get(field) or "").lower()
+    return sorted(rows, key=keyf, reverse=rev)
+
+
+def summarize_sbom(rows: list) -> dict:
+    """KPI: componenti, pacchetti unici, vulnerabili, licenze, ecosistema top."""
+    unique_pkgs = {(r.get("package"), r.get("version"), r.get("ecosystem")) for r in rows}
+    vulnerable = sum(1 for r in rows if (r.get("cve_count") or 0) > 0)
+    licenses = {(r.get("license") or "NOASSERTION") for r in rows}
+    lic_class = {"permissive": 0, "copyleft": 0, "unknown": 0}
+    eco: dict = {}
+    for r in rows:
+        lic_class[r.get("license_class", "unknown")] = lic_class.get(r.get("license_class", "unknown"), 0) + 1
+        e = r.get("ecosystem") or "?"
+        eco[e] = eco.get(e, 0) + 1
+    top_eco = max(eco.items(), key=lambda kv: kv[1])[0] if eco else "—"
+    return {
+        "components": len(rows), "unique": len(unique_pkgs), "vulnerable": vulnerable,
+        "licenses": len(licenses), "license_class": lic_class, "top_ecosystem": top_eco,
+    }
 
 
 # --- helper comuni --------------------------------------------------------
