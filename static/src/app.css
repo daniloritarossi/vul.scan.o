@@ -151,6 +151,11 @@ html.dark .text-slate-600 { color: #b6c2d4 !important; }
 html.dark .text-slate-500 { color: #94a3b8 !important; }
 html.dark .text-slate-400 { color: #7c8aa0 !important; }
 html.dark .text-slate-300 { color: #4b5568 !important; }
+/* slate-100/200 are LIGHT-on-dark labels (tooltip text, dark chips/console):
+   restano chiari in dark, altrimenti la remap della variabile li scurisce e
+   diventano illeggibili sul fondo scuro (bg-slate-900, che resta scuro). */
+html.dark .text-slate-100 { color: #f1f5f9 !important; }
+html.dark .text-slate-200 { color: #e2e8f0 !important; }
 html.dark .text-on-background { color: #e2e8f0 !important; }
 /* white-as-TEXT is an on-dark/on-colour label (buttons, active nav, badges) →
    always stays white, even though bg-white (surface) darkens via --c-white. */

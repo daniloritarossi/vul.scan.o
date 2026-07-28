@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=7" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=8" />
   <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -79,6 +79,10 @@
     .tip-wrap:focus-within .tip-pop {
       opacity: 1;
     }
+    /* Ogni neural-panel ha backdrop-filter -> proprio stacking context: senza
+       questo il pannello adiacente coprirebbe il tooltip aperto. */
+    .neural-panel:has(.tip-wrap:hover),
+    .neural-panel:has(.tip-wrap:focus-within) { z-index: 40; }
 
     /* Collassamento carta scan: transizione morbida del corpo tabella. */
     .scan-body {

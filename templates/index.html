@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=7" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=8" />
   <!-- XLSX export (SheetJS) + shared table/export helpers -->
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
@@ -89,6 +89,10 @@
     .tip-wrap:focus-within .tip-pop {
       opacity: 1;
     }
+    /* Ogni neural-panel ha backdrop-filter -> proprio stacking context: senza
+       questo il pannello adiacente coprirebbe il tooltip aperto. */
+    .neural-panel:has(.tip-wrap:hover),
+    .neural-panel:has(.tip-wrap:focus-within) { z-index: 40; }
 
     /* Dark: superfici traslucide bianche non coperte dagli override globali. */
     .dark .bg-white\/60 { background-color: rgba(30, 41, 59, .5) !important; }
