@@ -31,10 +31,10 @@ Backend **FastAPI** · Frontend **HTML + Tailwind** (CDN) · real-time results v
 
 > ⚠️ **Responsible use.** Only run scans or logins against assets you own or are explicitly authorized to test. Scanning third-party systems without permission is illegal.
 
-![Home](static/screens/home1.png)
-![Home](static/screens/home2.png)
-![Home](static/screens/home3.png)
-![Home](static/screens/home4.png)
+![Home](static/screens/home5.png)
+![Home](static/screens/home6.png)
+![Home](static/screens/home7.png)
+![Home](static/screens/home8.png)
 
 ---
 
