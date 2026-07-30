@@ -20,20 +20,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Light palette (stock Tailwind values → no visual change in light mode) ── */
+/* ── Light palette — "Cyber Intelligence HUD" light model (Stitch project
+      3512533164637631584, screen d9c2fbb2…). Surfaces move from pure white to a
+      cool blue-white; the accent moves from cyan to the model's blue. The cyan-*
+      slots keep their NAME but carry blue values — same remap trick the dark
+      block uses, so every accent utility follows without touching markup. ── */
 :root {
-  --c-white: 255 255 255;
-  --c-slate-50: 248 250 252;
-  --c-slate-100: 241 245 249;
-  --c-slate-200: 226 232 240;
-  --c-slate-300: 203 213 225;
-  --c-cyan-50: 236 254 255;
-  --c-cyan-100: 207 250 254;
-  --c-cyan-200: 165 243 252;
-  --c-cyan-300: 103 232 249;
-  --c-cyan-600: 8 145 178;
-  --c-cyan-700: 14 116 144;
-  --c-cyan-800: 21 94 117;
+  --c-white: 244 249 255;
+  --c-slate-50: 240 245 251;
+  --c-slate-100: 233 238 245;
+  --c-slate-200: 220 228 238;
+  --c-slate-300: 200 211 224;
+  --c-cyan-50: 234 242 254;
+  --c-cyan-100: 214 229 251;
+  --c-cyan-200: 189 214 248;
+  --c-cyan-300: 147 187 243;
+  --c-cyan-600: 2 119 249;
+  --c-cyan-700: 21 108 203;
+  --c-cyan-800: 12 86 165;
   --c-emerald-50: 236 253 245;
   --c-emerald-100: 209 250 229;
   --c-emerald-200: 167 243 208;
@@ -441,3 +445,213 @@ html.dark .query-example:hover {
 /* Scrollbars: the inline base uses light slate thumbs on every page. */
 html.dark ::-webkit-scrollbar-thumb { background: #2f3644 !important; }
 html.dark ::-webkit-scrollbar-thumb:hover { background: #3f4a5a !important; }
+
+/* ══ LIGHT theme layer — "Cyber Intelligence HUD" light model ════════════════
+   Mirrors the dark HUD block for the light model (Stitch screen d9c2fbb2…).
+   Scoped to html:not(.dark) so none of it can leak into dark mode.
+
+   Measured from the model:
+     page floor  #f0f5fb      surfaces (panel/sidebar/topbar/console) #f4f9ff
+     chip        #e1e7ee      query pill #e3e9ef      active nav pill #dce5ee
+     accent      #0277f9      bars/numerals #156ccb   danger #e85e55
+   The light model keeps a numeral bloom (measured: floor R-B -11, rising to +60
+   just outside the glyph strokes) but drops the gradient wordmark and the
+   glowing panel borders — those two stay dark-only. ───────────────────────── */
+
+/* ── Page floor. Templates hardcode #ffffff inline; admin.html has no shader
+      canvas at all, so the CSS value is what shows there. ────────────────────*/
+html:not(.dark) body { background: #f0f5fb; }
+html:not(.dark) .shader-bg { background: #f0f5fb !important; }
+html:not(.dark) .bg-canvas { background-color: #f0f5fb !important; }
+/* Faint blueprint grid, as in the model — much softer than the dark variant. */
+html:not(.dark) .shader-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(37, 99, 235, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 85%);
+}
+
+/* ── Page titles: same gradient wordmark treatment as the dark view, in tones
+      that stay legible on a light surface. All stops verified >= 4.5:1 on the
+      #f4f9ff card (7.35 / 5.15 / 6.59 / 6.11), where the dark theme's cyan and
+      pink would land around 1.5:1. Size/weight/tracking come from the shared
+      .font-display-lg.text-3xl.tracking-tight combo used by every page. ─────*/
+html:not(.dark) h2.font-display-lg.tracking-tight {
+  background-image: linear-gradient(100deg,
+    #0b4fa8 0%, #1268c9 38%, #7b3aa8 74%, #a52d78 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Neutral text scale. The stock Tailwind slate ramp is too light against the
+      model, whose card labels sit around #19222a where stock text-slate-500 is
+      #64748b. Darkened across the board; the hierarchy (900 darkest → 400
+      faintest) is preserved, just shifted down. ─────────────────────────────*/
+html:not(.dark) .text-slate-900 { color: #0b1929 !important; }
+html:not(.dark) .text-slate-800 { color: #16202b !important; }
+html:not(.dark) .text-slate-700 { color: #232c33 !important; }
+html:not(.dark) .text-slate-600 { color: #1f252b !important; }
+html:not(.dark) .text-slate-500 { color: #19222a !important; }
+html:not(.dark) .text-slate-400 { color: #454d54 !important; }
+html:not(.dark) .hover\:text-slate-900:hover { color: #05101c !important; }
+html:not(.dark) .hover\:text-slate-700:hover { color: #16202b !important; }
+
+/* ── Panels: near-white with a hairline border, soft shadow and the same
+      top-left sheen the model shows — but light-tinted. ──────────────────────*/
+html:not(.dark) .neural-panel {
+  background-color: transparent !important;
+  background-image:
+    /* Same geometry as the dark sheen, OPPOSITE sign: on the light card the
+       model tints the top-left DARKER (measured lum 234 vs a 249 floor), where
+       the dark card is lit lighter. rgba(15,23,42,0.06) reproduces the measured
+       delta of rgb(-15,-15,-14) almost exactly. */
+    radial-gradient(ellipse 66% 64% at 20% -8%,
+      rgba(15, 23, 42, 0.06) 0%,
+      rgba(15, 23, 42, 0.052) 32%,
+      rgba(15, 23, 42, 0.02) 58%,
+      transparent 78%),
+    linear-gradient(rgba(244, 249, 255, 0.94), rgba(244, 249, 255, 0.94)),
+    linear-gradient(135deg, rgba(37, 99, 235, 0.16) 0%, rgba(37, 99, 235, 0.06) 60%,
+      rgba(37, 99, 235, 0.02) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, padding-box, border-box !important;
+  border: 1px solid transparent !important;
+  box-shadow: 0 4px 20px -6px rgba(15, 23, 42, 0.12), 0 1px 2px -1px rgba(15, 23, 42, 0.06) !important;
+}
+html:not(.dark) .neural-panel:hover {
+  box-shadow: 0 8px 26px -6px rgba(15, 23, 42, 0.16) !important;
+}
+
+/* ── Chrome: sidebar + topbar sit on the same surface tone as the panels. ──── */
+html:not(.dark) nav.fixed.w-64 {
+  background-color: #f4f9ff !important;
+  border-right-color: rgba(37, 99, 235, 0.12) !important;
+}
+html:not(.dark) header.fixed.top-0 {
+  background-color: #f4f9ff !important;
+  border-bottom-color: rgba(37, 99, 235, 0.12) !important;
+}
+/* Nav items: the model uses dark navy icons on BOTH states and a pale pill —
+   the inverse of the dark theme, where the icons carry the accent. */
+html:not(.dark) nav.fixed.w-64 a .material-symbols-outlined { color: #12233d !important; }
+html:not(.dark) nav.fixed.w-64 a:not([aria-current="page"]) { color: #42494e !important; }
+html:not(.dark) nav.fixed.w-64 a:not([aria-current="page"]):hover {
+  background-color: rgba(37, 99, 235, 0.06) !important;
+  color: #0a1828 !important;
+}
+html:not(.dark) nav.fixed.w-64 a[aria-current="page"] {
+  background-color: #dce5ee !important;
+  background-image: none !important;
+  color: #0c192b !important;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.1), 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+html:not(.dark) nav.fixed.w-64 a[aria-current="page"] .material-symbols-outlined { color: #12233d !important; }
+
+/* ── Controls ─────────────────────────────────────────────────────────────── */
+/* Primary actions: solid blue with a white label (bg-slate-900 in markup). */
+html:not(.dark) button.bg-slate-900:not([aria-current]),
+html:not(.dark) a.bg-slate-900:not([aria-current]) {
+  background-color: #0277f9 !important;
+  color: #fff !important;
+  border: 1px solid rgba(2, 119, 249, 0.9) !important;
+  box-shadow: 0 1px 3px rgba(2, 119, 249, 0.3) !important;
+}
+html:not(.dark) button.bg-slate-900:not([aria-current]):hover,
+html:not(.dark) a.bg-slate-900:not([aria-current]):hover {
+  background-color: #0a68d8 !important;
+}
+html:not(.dark) button.bg-slate-900 .material-symbols-outlined { color: #fff !important; }
+/* text-white must stay pure white on the blue fill, not the #f4f9ff surface var. */
+html:not(.dark) .text-white { color: #fff !important; }
+
+html:not(.dark) .query-example {
+  background-color: #e1e7ee !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  color: #2b3036 !important;
+}
+html:not(.dark) .query-example:hover {
+  background-color: #d6dfea !important;
+  border-color: rgba(2, 119, 249, 0.45) !important;
+  color: #0a1828 !important;
+}
+/* Query pill: white field with the dark theme's glowing-rim treatment, in blue
+   instead of cyan. Deliberately diverges from the light model, which uses a
+   pale grey capsule with no glow. */
+html:not(.dark) .gemini-field {
+  background: #ffffff !important;
+  border-color: #2f7ffb !important;
+  box-shadow:
+    0 0 0 4px rgba(47, 127, 251, 0.12),
+    0 0 22px rgba(47, 127, 251, 0.3) !important;
+}
+html:not(.dark) .gemini-field:focus-within {
+  box-shadow:
+    0 0 0 4px rgba(47, 127, 251, 0.2),
+    0 0 30px rgba(47, 127, 251, 0.42) !important;
+}
+html:not(.dark) .gemini-field input { color: #16202b !important; }
+html:not(.dark) .gemini-field input::placeholder { color: #5b6875 !important; }
+html:not(.dark) .gemini-field .text-cyan-600 { color: #0277f9 !important; }
+
+/* ── Console: light surface with dark text. The container/header use arbitrary
+      hex utilities (bg-[#12121c] / bg-[#1a1a2e]) that are theme-agnostic. ──── */
+html:not(.dark) .bg-\[\#12121c\] {
+  background-color: #f4f9ff !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
+html:not(.dark) .bg-\[\#1a1a2e\] {
+  background-color: #f4f9ff !important;
+  border-bottom-color: rgba(15, 23, 42, 0.1) !important;
+}
+html:not(.dark) #console,
+html:not(.dark) #console .text-slate-300 { color: #2b3036 !important; }
+html:not(.dark) #console .text-indigo-400 { color: #4b5563 !important; }
+html:not(.dark) #console .text-emerald-400 { color: #1f7a68 !important; }
+/* Console chrome uses stock slate-400..800 utilities, which are NOT routed
+   through the colour variables — on the now-light console they read as washed
+   grey-on-grey. Remap them within the console container only. */
+html:not(.dark) .bg-\[\#12121c\] .text-slate-400,
+html:not(.dark) .bg-\[\#12121c\] .text-slate-500 { color: #4b5563 !important; }
+html:not(.dark) .bg-\[\#12121c\] .border-slate-700,
+html:not(.dark) .bg-\[\#12121c\] .border-slate-800 { border-color: rgba(15, 23, 42, 0.12) !important; }
+html:not(.dark) .bg-\[\#12121c\] .bg-slate-800,
+html:not(.dark) .bg-\[\#12121c\] .bg-slate-800\/60 { background-color: rgba(15, 23, 42, 0.05) !important; }
+html:not(.dark) .bg-\[\#12121c\] .hover\:bg-slate-700:hover { background-color: rgba(15, 23, 42, 0.1) !important; }
+html:not(.dark) .bg-\[\#12121c\] .hover\:text-slate-200:hover { color: #16202b !important; }
+
+/* ── Numeral bloom, light variant. Same currentColor trick as dark, but a
+      single tighter pass: on a light ground the halo saturates much faster.
+
+      NEUTRAL numerals are excluded. A currentColor bloom on near-black text
+      renders as a grey smudge, not a glow — and the light model confirms it:
+      its neutral "7" returns to background (lum 232→234) immediately either
+      side of the glyph, while its red 34 and blue 30 both halo. Only
+      semantically-coloured figures glow. ─────────────────────────────────── */
+html:not(.dark) .font-display-lg.text-display-lg:not(.tracking-tight):not(.bg-clip-text):not(.text-slate-900):not(.text-slate-700),
+html:not(.dark) .font-display-lg.text-4xl:not(.tracking-tight):not(.text-slate-900):not(.text-slate-700),
+html:not(.dark) .font-display-lg.text-3xl:not(.tracking-tight):not(.text-slate-900):not(.text-slate-700) {
+  filter: drop-shadow(0 0 7px color-mix(in srgb, currentColor 50%, transparent));
+}
+html:not(.dark) .font-display-lg.text-2xl:not(.tracking-tight):not(.text-slate-900):not(.text-slate-700) {
+  filter: drop-shadow(0 0 5px color-mix(in srgb, currentColor 50%, transparent));
+}
+/* Gradient-clipped score: currentColor is transparent, so it needs the accent. */
+html:not(.dark) .text-display-lg.bg-clip-text {
+  filter: drop-shadow(0 0 8px rgba(2, 119, 249, 0.22));
+}
+
+/* ── Trend sparklines: a slight glow in the line's own tone, as in both models.
+      Stroke colours are hardcoded in the sparkline JS (#06b6d4 posture,
+      #f43f5e vulns) and do not change per theme, so these rules are
+      theme-neutral on purpose — both models show the same treatment. The
+      drop-shadow covers the end-cap dot too, since it is inside the same SVG. */
+#postureTrendSvg { filter: drop-shadow(0 0 5px rgba(6, 182, 212, 0.45)); }
+#vulnsTrendSvg { filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.45)); }
