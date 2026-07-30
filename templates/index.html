@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=37" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=38" />
   <!-- XLSX export (SheetJS) + shared table/export helpers -->
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
@@ -149,8 +149,8 @@
         vec2 gridUv = uv + vec2(u_time * 0.015, u_time * 0.008);
         float g1 = grid(gridUv, 8.0) * 0.05;
         float g2 = grid(gridUv, 32.0) * 0.02;
-        vec3 c1 = mix(vec3(0.98, 0.99, 1.0), vec3(0.008, 0.039, 0.063), u_dark);
-        vec3 c2 = mix(vec3(0.94, 0.96, 0.98), vec3(0.0, 0.039, 0.055), u_dark);
+        vec3 c1 = mix(vec3(1.0, 1.0, 1.0), vec3(0.008, 0.039, 0.063), u_dark);
+        vec3 c2 = mix(vec3(0.972, 0.982, 0.996), vec3(0.0, 0.039, 0.055), u_dark);
         vec3 color = mix(c1, c2, length(uv - 0.5));
         vec3 cyberBlue = vec3(0.0, 0.7, 0.9);
         color -= (g1 + g2) * 0.1 * (1.0 - u_dark);
