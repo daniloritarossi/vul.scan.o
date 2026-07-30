@@ -74,101 +74,370 @@
   --c-yellow-700: 161 98 7;
 }
 
-/* ── Dark palette (surfaces darkened, *-50 tints pre-blended to solids,
-      accent text lightened). Flip a variable here and every utility follows. ── */
+/* ── Dark palette — "Cyber Intelligence HUD" (Stitch project 3512533164637631584).
+      Surfaces shift from violet-grey to teal-navy; accents go neon (Cyber Cyan,
+      Electric Magenta, Amber Alert). *-50 tints stay pre-blended solids, accent
+      *-600..800 stay the lightened text role. Flip a variable and every utility
+      follows. Palette-only: no layout/type/spacing change. ── */
 .dark {
-  --c-white: 20 20 31;
-  --c-slate-50: 26 26 40;
-  --c-slate-100: 34 34 47;
-  --c-slate-200: 43 43 61;
-  --c-slate-300: 52 52 77;
-  --c-cyan-50: 18 39 53;
-  --c-cyan-100: 15 77 94;
-  --c-cyan-200: 15 77 94;
-  --c-cyan-300: 15 77 94;
-  --c-cyan-600: 34 211 238;
-  --c-cyan-700: 34 211 238;
-  --c-cyan-800: 34 211 238;
-  --c-emerald-50: 20 40 43;
-  --c-emerald-100: 19 78 65;
-  --c-emerald-200: 19 78 65;
-  --c-emerald-600: 52 211 153;
-  --c-emerald-700: 52 211 153;
-  --c-rose-50: 47 25 39;
-  --c-rose-100: 98 35 53;
-  --c-rose-200: 98 35 53;
-  --c-rose-300: 98 35 53;
-  --c-rose-600: 251 113 133;
-  --c-rose-700: 251 113 133;
-  --c-red-50: 46 26 35;
-  --c-red-200: 97 37 44;
-  --c-red-700: 248 113 113;
-  --c-amber-50: 47 37 29;
-  --c-amber-200: 99 68 24;
-  --c-amber-700: 251 191 36;
-  --c-orange-50: 47 31 30;
-  --c-orange-200: 100 53 28;
-  --c-orange-700: 251 146 60;
-  --c-blue-50: 25 33 57;
-  --c-blue-100: 34 59 106;
-  --c-blue-200: 34 59 106;
-  --c-blue-600: 96 165 250;
-  --c-blue-700: 96 165 250;
-  --c-indigo-50: 29 30 56;
-  --c-indigo-100: 48 49 105;
-  --c-indigo-200: 48 49 105;
-  --c-indigo-300: 48 49 105;
-  --c-indigo-600: 129 140 248;
-  --c-indigo-700: 129 140 248;
-  --c-indigo-800: 129 140 248;
-  --c-purple-50: 38 28 57;
-  --c-purple-200: 72 43 107;
-  --c-purple-700: 192 132 252;
-  --c-yellow-50: 46 39 28;
-  --c-yellow-200: 95 76 23;
-  --c-yellow-700: 250 204 21;
+  --c-white: 16 18 26;
+  --c-slate-50: 20 24 34;
+  --c-slate-100: 26 31 43;
+  --c-slate-200: 36 42 56;
+  --c-slate-300: 47 54 68;
+  --c-cyan-50: 12 39 49;
+  --c-cyan-100: 16 82 94;
+  --c-cyan-200: 16 82 94;
+  --c-cyan-300: 16 82 94;
+  --c-cyan-600: 53 232 244;
+  --c-cyan-700: 53 232 244;
+  --c-cyan-800: 53 232 244;
+  --c-emerald-50: 11 43 36;
+  --c-emerald-100: 16 81 63;
+  --c-emerald-200: 16 81 63;
+  --c-emerald-600: 63 244 155;
+  --c-emerald-700: 63 244 155;
+  --c-rose-50: 46 17 25;
+  --c-rose-100: 107 32 48;
+  --c-rose-200: 107 32 48;
+  --c-rose-300: 107 32 48;
+  --c-rose-600: 248 63 92;
+  --c-rose-700: 248 63 92;
+  --c-red-50: 46 19 21;
+  --c-red-200: 107 36 38;
+  --c-red-700: 254 84 67;
+  --c-amber-50: 44 34 16;
+  --c-amber-200: 107 79 22;
+  --c-amber-700: 242 175 68;
+  --c-orange-50: 44 28 18;
+  --c-orange-200: 107 63 28;
+  --c-orange-700: 249 135 63;
+  --c-blue-50: 13 31 51;
+  --c-blue-100: 23 70 110;
+  --c-blue-200: 23 70 110;
+  --c-blue-600: 59 164 230;
+  --c-blue-700: 59 164 230;
+  --c-indigo-50: 20 20 44;
+  --c-indigo-100: 44 45 92;
+  --c-indigo-200: 44 45 92;
+  --c-indigo-300: 44 45 92;
+  --c-indigo-600: 159 162 232;
+  --c-indigo-700: 159 162 232;
+  --c-indigo-800: 159 162 232;
+  --c-purple-50: 36 22 51;
+  --c-purple-200: 74 42 99;
+  --c-purple-700: 214 140 235;
+  --c-yellow-50: 44 42 16;
+  --c-yellow-200: 106 99 24;
+  --c-yellow-700: 245 217 74;
 }
 
 /* ── Irreducible dark rules (cannot be expressed as a colour variable) ─────── */
-html.dark body { color: #e2e8f0; background: #0b0b14; }
+/* Page floor. #020a10 is the HUD model's measured background — a near-black with
+   a faint teal cast, darker than the PRD's nominal #0A0C10. */
+html.dark body { color: #d3e3e8; background: #020a10; }
 /* Fullscreen shader/background layers behind every page. */
-html.dark .shader-bg { background: #0b0b14 !important; }
-html.dark .bg-canvas { background-color: #0b0b14 !important; }
-/* Main wrapper under the topbar (sidebar + main), all pages. */
-html.dark body > .flex.pt-16 { background-color: rgba(42, 42, 63, 0.6) !important; }
-/* Glass panels (KPI / section cards) — component class, not a utility. */
+html.dark .shader-bg { background: #020a10 !important; }
+html.dark .bg-canvas { background-color: #020a10 !important; }
+/* Main wrapper under the topbar (sidebar + main), all pages. Transparent so the
+   page floor reads uniformly — the model has no lifted overlay here. */
+html.dark body > .flex.pt-16 { background-color: transparent !important; }
+/* Glass panels (KPI / section cards) — component class, not a utility.
+   Border picks up the HUD's cyan tint instead of neutral slate. */
 html.dark .neural-panel {
-  background: rgba(20, 20, 32, 0.75) !important;
-  border-color: rgba(148, 163, 184, 0.15) !important;
+  background: rgba(16, 18, 26, 0.75) !important;
+  border-color: rgba(53, 232, 244, 0.15) !important;
   box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.4) !important;
 }
 /* Neutral TEXT scale inverts to light — while bg-slate-900 stays dark (stock).
    Same shade, opposite treatment: only expressible per-utility, not per-var. */
-html.dark .text-slate-900 { color: #f1f5f9 !important; }
-html.dark .text-slate-800 { color: #e2e8f0 !important; }
-html.dark .text-slate-700 { color: #cbd5e1 !important; }
-html.dark .text-slate-600 { color: #b6c2d4 !important; }
-html.dark .text-slate-500 { color: #94a3b8 !important; }
-html.dark .text-slate-400 { color: #7c8aa0 !important; }
-html.dark .text-slate-300 { color: #4b5568 !important; }
+html.dark .text-slate-900 { color: #e8f6f8 !important; }
+html.dark .text-slate-800 { color: #d3e3e8 !important; }
+html.dark .text-slate-700 { color: #b9ccd4 !important; }
+html.dark .text-slate-600 { color: #9fb3bd !important; }
+html.dark .text-slate-500 { color: #869aa4 !important; }
+html.dark .text-slate-400 { color: #6d818b !important; }
+html.dark .text-slate-300 { color: #47555e !important; }
 /* slate-100/200 are LIGHT-on-dark labels (tooltip text, dark chips/console):
    restano chiari in dark, altrimenti la remap della variabile li scurisce e
    diventano illeggibili sul fondo scuro (bg-slate-900, che resta scuro). */
-html.dark .text-slate-100 { color: #f1f5f9 !important; }
-html.dark .text-slate-200 { color: #e2e8f0 !important; }
-html.dark .text-on-background { color: #e2e8f0 !important; }
+html.dark .text-slate-100 { color: #e8f6f8 !important; }
+html.dark .text-slate-200 { color: #d3e3e8 !important; }
+html.dark .text-on-background { color: #d3e3e8 !important; }
 /* white-as-TEXT is an on-dark/on-colour label (buttons, active nav, badges) →
    always stays white, even though bg-white (surface) darkens via --c-white. */
 html.dark .text-white { color: #fff !important; }
 html.dark .hover\:text-white:hover { color: #fff !important; }
-html.dark .hover\:text-slate-700:hover { color: #e2e8f0 !important; }
-html.dark .hover\:text-slate-900:hover { color: #f1f5f9 !important; }
-html.dark .placeholder\:text-slate-400::placeholder { color: #64748b !important; }
-html.dark .placeholder\:text-slate-300::placeholder { color: #4b5568 !important; }
+html.dark .hover\:text-slate-700:hover { color: #d3e3e8 !important; }
+html.dark .hover\:text-slate-900:hover { color: #e8f6f8 !important; }
+html.dark .placeholder\:text-slate-400::placeholder { color: #6a808a !important; }
+html.dark .placeholder\:text-slate-300::placeholder { color: #47555e !important; }
 /* Consoles keep a dark surface in BOTH themes → their slate-300 text stays light. */
 html.dark #console,
 html.dark #console .text-slate-300,
 html.dark .overflow-y-auto.flex-1.text-slate-300,
-html.dark .overflow-y-auto.flex-1.text-slate-300 .text-slate-300 { color: #cbd5e1 !important; }
+html.dark .overflow-y-auto.flex-1.text-slate-300 .text-slate-300 { color: #b9ccd4 !important; }
 /* Theme toggle active tint. */
-html.dark #themeToggle { color: #22d3ee; }
+html.dark #themeToggle { color: #35e8f4; }
+
+/* ══ HUD presentation layer — dark only ══════════════════════════════════════
+   The "Cyber Intelligence HUD" leitmotif from the Stitch PRD: glassmorphism
+   cards with glowing gradient borders, neon data readouts, grid + scanline
+   background. Every rule here is scoped to html.dark, so light mode keeps its
+   current flat treatment untouched (restyled separately later).
+
+   Base .neural-panel / .shader-bg live in per-template inline <style> blocks,
+   which come after this stylesheet in the cascade → !important is required to
+   win, matching the convention above. ─────────────────────────────────────── */
+
+/* ── 1. Background motifs: holographic grid + scanline texture ─────────────── */
+html.dark .shader-bg::before,
+html.dark .shader-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Grid, faded out toward the bottom so dense tables stay readable. */
+html.dark .shader-bg::before {
+  background-image:
+    linear-gradient(rgba(53, 232, 244, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(53, 232, 244, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 35%, transparent 85%);
+}
+/* Scanlines — deliberately near-threshold; any stronger and text shimmers. */
+html.dark .shader-bg::after {
+  background: repeating-linear-gradient(
+    to bottom, rgba(220, 245, 255, 0.014) 0 1px, transparent 1px 3px);
+}
+
+/* ── 2. Page titles: cyan → magenta gradient wordmark ─────────────────────────
+   Titles are the only .font-display-lg that also carry .tracking-tight; KPI
+   numerals share the font token but not that class, hence the split below. */
+html.dark h2.font-display-lg.tracking-tight {
+  background-image: linear-gradient(100deg,
+    #35e8f4 0%, #6fd9f7 38%, #d68ceb 74%, #f472b6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── 3. Neon data readouts ────────────────────────────────────────────────────
+   Semantic-coloured numerals glow in their own hue via currentColor. */
+/* Every large numeral blooms in its own hue via currentColor. Two stacked
+   shadows — a tight core plus a wide halo — reproduce the model's bloom, which
+   lifts the surrounding pixels well past a single soft shadow.
+   .tracking-tight excluded: that class marks page TITLES, which share the
+   font-display-lg token but must not glow. */
+html.dark .font-display-lg.text-display-lg:not(.tracking-tight):not(.bg-clip-text),
+html.dark .font-display-lg.text-4xl:not(.tracking-tight),
+html.dark .font-display-lg.text-3xl:not(.tracking-tight) {
+  filter: drop-shadow(0 0 9px currentColor);
+}
+/* Smaller (24px) KPI figures get a proportionally tighter bloom. */
+html.dark .font-display-lg.text-2xl:not(.tracking-tight) {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+/* The dashboard's 48px score is gradient-clipped, so currentColor is
+   transparent — it needs an explicit cyan halo instead. */
+html.dark .text-display-lg.bg-clip-text {
+  filter: drop-shadow(0 0 10px rgba(53, 232, 244, 0.38));
+}
+
+/* ── 4. Glass panels: glowing gradient border ─────────────────────────────────
+   Two stacked backgrounds — the panel fill clipped to padding-box, the border
+   gradient clipped to border-box — so the existing 1px border becomes the
+   gradient without changing box metrics (no layout shift). */
+html.dark .neural-panel {
+  border: 1px solid transparent !important;
+  /* background-color must stay transparent: it is clipped by the LAST
+     background-clip value (border-box), so any colour here would paint over the
+     border gradient. The fill lives in layer 1 instead, at 0.94 so the card
+     lands on the model's #10121a rather than stacking alpha over the page. */
+  background-color: transparent !important;
+  /* Layer 1 (topmost) is the model's "light source" sheen: a broad soft glow
+     seated off the top-left corner, plateauing across the first third of the
+     card and falling to the floor by ~70% width / ~45% height. Measured peak
+     #303d47 over floor #10131a → added light rgb(32,42,45) ≈ 23% of #9fc4d8.
+     Done as a background layer, not a ::before, so panels keep whatever
+     containing block their absolutely-positioned children already rely on. */
+  background-image:
+    radial-gradient(ellipse 66% 64% at 20% -8%,
+      rgba(159, 196, 216, 0.275) 0%,
+      rgba(159, 196, 216, 0.24) 32%,
+      rgba(159, 196, 216, 0.09) 58%,
+      transparent 78%),
+    linear-gradient(rgba(16, 18, 26, 0.94), rgba(16, 18, 26, 0.94)),
+    linear-gradient(135deg,
+      rgba(53, 232, 244, 0.5) 0%,
+      rgba(214, 140, 235, 0.3) 45%,
+      rgba(53, 232, 244, 0.06) 100%) !important;
+  background-origin: border-box !important;
+  background-clip: padding-box, padding-box, border-box !important;
+  box-shadow:
+    0 4px 28px -6px rgba(0, 0, 0, 0.55),
+    0 0 26px -10px rgba(53, 232, 244, 0.28) !important;
+}
+/* Holographic depth on hover — lifts the border glow, no transform (the
+   templates already own hover:-translate-y-1 on some panels). */
+html.dark .neural-panel:hover {
+  box-shadow:
+    0 8px 34px -6px rgba(0, 0, 0, 0.6),
+    0 0 34px -8px rgba(53, 232, 244, 0.42) !important;
+}
+
+/* ── 5. Chrome: sidebar + topbar as their own surface tiers ───────────────────
+   The model uses four distinct layers, not one flat black:
+     page #020a10  <  sidebar #041016  <  topbar #0c141a  <  card #10121a
+   The drawer/header are bg-white/40 and /80 utilities, i.e. alpha over the page,
+   which drifted light and washed the distinction out. Pin them to the measured
+   values instead; backdrop-blur stays for the glass feel. */
+html.dark nav.fixed.w-64 {
+  background-color: #041016 !important;
+  border-right-color: rgba(53, 232, 244, 0.14) !important;
+}
+html.dark header.fixed.top-0 {
+  background-color: #0c141a !important;
+  border-bottom-color: rgba(53, 232, 244, 0.14) !important;
+}
+/* Nav item palette, sampled from the model:
+     ACTIONS header  #74939b      inactive label  #82a3ab
+     icons (ALL)     #77ebed      active label    #edfeff / icon #58e6eb
+     active pill     horizontal teal gradient #13424e → #3a707a
+   Note the model keeps EVERY icon at full cyan — active and inactive alike —
+   and differentiates state through the label and the pill, not the icon. */
+html.dark nav.fixed.w-64 > div .font-label-caps { color: #74939b !important; }
+html.dark nav.fixed.w-64 a:not([aria-current="page"]) { color: #82a3ab !important; }
+html.dark nav.fixed.w-64 a .material-symbols-outlined { color: #77ebed !important; }
+html.dark nav.fixed.w-64 a:not([aria-current="page"]):hover {
+  background-color: rgba(53, 232, 244, 0.07) !important;
+  color: #d3f2f6 !important;
+}
+/* Active pill: bg-slate-900 stays dark in BOTH themes, so against a near-black
+   drawer it read as an unlit slab. Replaced with the model's teal gradient. */
+html.dark nav.fixed.w-64 a[aria-current="page"] {
+  background-color: transparent !important;
+  background-image: linear-gradient(90deg, #13424e 0%, #2b6570 58%, #3a707a 100%) !important;
+  color: #edfeff !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(96, 156, 166, 0.55),
+    0 0 20px -8px rgba(53, 232, 244, 0.45) !important;
+}
+html.dark nav.fixed.w-64 a[aria-current="page"] .material-symbols-outlined {
+  color: #58e6eb !important;
+}
+
+/* ── 6. Telemetry accents: glow on progress fills and the active nav pill ──── */
+html.dark [class*="bg-gradient-to-r"][style*="width"] {
+  box-shadow: 0 0 12px -1px rgba(53, 232, 244, 0.55);
+}
+/* Terminal-style query pill. The inline base paints it #ffffff, which read as a
+   white slab on the dark page — the PRD calls for a command-line field. */
+html.dark .gemini-field {
+  background: rgba(8, 11, 16, 0.88) !important;
+  border-color: #35e8f4 !important;
+  box-shadow:
+    0 0 0 4px rgba(53, 232, 244, 0.1),
+    0 0 22px rgba(53, 232, 244, 0.28) !important;
+}
+html.dark .gemini-field:focus-within {
+  box-shadow:
+    0 0 0 4px rgba(53, 232, 244, 0.18),
+    0 0 30px rgba(53, 232, 244, 0.4) !important;
+}
+/* Remaining hardcoded-light components with no dark rule of their own. */
+html.dark .gctl-btn {
+  background: rgba(16, 18, 26, 0.9) !important;
+  border-color: rgba(53, 232, 244, 0.28) !important;
+  color: #d3e3e8 !important;
+}
+/* ── Controls: fields, buttons and chips ──────────────────────────────────────
+   Sampled from the model's query panel:
+     field  fill #131d26, cyan-tinted rim, text #d3e3e8
+     button fill #1d3641, cyan rim + glow, label #eafcfe, icon cyan
+     chip   fill #20202d, rim #383946, text #dadae5                            */
+
+/* Text-like inputs only — checkboxes/radios/ranges keep their native painting,
+   or the toggle switches and range sliders lose their shape. */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not(.bg-transparent),
+html.dark select,
+html.dark textarea,
+html.dark .setting-input {
+  background-color: #131d26 !important;
+  background-image: none !important;
+  border-color: rgba(53, 232, 244, 0.22) !important;
+  color: #d3e3e8 !important;
+}
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="submit"]):not(.bg-transparent):focus,
+html.dark select:focus,
+html.dark textarea:focus,
+html.dark .setting-input:focus {
+  border-color: #35e8f4 !important;
+  box-shadow: 0 0 0 3px rgba(53, 232, 244, 0.12), 0 0 18px -7px rgba(53, 232, 244, 0.55) !important;
+  outline: none !important;
+}
+/* The query pill IS the field: its inner input must stay transparent, or a dark
+   rectangle appears inside the rounded-full wrapper. Must follow the rule above. */
+html.dark .gemini-field input {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #e2f1f5 !important;
+}
+html.dark .gemini-field input::placeholder { color: #a8bcc6 !important; }
+
+/* File inputs: the native button was nearly invisible on the dark surface. */
+html.dark input[type="file"] { color: #9fb3bd !important; }
+html.dark input[type="file"]::file-selector-button {
+  background-color: #20202d !important;
+  border: 1px solid #383946 !important;
+  color: #dadae5 !important;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+html.dark input[type="file"]::file-selector-button:hover {
+  border-color: rgba(53, 232, 244, 0.5) !important;
+  color: #eafcfe !important;
+}
+
+/* Primary actions. bg-slate-900 stays dark in both themes, so in dark these read
+   as unlit slabs; the model gives them a lit teal seat with a cyan rim.
+   [aria-current] excluded so the sidebar's active pill keeps its own treatment. */
+html.dark button.bg-slate-900:not([aria-current]),
+html.dark a.bg-slate-900:not([aria-current]) {
+  background-color: #1d3641 !important;
+  border: 1px solid rgba(53, 232, 244, 0.45) !important;
+  color: #eafcfe !important;
+  box-shadow: 0 0 18px -6px rgba(53, 232, 244, 0.45) !important;
+}
+html.dark button.bg-slate-900:not([aria-current]):hover,
+html.dark a.bg-slate-900:not([aria-current]):hover {
+  background-color: #24485a !important;
+  border-color: rgba(53, 232, 244, 0.7) !important;
+  box-shadow: 0 0 24px -6px rgba(53, 232, 244, 0.6) !important;
+}
+html.dark button.bg-slate-900:disabled { box-shadow: none !important; }
+
+/* Toggle tracks (peer + sr-only pattern). Unchecked track only — the checked
+   state keeps its cyan fill from peer-checked:bg-cyan-500. */
+html.dark input.peer.sr-only:not(:checked) + span { background-color: #3d3c4d !important; }
+
+/* Example chips under the query field. */
+html.dark .query-example {
+  background-color: #20202d !important;
+  border-color: #383946 !important;
+  color: #dadae5 !important;
+}
+html.dark .query-example:hover {
+  background-color: #26263a !important;
+  border-color: rgba(53, 232, 244, 0.5) !important;
+  color: #eafcfe !important;
+}
+/* Scrollbars: the inline base uses light slate thumbs on every page. */
+html.dark ::-webkit-scrollbar-thumb { background: #2f3644 !important; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #3f4a5a !important; }
