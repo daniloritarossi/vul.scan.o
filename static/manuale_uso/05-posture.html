@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="05 · Security Posture" data-title-it="05 · Postura di sicurezza">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>05 · Security Posture — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html" aria-current="page"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#run"><span lang="en">Running a scan</span><span lang="it">Avviare una scansione</span></a></li>
+              <li><a href="#kpi">KPI</a></li>
+              <li><a href="#charts"><span lang="en">The six charts</span><span lang="it">I sei grafici</span></a></li>
+              <li><a href="#cve"><span lang="en">CVE visualisations</span><span lang="it">Visualizzazioni CVE</span></a></li>
+              <li><a href="#findings">PACKAGE FINDINGS</a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">05 · <span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span> <span class="route">/intel</span></div>
+        <h1><span lang="en">Application Security Posture</span><span lang="it">Postura di sicurezza applicativa</span></h1>
+        <p lang="en">
+          The software-composition analysis workbench: run a scan, read six charts, drill from a fleet-wide picture down
+          to one package's fix version.
+        </p>
+        <p lang="it">
+          Il banco di lavoro dell'analisi della composizione software: avvia una scansione, leggi sei grafici, scendi dal
+          quadro generale del parco fino alla versione che corregge un singolo pacchetto.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all · scan: admin, manager, editor</span><span lang="it">lettura: tutti · scansione: admin, manager, editor</span></span></h2>
+
+        <p lang="en">
+          A <strong>posture run</strong> collects the complete installed package inventory of each selected asset,
+          batches it against OSV.dev and produces three things: a per-asset score, a severity-classified list of
+          vulnerable packages, and the component records that become your SBOM. Its subtitle states the scope plainly —
+          <em>“Full software-composition posture per asset — installed packages vs OSV.”</em>
+        </p>
+        <p lang="it">
+          Una <strong>run di postura</strong> raccoglie l'inventario completo dei pacchetti installati su ogni asset
+          selezionato, lo confronta in blocco con OSV.dev e produce tre cose: uno score per asset, un elenco di pacchetti
+          vulnerabili classificati per severità e i record dei componenti che diventano la tua SBOM. Il sottotitolo
+          dichiara l'ambito senza giri di parole: <em>«Full software-composition posture per asset — installed packages
+            vs OSV.»</em>
+        </p>
+        <p lang="en">
+          This page is the origin of most of the product's data. The same run feeds <a href="08-sbom.html">/sbom</a>
+          (components and licences), <a href="07-findings.html">/findings</a> (internal findings entering the lifecycle)
+          and <a href="06-risk.html">/risk</a> (contextual re-scoring). If those pages look empty, the answer is almost
+          always “no posture run yet”.
+        </p>
+        <p lang="it">
+          Questa pagina è l'origine della maggior parte dei dati del prodotto. La stessa run alimenta
+          <a href="08-sbom.html">/sbom</a> (componenti e licenze), <a href="07-findings.html">/findings</a> (finding
+          interni che entrano nel ciclo di vita) e <a href="06-risk.html">/risk</a> (ricalcolo contestuale). Se quelle
+          pagine sembrano vuote, la risposta è quasi sempre «nessuna run di postura eseguita».
+        </p>
+
+        <figure>
+          <img src="img/intel-page.webp" alt="Security posture page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The posture page</b> — run controls at the top, then the KPI strip and the chart grid.</span>
+            <span lang="it"><b>La pagina postura</b> — controlli di run in alto, poi la striscia KPI e la griglia dei
+              grafici.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= RUN -->
+      <section class="block" id="run">
+        <h2><span lang="en">Running and comparing scans</span><span lang="it">Eseguire e confrontare le scansioni</span></h2>
+
+        <figure class="mid">
+          <img src="img/intel-runctl.webp" alt="Posture run controls" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Run controls</b> — the asset picker with its live count, and the scan launcher.</span>
+            <span lang="it"><b>Controlli di run</b> — il selettore di asset con il conteggio live e il pulsante di avvio
+              scansione.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-acc">ASSETS</span> <span lang="en">picker</span><span lang="it">selettore</span></td>
+                <td>
+                  <span lang="en">Opens the <strong>TARGET ASSETS</strong> panel: a checkbox list of the enabled inventory assets, with <span class="badge b-acc">ALL</span> and <span class="badge">NONE</span> shortcuts and a live count on the button itself. The next run is restricted to the ticked hosts — the way to re-check a handful of servers after a patch window without waiting for the whole fleet.</span>
+                  <span lang="it">Apre il pannello <strong>TARGET ASSETS</strong>: un elenco con caselle degli asset abilitati in inventario, con le scorciatoie <span class="badge b-acc">ALL</span> e <span class="badge">NONE</span> e un conteggio live sul pulsante stesso. La run successiva è limitata agli host spuntati — il modo per ricontrollare pochi server dopo una finestra di patch senza attendere l'intero parco.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">RUN FULL POSTURE SCAN</span></td>
+                <td>
+                  <span lang="en">Starts the run over Server-Sent Events (<code>GET /api/posture/scan</code>). A progress panel appears reading <em>“Scanning assets…”</em> with a <code>done/total</code> counter and a filling bar, ending in <em>“Scan complete”</em>. Authenticated assets take the longest because they enumerate the entire package list.</span>
+                  <span lang="it">Avvia la run tramite Server-Sent Events (<code>GET /api/posture/scan</code>). Compare un pannello di avanzamento con <em>«Scanning assets…»</em>, un contatore <code>fatti/totale</code> e una barra che si riempie, fino a <em>«Scan complete»</em>. Gli asset autenticati sono i più lenti perché enumerano l'intera lista dei pacchetti.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Run metadata</strong></span><span lang="it"><strong>Metadati della run</strong></span></td>
+                <td><span lang="en">Timestamp and scope of the run currently on screen, so you always know whether you are looking at fresh or historical data.</span><span lang="it">Timestamp e ambito della run attualmente a schermo, così sai sempre se stai guardando dati freschi o storici.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="mid">
+          <img src="img/intel-picker.webp" alt="Target assets picker" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>TARGET ASSETS</b> — tick exactly the hosts you want in the next run.</span>
+            <span lang="it"><b>TARGET ASSETS</b> — spunta esattamente gli host che vuoi nella prossima run.</span>
+          </figcaption>
+        </figure>
+
+        <div class="tip">
+          <span lang="en"><strong>Comparing runs.</strong> Every run is stored and can be recalled later. On the
+            <a href="06-risk.html">/risk</a> and <a href="08-sbom.html">/sbom</a> pages a run selector lets you load an
+            older run — <code>Run #id · timestamp · n CVE</code> — and re-render every chart and table from it. That is
+            how you demonstrate that a patch window worked, rather than asserting it.</span>
+          <span lang="it"><strong>Confrontare le run.</strong> Ogni run viene salvata e può essere richiamata in seguito. Nelle
+            pagine <a href="06-risk.html">/risk</a> e <a href="08-sbom.html">/sbom</a> un selettore consente di caricare
+            una run precedente — <code>Run #id · timestamp · n CVE</code> — e ridisegnare ogni grafico e tabella da essa.
+            È così che si dimostra che una finestra di patch ha funzionato, invece di limitarsi ad affermarlo.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">KPI strip</span><span lang="it">Striscia KPI</span></h2>
+
+        <figure>
+          <img src="img/intel-kpis.webp" alt="Posture KPI strip" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Five numbers</b> that summarise the run before you look at a single chart.</span>
+            <span lang="it"><b>Cinque numeri</b> che riassumono la run prima ancora di guardare un grafico.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th>KPI</th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th><th><span lang="en">How to read it</span><span lang="it">Come leggerlo</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ASSETS</strong></td>
+                <td><span lang="en">Hosts included in the displayed run.</span><span lang="it">Host inclusi nella run mostrata.</span></td>
+                <td><span lang="en">Lower than expected? Some assets were unreachable, unauthenticated or disabled.</span><span lang="it">Più basso del previsto? Alcuni asset erano irraggiungibili, non autenticati o disabilitati.</span></td>
+              </tr>
+              <tr>
+                <td><strong>PACKAGES</strong></td>
+                <td><span lang="en">Total installed packages inventoried across those hosts.</span><span lang="it">Pacchetti installati totali inventariati su quegli host.</span></td>
+                <td><span lang="en">A few dozen means banner-only data; hundreds or thousands means real authenticated inventories.</span><span lang="it">Poche decine indicano dati da solo banner; centinaia o migliaia indicano inventari autenticati reali.</span></td>
+              </tr>
+              <tr>
+                <td><strong>VULNERABLE PKGS</strong></td>
+                <td><span lang="en">Packages with at least one OSV match.</span><span lang="it">Pacchetti con almeno una corrispondenza OSV.</span></td>
+                <td><span lang="en">The count of things to fix, before deduplication by CVE.</span><span lang="it">Il numero di cose da correggere, prima della deduplica per CVE.</span></td>
+              </tr>
+              <tr>
+                <td><strong>TOTAL CVES</strong></td>
+                <td><span lang="en">Sum of distinct CVEs across all vulnerable packages.</span><span lang="it">Somma dei CVE distinti su tutti i pacchetti vulnerabili.</span></td>
+                <td><span lang="en">Impressive but blunt — one outdated base image can produce thousands.</span><span lang="it">Impressionante ma grezzo — una sola immagine di base obsoleta può produrne migliaia.</span></td>
+              </tr>
+              <tr>
+                <td><strong>AVG POSTURE</strong></td>
+                <td><span lang="en">Mean posture score of the run (0–100, higher is better).</span><span lang="it">Score medio di postura della run (0–100, più alto è meglio).</span></td>
+                <td><span lang="en">The number the Dashboard card mirrors. Formula in <a href="12-reference.html#formulas">Appendix C</a>.</span><span lang="it">Il numero rispecchiato dalla card della Dashboard. Formula in <a href="12-reference.html#formulas">Appendice C</a>.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= CHARTS -->
+      <section class="block" id="charts">
+        <h2><span lang="en">The six charts</span><span lang="it">I sei grafici</span></h2>
+        <p lang="en">
+          Each chart answers one question. They are also <strong>click-to-filter</strong>: selecting a slice or a bar
+          applies a filter badge to the PACKAGE FINDINGS table further down, which you clear with the ✕ on the badge.
+        </p>
+        <p lang="it">
+          Ogni grafico risponde a una domanda. Sono anche <strong>cliccabili per filtrare</strong>: selezionando una
+          fetta o una barra viene applicato un badge di filtro alla tabella PACKAGE FINDINGS più in basso, che si rimuove
+          con la ✕ sul badge.
+        </p>
+
+        <h4><span class="n">1</span>POSTURE SCORE</h4>
+        <figure class="mid">
+          <img src="img/intel-gauge.webp" alt="Posture score gauge" loading="lazy" />
+          <figcaption><span lang="en"><b>The gauge</b> — “how healthy is the fleet overall?”, with the value in the centre.</span><span lang="it"><b>Il tachimetro</b> — «quanto è sana la flotta nel complesso?», con il valore al centro.</span></figcaption>
+        </figure>
+
+        <h4><span class="n">2</span>SEVERITY DISTRIBUTION</h4>
+        <figure class="mid">
+          <img src="img/intel-sev.webp" alt="Severity distribution chart" loading="lazy" />
+          <figcaption><span lang="en"><b>Severity mix</b> — “how bad are the findings?”. Click a segment to filter the table below to that severity.</span><span lang="it"><b>Mix di severità</b> — «quanto sono gravi i finding?». Clicca un segmento per filtrare la tabella sotto su quella severità.</span></figcaption>
+        </figure>
+
+        <h4><span class="n">3</span>FINDINGS BY CATEGORY</h4>
+        <figure class="mid">
+          <img src="img/intel-cat.webp" alt="Findings by category chart" loading="lazy" />
+          <figcaption><span lang="en"><b>Category breakdown</b> — “what kind of software is affected?” — operating-system packages, language ecosystems, and so on.</span><span lang="it"><b>Ripartizione per categoria</b> — «che tipo di software è coinvolto?» — pacchetti di sistema, ecosistemi di linguaggio e così via.</span></figcaption>
+        </figure>
+
+        <h4><span class="n">4</span>TOP VULNERABLE COMPONENTS</h4>
+        <figure class="mid">
+          <img src="img/intel-top.webp" alt="Top vulnerable components chart" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The patch shortlist</b> — “which packages hurt most?”. In practice this is the chart you act on
+              first: a handful of components usually account for most of the CVE count.</span>
+            <span lang="it"><b>La lista corta delle patch</b> — «quali pacchetti pesano di più?». In pratica è il grafico su cui
+              agire per primo: pochi componenti di solito spiegano la maggior parte dei CVE.</span>
+          </figcaption>
+        </figure>
+
+        <h4><span class="n">5</span>SEVERITY BY ASSET</h4>
+        <figure class="mid">
+          <img src="img/intel-byasset.webp" alt="Severity by asset chart" loading="lazy" />
+          <figcaption><span lang="en"><b>Per-host load</b> — “which machines carry the weight?”, as stacked severities.</span><span lang="it"><b>Carico per host</b> — «quali macchine reggono il peso?», con severità impilate.</span></figcaption>
+        </figure>
+
+        <h4><span class="n">6</span>OS DISTRIBUTION</h4>
+        <figure class="mid">
+          <img src="img/intel-os.webp" alt="OS distribution chart" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Fleet composition</b> — “what am I actually running?”, with a version breakdown table underneath.
+              Fed by the OS type and OS version you set in <a href="04-assets.html">/assets</a>.</span>
+            <span lang="it"><b>Composizione del parco</b> — «cosa sto effettivamente eseguendo?», con una tabella di dettaglio
+              delle versioni sotto. Alimentato dal tipo e dalla versione OS impostati in
+              <a href="04-assets.html">/assets</a>.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= CVE -->
+      <section class="block" id="cve">
+        <h2><span lang="en">CVE visualisations</span><span lang="it">Visualizzazioni CVE</span></h2>
+
+        <h4><span class="n">7</span><span lang="en">CVE pack (bubble view)</span><span lang="it">CVE pack (vista a bolle)</span></h4>
+        <figure>
+          <img src="img/intel-cvepack.webp" alt="CVE bubble pack" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Packed circles</b> — every CVE as a bubble, coloured and sized by severity, with a server filter
+              and a searchable CVE list beside the plot.</span>
+            <span lang="it"><b>Cerchi impacchettati</b> — ogni CVE come bolla, colorata e dimensionata per severità, con un filtro
+              per server e un elenco CVE ricercabile accanto al grafico.</span>
+          </figcaption>
+        </figure>
+        <ul class="tight">
+          <li><span lang="en">The <strong>SERVERS</strong> picker (with <span class="badge b-acc">ALL</span> / <span class="badge">NONE</span> and a <em>“Filter servers…”</em> search box) limits the view to the hosts you care about.</span><span lang="it">Il selettore <strong>SERVERS</strong> (con <span class="badge b-acc">ALL</span> / <span class="badge">NONE</span> e una casella <em>«Filter servers…»</em>) limita la vista agli host che ti interessano.</span></li>
+          <li><span lang="en">The <em>“Find CVE…”</em> box highlights and scrolls to a specific identifier, with a live match count — the fastest way to answer “are we affected by CVE-XXXX-YYYY?”.</span><span lang="it">La casella <em>«Find CVE…»</em> evidenzia e porta a un identificativo specifico, con conteggio live delle corrispondenze — il modo più rapido per rispondere a «siamo esposti a CVE-XXXX-YYYY?».</span></li>
+          <li><span lang="en">A scrollable CVE list sits beside the plot for keyboard-friendly browsing.</span><span lang="it">Un elenco CVE scorrevole affianca il grafico, comodo per la navigazione da tastiera.</span></li>
+        </ul>
+
+        <h4><span class="n">8</span>CVE EXPOSURE GRAPH · 3D</h4>
+        <figure>
+          <img src="img/intel-graph3d.webp" alt="3D CVE exposure graph" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Force-directed 3D graph</b> — node = CVE (colour = severity, size = blast radius) or asset (cyan);
+              animated links are exposure paths. The legend counts servers and severities and reports how many CVEs are
+              <em>shared</em> across two or more servers.</span>
+            <span lang="it"><b>Grafo 3D force-directed</b> — nodo = CVE (colore = severità, dimensione = raggio d'impatto) o asset
+              (ciano); i collegamenti animati sono percorsi di esposizione. La legenda conta server e severità e riporta
+              quanti CVE sono <em>condivisi</em> fra due o più server.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en"><strong>Drag / click</strong></span><span lang="it"><strong>Trascina / clicca</strong></span></td><td><span lang="en">Drag rotates the camera; clicking a node focuses it. The panel states both hints inline.</span><span lang="it">Trascinare ruota la camera; cliccare un nodo lo mette a fuoco. Il pannello riporta entrambi i suggerimenti.</span></td></tr>
+              <tr><td><strong>SERVERS</strong></td><td><span lang="en">Its own picker restricting which hosts contribute nodes, with a count such as <code>7/7</code>.</span><span lang="it">Un selettore dedicato che limita gli host che contribuiscono nodi, con un conteggio tipo <code>7/7</code>.</span></td></tr>
+              <tr><td><span lang="en"><strong>Zoom in / out</strong></span><span lang="it"><strong>Zoom avanti / indietro</strong></span></td><td><span lang="en">Step the camera closer or further.</span><span lang="it">Avvicina o allontana la camera.</span></td></tr>
+              <tr><td><span lang="en"><strong>Fit to view</strong></span><span lang="it"><strong>Adatta alla vista</strong></span></td><td><span lang="en">Frames the whole graph — the first button to press when the cluster looks tiny.</span><span lang="it">Inquadra l'intero grafo — il primo pulsante da premere quando il grappolo appare minuscolo.</span></td></tr>
+              <tr><td><span lang="en"><strong>Reset camera</strong></span><span lang="it"><strong>Reimposta camera</strong></span></td><td><span lang="en">Back to the default viewpoint.</span><span lang="it">Torna al punto di vista predefinito.</span></td></tr>
+              <tr><td><span lang="en"><strong>Auto-rotate</strong></span><span lang="it"><strong>Rotazione automatica</strong></span></td><td><span lang="en">Slow orbit — useful on a wall display.</span><span lang="it">Orbita lenta — utile su un display a parete.</span></td></tr>
+              <tr><td><span lang="en"><strong>Pause animation</strong></span><span lang="it"><strong>Pausa animazione</strong></span></td><td><span lang="en">Freezes the force simulation so you can read labels.</span><span lang="it">Congela la simulazione a forze per poter leggere le etichette.</span></td></tr>
+              <tr><td><span lang="en"><strong>Expand</strong></span><span lang="it"><strong>Espandi</strong></span></td><td><span lang="en">Maximises the panel to fill the page.</span><span lang="it">Massimizza il pannello a tutta pagina.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <span lang="en">The graph library is <strong>lazy-loaded</strong> when the panel scrolls into view, and it needs
+            <strong>WebGL</strong>. If the canvas stays empty, scroll the panel fully into view and give it a few seconds;
+            if it is still empty, WebGL or hardware acceleration is disabled in the browser. The bubble pack above works
+            without WebGL and shows the same CVE population.</span>
+          <span lang="it">La libreria del grafo viene <strong>caricata in modo lazy</strong> quando il pannello entra nella
+            viewport e richiede <strong>WebGL</strong>. Se il canvas resta vuoto, porta il pannello completamente in vista
+            e attendi qualche secondo; se resta vuoto, WebGL o l'accelerazione hardware sono disattivati nel browser. Il
+            bubble pack qui sopra funziona senza WebGL e mostra la stessa popolazione di CVE.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= FINDINGS -->
+      <section class="block" id="findings">
+        <h2>PACKAGE FINDINGS</h2>
+
+        <figure>
+          <img src="img/intel-findings.webp" alt="Package findings table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The detail table</b> — one row per vulnerable package per asset, with search, export and the
+              per-row RESOLVE action.</span>
+            <span lang="it"><b>La tabella di dettaglio</b> — una riga per pacchetto vulnerabile per asset, con ricerca, export e
+              l'azione RESOLVE per riga.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Element</span><span lang="it">Elemento</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en"><strong>Columns</strong></span><span lang="it"><strong>Colonne</strong></span></td><td>SEVERITY · PACKAGE · VERSION · ECOSYSTEM · CATEGORY · ASSET<span lang="en">, plus the CVE list and the RESOLVE action.</span><span lang="it">, più l'elenco CVE e l'azione RESOLVE.</span></td></tr>
+              <tr><td><span lang="en"><strong>Search</strong></span><span lang="it"><strong>Ricerca</strong></span> — <em>“Filter package, CVE, asset…”</em></td><td><span lang="en">Instant client-side filter across every column.</span><span lang="it">Filtro istantaneo lato client su tutte le colonne.</span></td></tr>
+              <tr><td><span lang="en"><strong>Filter badge</strong></span><span lang="it"><strong>Badge di filtro</strong></span></td><td><span lang="en">Shows the filter currently applied by a chart click; the ✕ clears it.</span><span lang="it">Mostra il filtro applicato da un clic su un grafico; la ✕ lo rimuove.</span></td></tr>
+              <tr><td><span class="badge b-acc">CSV</span> / <span class="badge b-acc">XLS</span></td><td><span lang="en">Export the findings exactly as currently filtered — the artefact to attach to a change ticket.</span><span lang="it">Esportano i finding esattamente come filtrati — l'allegato da mettere in un ticket di modifica.</span></td></tr>
+              <tr><td><span lang="en"><strong>Pager</strong></span><span lang="it"><strong>Paginatore</strong></span></td><td><span lang="en">Pagination for large result sets.</span><span lang="it">Paginazione per insiemi di risultati ampi.</span></td></tr>
+              <tr><td><span lang="en"><strong>Empty state</strong></span><span lang="it"><strong>Stato vuoto</strong></span></td><td><span lang="en"><em>“No posture data yet. Run a scan.”</em></span><span lang="it"><em>«No posture data yet. Run a scan.»</em></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="mid">
+          <img src="img/intel-findings-row.webp" alt="A single package finding row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>A single finding row</b> — severity, package and version, ecosystem, asset, and the cyan
+              <em>RESOLVE</em> button on the right.</span>
+            <span lang="it"><b>Una singola riga di finding</b> — severità, pacchetto e versione, ecosistema, asset e il pulsante
+              ciano <em>RESOLVE</em> a destra.</span>
+          </figcaption>
+        </figure>
+
+        <h4><span class="n">9</span>RESOLVE — <span lang="en">the fix planner</span><span lang="it">il pianificatore di fix</span></h4>
+        <p lang="en">
+          The panel introduces it plainly: <em>“Click RESOLVE to compute, via OSV.dev, the fixed version of every CVE
+            affecting the package: the result is the minimum version that resolves them all. CVEs without a published fix
+            are counted separately (unfixed).”</em>
+        </p>
+        <p lang="it">
+          Il pannello lo introduce senza giri di parole: <em>«Click RESOLVE to compute, via OSV.dev, the fixed version of
+            every CVE affecting the package: the result is the minimum version that resolves them all. CVEs without a
+            published fix are counted separately (unfixed).»</em>
+        </p>
+        <p lang="en">
+          Mechanically it calls <code>GET /api/posture/fixplan?package=…</code>, which queries OSV.dev for the fixed
+          version of each CVE affecting that package and returns the <strong>minimum version that clears all of
+            them</strong>, plus a separate count of CVEs with no published fix. A full-page animation — labelled
+          <em>QUANTUM VERSION RESOLVER</em> — plays while it computes.
+        </p>
+        <p lang="it">
+          Meccanicamente chiama <code>GET /api/posture/fixplan?package=…</code>, che interroga OSV.dev per la versione
+          corretta di ciascun CVE che riguarda quel pacchetto e restituisce la <strong>versione minima che li risolve
+            tutti</strong>, più un conteggio separato dei CVE senza fix pubblicata. Durante il calcolo scorre
+          un'animazione a tutta pagina etichettata <em>QUANTUM VERSION RESOLVER</em>.
+        </p>
+        <div class="tip">
+          <span lang="en">This is the single most practical control on the page: it converts “this package has 23 CVEs” into
+            “upgrade to ≥ X and 21 of them disappear”. The unfixed count tells you what upgrading will <em>not</em>
+            solve — those need mitigation, not a version bump.</span>
+          <span lang="it">È il controllo più pratico della pagina: converte «questo pacchetto ha 23 CVE» in «aggiorna a ≥ X e 21
+            spariscono». Il conteggio dei non corretti dice cosa l'aggiornamento <em>non</em> risolverà — quelli richiedono
+            mitigazione, non un cambio di versione.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open <strong>Security posture</strong> from the drawer.</span><span lang="it">Apri <strong>Security posture</strong> dal drawer.</span></li>
+          <li><span lang="en">Click <span class="badge b-acc">ASSETS</span> and choose your targets — <span class="badge b-acc">ALL</span> for a full sweep, or a subset for a quick re-check after patching.</span><span lang="it">Clicca <span class="badge b-acc">ASSETS</span> e scegli i target — <span class="badge b-acc">ALL</span> per una passata completa, o un sottoinsieme per un ricontrollo rapido dopo le patch.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">RUN FULL POSTURE SCAN</span> and follow the progress bar.</span><span lang="it">Premi <span class="badge b-acc">RUN FULL POSTURE SCAN</span> e segui la barra di avanzamento.</span></li>
+          <li><span lang="en">On <em>“Scan complete”</em>, read the KPI strip, then <strong>TOP VULNERABLE COMPONENTS</strong> — that bar chart is your patch shortlist.</span><span lang="it">Con <em>«Scan complete»</em>, leggi la striscia KPI, poi <strong>TOP VULNERABLE COMPONENTS</strong> — quel grafico è la tua lista corta di patch.</span></li>
+          <li><span lang="en">Click a severity segment to filter PACKAGE FINDINGS down to, say, critical only.</span><span lang="it">Clicca un segmento di severità per filtrare PACKAGE FINDINGS, ad esempio solo critical.</span></li>
+          <li><span lang="en">For each package you intend to patch, press <span class="badge b-acc">RESOLVE</span> and note the minimum safe version and the unfixed count.</span><span lang="it">Per ogni pacchetto che intendi correggere, premi <span class="badge b-acc">RESOLVE</span> e annota la versione minima sicura e il numero di CVE non corretti.</span></li>
+          <li><span lang="en">Export CSV/XLS for the change ticket, or move to <a href="07-findings.html">/findings</a> to assign and track the work with SLAs.</span><span lang="it">Esporta CSV/XLS per il ticket di modifica, oppure passa a <a href="07-findings.html">/findings</a> per assegnare e tracciare il lavoro con gli SLA.</span></li>
+          <li><span lang="en">After the patch window, run again and compare with the previous run in <a href="06-risk.html">/risk</a>.</span><span lang="it">Dopo la finestra di patch, riesegui e confronta con la run precedente in <a href="06-risk.html">/risk</a>.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en">The gauge shows a concrete posture score, every chart is populated, PACKAGE FINDINGS lists one row per
+            vulnerable package per asset, and <span class="badge b-acc">RESOLVE</span> returns a specific target version
+            such as <em>“upgrade to ≥ 1.1.1w — resolves 6 CVEs, 1 unfixed”</em>. The same run is now visible in /sbom,
+            /risk and /findings.</p>
+          <p lang="en"><strong>If nothing appears:</strong> either no run exists yet, or the selected assets were unreachable or
+            unauthenticated — check the ACTIVE column in <a href="04-assets.html">/assets</a> before blaming the scan.</p>
+          <p lang="it">Il tachimetro mostra uno score di postura concreto, tutti i grafici sono popolati, PACKAGE FINDINGS elenca
+            una riga per pacchetto vulnerabile per asset e <span class="badge b-acc">RESOLVE</span> restituisce una
+            versione obiettivo precisa, del tipo <em>«upgrade to ≥ 1.1.1w — resolves 6 CVEs, 1 unfixed»</em>. La stessa
+            run è ora visibile in /sbom, /risk e /findings.</p>
+          <p lang="it"><strong>Se non compare nulla:</strong> o non esiste ancora alcuna run, o gli asset selezionati erano
+            irraggiungibili o non autenticati — controlla la colonna ACTIVE in <a href="04-assets.html">/assets</a> prima
+            di dare la colpa alla scansione.</p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="04-assets.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          04 · <span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span>
+        </a>
+        <a class="nxt" href="06-risk.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          06 · <span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="10 · Users &amp; Groups" data-title-it="10 · Utenti e gruppi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>10 · Users &amp; Groups — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html" aria-current="page"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#roles"><span lang="en">The four roles</span><span lang="it">I quattro ruoli</span></a></li>
+              <li><a href="#users"><span lang="en">Users panel</span><span lang="it">Pannello utenti</span></a></li>
+              <li><a href="#groups"><span lang="en">Groups panel</span><span lang="it">Pannello gruppi</span></a></li>
+              <li><a href="#matrix"><span lang="en">Role matrix</span><span lang="it">Matrice dei ruoli</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">10 · <span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span> <span class="route">/admin</span></div>
+        <h1><span lang="en">Users, groups and visibility cones</span><span lang="it">Utenti, gruppi e coni di visibilità</span></h1>
+        <p lang="en">
+          Identity and access management. You create users by <strong>invitation</strong> — never by handing out a
+          password — assign roles, organise people into groups and drive password resets.
+        </p>
+        <p lang="it">
+          Gestione di identità e accessi. Gli utenti si creano per <strong>invito</strong> — mai distribuendo una
+          password — assegnando ruoli, organizzando le persone in gruppi e avviando i reset di password.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">admin only (manager: read-only user list through the API)</span><span lang="it">solo admin (manager: elenco utenti in sola lettura via API)</span></span></h2>
+
+        <p lang="en">
+          The subtitle sets the frame: <em>“Roles and visibility cones.”</em> This page defines <em>who</em> exists and
+          <em>what kind</em> of user they are; the <strong>ASSIGNED</strong> column in <a href="04-assets.html">/assets</a>
+          defines <em>which assets</em> they can see. Together those two decisions produce every visibility cone in the
+          installation.
+        </p>
+        <p lang="it">
+          Il sottotitolo inquadra il tema: <em>«Roles and visibility cones.»</em> Questa pagina definisce <em>chi</em>
+          esiste e <em>di che tipo</em> di utente si tratta; la colonna <strong>ASSIGNED</strong> in
+          <a href="04-assets.html">/assets</a> definisce <em>quali asset</em> può vedere. Insieme, queste due decisioni
+          producono ogni cono di visibilità dell'installazione.
+        </p>
+
+        <figure>
+          <img src="img/admin-page.webp" alt="Users and groups page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The admin page</b> — the users panel on top with the invitation form, the groups panel below.
+              Email addresses are blurred in this manual's screenshots.</span>
+            <span lang="it"><b>La pagina admin</b> — il pannello utenti in alto con il modulo di invito, il pannello gruppi sotto.
+              Gli indirizzi email sono sfocati negli screenshot di questo manuale.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= ROLES -->
+      <section class="block" id="roles">
+        <h2><span lang="en">The four roles</span><span lang="it">I quattro ruoli</span></h2>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Role</span><span lang="it">Ruolo</span></th>
+                <th><span lang="en">Scope</span><span lang="it">Ambito</span></th>
+                <th><span lang="en">Typical holder</span><span lang="it">Chi lo riceve tipicamente</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-err">admin</span></td>
+                <td><span lang="en">Everything, including application configuration and user and group management.</span><span lang="it">Tutto, inclusi la configurazione dell'applicazione e la gestione di utenti e gruppi.</span></td>
+                <td><span lang="en">Platform owner.</span><span lang="it">Responsabile della piattaforma.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">manager</span></td>
+                <td><span lang="en">Everything except <em>writing</em> configuration and managing users; manages asset assignments; full audit access.</span><span lang="it">Tutto tranne <em>scrivere</em> la configurazione e gestire gli utenti; gestisce le assegnazioni degli asset; accesso completo all'audit.</span></td>
+                <td><span lang="en">Security lead.</span><span lang="it">Responsabile della sicurezza.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-ok">editor</span></td>
+                <td><span lang="en">Works only inside their visibility cone — the assets assigned to them directly or through one of their groups.</span><span lang="it">Opera solo dentro il proprio cono di visibilità — gli asset assegnati direttamente a lui o tramite un suo gruppo.</span></td>
+                <td><span lang="en">Team engineer.</span><span lang="it">Tecnico di team.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">viewer</span></td>
+                <td><span lang="en">Read-only: no scans, no imports, no exports, no audit page; asset usernames are redacted.</span><span lang="it">Sola lettura: nessuna scansione, nessun import, nessun export, nessuna pagina audit; gli username degli asset sono oscurati.</span></td>
+                <td><span lang="en">Auditor, stakeholder.</span><span lang="it">Auditor, stakeholder.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          Roles take effect <strong>immediately</strong>: the session token carries only the user id and its expiry, and
+          role and group membership are re-read from the database on every request. There is no stale-claim window to
+          wait out after a demotion.
+        </p>
+        <p lang="it">
+          I ruoli hanno effetto <strong>immediato</strong>: il token di sessione contiene solo l'id utente e la sua
+          scadenza, e ruolo e appartenenza ai gruppi vengono riletti dal database a ogni richiesta. Non c'è alcuna
+          finestra di claim obsoleti da attendere dopo una retrocessione.
+        </p>
+      </section>
+
+      <!-- ======================================= USERS -->
+      <section class="block" id="users">
+        <h2>USERS</h2>
+
+        <figure>
+          <img src="img/admin-invite.webp" alt="Users panel with invitation form" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The users panel</b> — username, email and role, then INVITE USER. The hint underneath explains why
+              no password is involved.</span>
+            <span lang="it"><b>Il pannello utenti</b> — username, email e ruolo, poi INVITE USER. Il suggerimento sotto spiega
+              perché nessuna password è coinvolta.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown — invitation</span><span lang="it">Dettaglio funzionalità — invito</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>username</strong></td><td><span lang="en">The login name — unique and required.</span><span lang="it">Il nome di accesso — unico e obbligatorio.</span></td></tr>
+              <tr><td><strong>email (activation link)</strong></td><td><span lang="en">The destination for the one-time activation link — unique and required.</span><span lang="it">La destinazione del link di attivazione monouso — unica e obbligatoria.</span></td></tr>
+              <tr><td><span lang="en"><strong>Role selector</strong></span><span lang="it"><strong>Selettore ruolo</strong></span></td><td>admin / manager / editor / viewer</td></tr>
+              <tr>
+                <td><span class="badge b-acc">INVITE USER</span></td>
+                <td>
+                  <span lang="en"><code>POST /api/users</code> followed by <code>POST /api/users/{id}/invite</code>. Generates a one-time token of 32 random bytes, stores <strong>only its SHA-256 hash</strong> with a 48-hour expiry, and emails the <code>/activate?token=…</code> link. Submitting with a field missing raises <em>“username and email are required”</em>.</span>
+                  <span lang="it"><code>POST /api/users</code> seguito da <code>POST /api/users/{id}/invite</code>. Genera un token monouso di 32 byte casuali, salva <strong>solo il suo hash SHA-256</strong> con scadenza 48 ore e invia via email il link <code>/activate?token=…</code>. Inviando con un campo mancante compare <em>«username and email are required»</em>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Invite hint</strong></span><span lang="it"><strong>Nota sull'invito</strong></span></td>
+                <td><span lang="en"><em>“The user receives a one-time link to choose their own password (opening the link also verifies the email). No password ever travels by email or through the administrator. Without SMTP configured, the link is shown here for manual delivery.”</em></span><span lang="it"><em>«The user receives a one-time link to choose their own password (opening the link also verifies the email). No password ever travels by email or through the administrator. Without SMTP configured, the link is shown here for manual delivery.»</em></span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Manual link box</strong></span><span lang="it"><strong>Riquadro link manuale</strong></span></td>
+                <td><span lang="en">When SMTP is not configured: <em>“Deliver this link manually:”</em> followed by the URL. <strong>The whole onboarding flow works without email</strong> — you just become the delivery channel.</span><span lang="it">Quando SMTP non è configurato: <em>«Deliver this link manually:»</em> seguito dall'URL. <strong>L'intero flusso di onboarding funziona senza email</strong> — diventi semplicemente tu il canale di consegna.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Confirmation</strong></span><span lang="it"><strong>Conferma</strong></span></td>
+                <td><em>“Email sent to {email}”</em></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <pre><code>Admin (/admin): INVITE USER — username + email + role
+      │
+      ▼
+<span lang="en">app generates a one-time token (32 random bytes)</span><span lang="it">l'app genera un token monouso (32 byte casuali)</span>
+  → <span lang="en">only its SHA-256 hash is stored, with a 48 h expiry</span><span lang="it">viene salvato solo il suo hash SHA-256, con scadenza 48 h</span>
+      │
+      ▼
+<span lang="en">email to the user with the activation link  /activate?token=…</span><span lang="it">email all'utente con il link di attivazione  /activate?token=…</span>
+  (<span lang="en">no SMTP → the link is shown to the admin for manual delivery</span><span lang="it">senza SMTP → il link è mostrato all'admin per consegna manuale</span>)
+      │
+      ▼
+<span lang="en">the user opens the link and chooses their own password (min 12 chars)</span><span lang="it">l'utente apre il link e sceglie la propria password (min 12 caratteri)</span>
+      │
+      ▼
+<span lang="en">password set + account activated + email implicitly VERIFIED + token burned</span><span lang="it">password impostata + account attivato + email implicitamente VERIFICATA + token bruciato</span></code></pre>
+
+        <h3><span lang="en">Features Breakdown — the users table</span><span lang="it">Dettaglio funzionalità — la tabella utenti</span></h3>
+        <figure>
+          <img src="img/admin-users.webp" alt="Users table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The users table</b> — status badges, inline role editing, group membership and the per-row
+              actions.</span>
+            <span lang="it"><b>La tabella utenti</b> — badge di stato, modifica del ruolo in linea, appartenenza ai gruppi e le
+              azioni per riga.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Column</span><span lang="it">Colonna</span></th><th><span lang="en">Content and behaviour</span><span lang="it">Contenuto e comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>USERNAME</strong> / <strong>EMAIL</strong></td><td><span lang="en">Identity.</span><span lang="it">Identità.</span></td></tr>
+              <tr>
+                <td><strong>STATUS</strong></td>
+                <td>
+                  <span lang="en"><span class="badge b-warn">PENDING</span> — invited, link not yet used. <span class="badge b-ok">ACTIVE</span> — password set. Plus three informative badges: <em>Email verified</em>, <em>Email NOT verified</em>, and <em>Password change forced at next login</em>.</span>
+                  <span lang="it"><span class="badge b-warn">PENDING</span> — invitato, link non ancora usato. <span class="badge b-ok">ACTIVE</span> — password impostata. Più tre badge informativi: <em>Email verified</em>, <em>Email NOT verified</em> e <em>Password change forced at next login</em>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ROLE</strong></td>
+                <td><span lang="en">Inline dropdown — <code>PUT /api/users/{id}</code>, confirmed by <em>“Role updated”</em>. It applies on the user's very next request.</span><span lang="it">Menu in linea — <code>PUT /api/users/{id}</code>, confermato da <em>«Role updated»</em>. Si applica già alla richiesta successiva dell'utente.</span></td>
+              </tr>
+              <tr>
+                <td><strong>GROUPS</strong></td>
+                <td><span lang="en">Membership chips; editing them calls <code>PUT /api/groups/{id}/members</code> and confirms with <em>“Membership updated”</em>.</span><span lang="it">Chip di appartenenza; modificandoli si chiama <code>PUT /api/groups/{id}/members</code> con conferma <em>«Membership updated»</em>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>ACTIONS</strong></td>
+                <td>
+                  <span lang="en">
+                    <span class="badge b-acc">SEND RESET</span> — <code>POST /api/users/{id}/reset</code>, asks <em>“Send a password-reset link to {u}?”</em> then emails a 4-hour link.<br />
+                    <span class="badge b-acc">RESEND INVITE</span> — issues a fresh activation token for a pending user whose link expired.<br />
+                    <span class="badge b-err">DELETE</span> — <code>DELETE /api/users/{id}</code>, asks <em>“Delete user {u}?”</em>, confirms with <em>“User deleted”</em>.
+                  </span>
+                  <span lang="it">
+                    <span class="badge b-acc">SEND RESET</span> — <code>POST /api/users/{id}/reset</code>, chiede <em>«Send a password-reset link to {u}?»</em> e invia un link valido 4 ore.<br />
+                    <span class="badge b-acc">RESEND INVITE</span> — emette un nuovo token di attivazione per un utente pendente il cui link è scaduto.<br />
+                    <span class="badge b-err">DELETE</span> — <code>DELETE /api/users/{id}</code>, chiede <em>«Delete user {u}?»</em>, conferma con <em>«User deleted»</em>.
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Empty state: <em>“No users.”</em></p>
+        <p lang="it">Stato vuoto: <em>«No users.»</em></p>
+
+        <div class="note">
+          <span lang="en">Setting a password directly through the API (<code>PUT /api/users/{id}</code> with a
+            <code>password</code> field) is supported as a fallback, but it flags the account
+            <code>must_change_password</code>: the user must change it at the next login before doing anything else.</span>
+          <span lang="it">Impostare una password direttamente via API (<code>PUT /api/users/{id}</code> con un campo
+            <code>password</code>) è supportato come ripiego, ma marca l'account con
+            <code>must_change_password</code>: l'utente dovrà cambiarla al successivo accesso prima di poter fare
+            altro.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= GROUPS -->
+      <section class="block" id="groups">
+        <h2>GROUPS</h2>
+
+        <figure>
+          <img src="img/admin-groups.webp" alt="Groups panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The groups panel</b> — create a group by name; delete it with a warning about its asset
+              assignments.</span>
+            <span lang="it"><b>Il pannello gruppi</b> — crea un gruppo per nome; eliminalo con un avviso sulle sue assegnazioni di
+              asset.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>group name</strong></td><td><span lang="en">A unique name, for example <code>team-infra</code> — the placeholder suggests that convention.</span><span lang="it">Un nome unico, per esempio <code>team-infra</code> — il placeholder suggerisce questa convenzione.</span></td></tr>
+              <tr><td><span class="badge b-acc">ADD GROUP</span></td><td><code>POST /api/groups</code> → <em>“Group created”</em></td></tr>
+              <tr><td><span class="badge b-err">DELETE</span></td><td><span lang="en"><code>DELETE /api/groups/{id}</code>, with the warning <em>“Delete group {g}? Its asset assignments will be removed.”</em> Members are not deleted — only the group and the access it granted.</span><span lang="it"><code>DELETE /api/groups/{id}</code>, con l'avviso <em>«Delete group {g}? Its asset assignments will be removed.»</em> I membri non vengono eliminati — solo il gruppo e l'accesso che concedeva.</span></td></tr>
+              <tr><td><span lang="en"><strong>Empty state</strong></span><span lang="it"><strong>Stato vuoto</strong></span></td><td><em>“No groups yet. Create the first one.”</em></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tip">
+          <span lang="en"><strong>Prefer groups over per-user assignments.</strong> A group models the team; adding or removing a
+            person then requires one membership change instead of revisiting every asset. Deleting a group revokes access
+            everywhere at once — which is exactly what you want when a team is dissolved.</span>
+          <span lang="it"><strong>Preferisci i gruppi alle assegnazioni per singolo utente.</strong> Un gruppo modella il team;
+            aggiungere o rimuovere una persona richiede allora una sola modifica di appartenenza invece di rivedere ogni
+            asset. Eliminare un gruppo revoca l'accesso ovunque in un colpo solo — esattamente ciò che serve quando un
+            team viene sciolto.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= MATRIX -->
+      <section class="block" id="matrix">
+        <h2>ROLE MATRIX</h2>
+
+        <figure>
+          <img src="img/admin-rolematrix.webp" alt="Role visibility matrix modal" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The role visibility matrix</b> — an in-app reference for what each role can see and do, with
+              per-cell qualifiers.</span>
+            <span lang="it"><b>La matrice di visibilità dei ruoli</b> — un riferimento in-app su ciò che ogni ruolo può vedere e
+              fare, con qualificatori per cella.</span>
+          </figcaption>
+        </figure>
+
+        <p lang="en">
+          The <span class="badge b-acc">ROLE MATRIX</span> button opens a modal listing every capability — assets
+          view and write, asset assignments, users management, groups and membership, findings view and write, scans,
+          risk and trend, SBOM export, audit history, settings view and write — against the four roles. Its header states
+          the rule the whole product follows: <em>“Enforcement is server-side on every endpoint; the editor operates only
+            inside their visibility cone.”</em>
+        </p>
+        <p lang="it">
+          Il pulsante <span class="badge b-acc">ROLE MATRIX</span> apre una finestra che elenca ogni capacità — vista e
+          scrittura degli asset, assegnazioni, gestione utenti, gruppi e appartenenze, vista e scrittura dei finding,
+          scansioni, rischio e tendenza, export SBOM, storico audit, vista e scrittura delle impostazioni — rispetto ai
+          quattro ruoli. L'intestazione dichiara la regola che l'intero prodotto segue: <em>«Enforcement is server-side
+            on every endpoint; the editor operates only inside their visibility cone.»</em>
+        </p>
+        <p lang="en">Cells are qualified rather than binary, which is what makes the matrix genuinely useful:</p>
+        <p lang="it">Le celle sono qualificate invece che binarie, ed è ciò che rende la matrice davvero utile:</p>
+        <ul class="tight">
+          <li><em>all</em> — <span lang="en">unrestricted.</span><span lang="it">senza restrizioni.</span></li>
+          <li><em>cone only</em> — <span lang="en">limited to assigned assets.</span><span lang="it">limitato agli asset assegnati.</span></li>
+          <li><em>cone only, auto-assigned on create</em> — <span lang="en">an editor's new assets land inside their own cone.</span><span lang="it">i nuovi asset di un editor finiscono nel suo stesso cono.</span></li>
+          <li><em>recomputed on the cone</em> — <span lang="en">aggregates are rebuilt, not masked.</span><span lang="it">gli aggregati vengono ricostruiti, non mascherati.</span></li>
+          <li><em>all, usernames redacted</em> — <span lang="en">a viewer sees the assets but not the accounts.</span><span lang="it">un viewer vede gli asset ma non gli account.</span></li>
+          <li><em>all, read-only</em> · <em>view only</em> · <em>own groups, view only</em> · <em>own scope only</em>.</li>
+        </ul>
+        <p lang="en">A full text version of the matrix is in <a href="12-reference.html#matrix">Appendix A</a>.</p>
+        <p lang="it">Una versione testuale completa della matrice è in <a href="12-reference.html#matrix">Appendice A</a>.</p>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — onboard a team member</span><span lang="it">Come funziona — inserire un membro del team</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Sign in as <strong>admin</strong> and open <strong>Admin</strong>.</span><span lang="it">Accedi come <strong>admin</strong> e apri <strong>Admin</strong>.</span></li>
+          <li><span lang="en">Create the groups that mirror your teams first (<code>team-infra</code>, <code>team-app</code>…). Group-based cones age far better than per-user assignments.</span><span lang="it">Crea prima i gruppi che rispecchiano i tuoi team (<code>team-infra</code>, <code>team-app</code>…). I coni basati sui gruppi invecchiano molto meglio delle assegnazioni per singolo utente.</span></li>
+          <li><span lang="en">Fill <strong>username</strong> and <strong>email</strong>, pick the role, press <span class="badge b-acc">INVITE USER</span>.</span><span lang="it">Compila <strong>username</strong> ed <strong>email</strong>, scegli il ruolo, premi <span class="badge b-acc">INVITE USER</span>.</span></li>
+          <li><span lang="en">With SMTP configured you get <em>“Email sent to {email}”</em>. Without it, copy the link from <em>“Deliver this link manually”</em> and send it over a channel you trust.</span><span lang="it">Con SMTP configurato ottieni <em>«Email sent to {email}»</em>. Senza, copia il link da <em>«Deliver this link manually»</em> e inviarlo su un canale di cui ti fidi.</span></li>
+          <li><span lang="en">Add the user to their group or groups in the <strong>GROUPS</strong> column.</span><span lang="it">Aggiungi l'utente al suo gruppo o ai suoi gruppi nella colonna <strong>GROUPS</strong>.</span></li>
+          <li><span lang="en">Go to <a href="04-assets.html">/assets</a> and assign the relevant assets to that group.</span><span lang="it">Vai in <a href="04-assets.html">/assets</a> e assegna gli asset pertinenti a quel gruppo.</span></li>
+          <li><span lang="en">Verify the cone: have the user sign in and confirm they see exactly those assets — nothing more, on any page.</span><span lang="it">Verifica il cono: fai accedere l'utente e conferma che veda esattamente quegli asset — nulla di più, su nessuna pagina.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — reset a forgotten password</span><span lang="it">Come funziona — reimpostare una password dimenticata</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Find the user, press <span class="badge b-acc">SEND RESET</span> and confirm.</span><span lang="it">Trova l'utente, premi <span class="badge b-acc">SEND RESET</span> e conferma.</span></li>
+          <li><span lang="en">The user receives a 4-hour one-time link and chooses their own password at <a href="02-auth.html#activate">/activate</a>.</span><span lang="it">L'utente riceve un link monouso valido 4 ore e sceglie la propria password su <a href="02-auth.html#activate">/activate</a>.</span></li>
+          <li><span lang="en">You never see or type their password, and all of their existing sessions are invalidated the moment they change it.</span><span lang="it">Non vedi né digiti mai la sua password, e tutte le sue sessioni esistenti vengono invalidate nel momento in cui la cambia.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">A user list in which every row shows a role, a verification state and a group membership; groups that map
+            to your organisation; and cones that are provably tight — an editor signing in sees only their assets, and
+            their /risk, /findings, /sbom and /audit aggregates are <em>recomputed</em> on that subset rather than
+            filtered in the browser.</span>
+          <span lang="it">Un elenco utenti in cui ogni riga mostra ruolo, stato di verifica e appartenenza ai gruppi; gruppi che
+            rispecchiano la tua organizzazione; e coni dimostrabilmente stretti — un editor che accede vede solo i suoi
+            asset, e i suoi aggregati in /risk, /findings, /sbom e /audit sono <em>ricalcolati</em> su quel sottoinsieme
+            invece che filtrati nel browser.</span>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="09-audit.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          09 · <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span>
+        </a>
+        <a class="nxt" href="11-settings.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          11 · <span lang="en">Settings</span><span lang="it">Impostazioni</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

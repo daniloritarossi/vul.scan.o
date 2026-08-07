@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="08 · SBOM" data-title-it="08 · SBOM">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>08 · SBOM — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html" aria-current="page"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#kpi">KPI</a></li>
+              <li><a href="#filters"><span lang="en">Filters</span><span lang="it">Filtri</span></a></li>
+              <li><a href="#table"><span lang="en">Component table</span><span lang="it">Tabella componenti</span></a></li>
+              <li><a href="#export"><span lang="en">Standard export</span><span lang="it">Export standard</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">08 · SBOM <span class="route">/sbom</span></div>
+        <h1><span lang="en">Software Bill of Materials</span><span lang="it">Software Bill of Materials</span></h1>
+        <p lang="en">
+          The component inventory produced by the latest SCA posture run: every package on every asset, with version,
+          ecosystem, licence and CVE count — and an export that standard tooling can consume.
+        </p>
+        <p lang="it">
+          L'inventario dei componenti prodotto dall'ultima run di postura SCA: ogni pacchetto su ogni asset, con
+          versione, ecosistema, licenza e conteggio CVE — più un export che gli strumenti standard sanno leggere.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all (cone-scoped) · export: admin, manager, editor</span><span lang="it">lettura: tutti (limitata al cono) · export: admin, manager, editor</span></span></h2>
+
+        <p lang="en">
+          The subtitle is precise: <em>“Per-asset package inventory — generated from SCA posture.”</em> This page does
+          not scan anything itself; it presents what the posture run already collected, from
+          <code>GET /api/sbom</code>. With no posture run yet, it returns an empty set by design.
+        </p>
+        <p lang="it">
+          Il sottotitolo è preciso: <em>«Per-asset package inventory — generated from SCA posture.»</em> Questa pagina
+          non esegue scansioni: presenta ciò che la run di postura ha già raccolto, tramite
+          <code>GET /api/sbom</code>. Se non esiste ancora alcuna run, restituisce un insieme vuoto per scelta
+          progettuale.
+        </p>
+        <p lang="en">
+          Two very different audiences use it. Security asks <em>“are we running the component in today's advisory?”</em>
+          Legal and procurement ask <em>“how many copyleft or unknown-licence components are in production?”</em> The KPI
+          strip is built to answer both without changing page.
+        </p>
+        <p lang="it">
+          La usano due tipi di interlocutori molto diversi. La sicurezza chiede <em>«stiamo usando il componente
+            dell'advisory di oggi?»</em>. Legale e acquisti chiedono <em>«quanti componenti copyleft o a licenza ignota
+            abbiamo in produzione?»</em>. La striscia KPI è costruita per rispondere a entrambe senza cambiare
+          pagina.
+        </p>
+
+        <figure>
+          <img src="img/sbom-page.webp" alt="SBOM page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The SBOM page</b> — six KPIs, the filter row and the component table.</span>
+            <span lang="it"><b>La pagina SBOM</b> — sei KPI, la riga dei filtri e la tabella dei componenti.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">KPI strip</span><span lang="it">Striscia KPI</span></h2>
+
+        <figure>
+          <img src="img/sbom-kpis.webp" alt="SBOM KPI cards" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Six KPIs</b> — the first three are security-facing, the last three licence-facing. Each has a
+              tooltip stating its exact definition.</span>
+            <span lang="it"><b>Sei KPI</b> — i primi tre orientati alla sicurezza, gli ultimi tre alle licenze. Ognuno ha un
+              tooltip che ne dichiara la definizione esatta.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th>KPI</th><th><span lang="en">Definition</span><span lang="it">Definizione</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>COMPONENTS</strong></td>
+                <td><span lang="en">Total component entries in the current view — <strong>one per package per asset</strong>, after filters. The same library on ten hosts counts ten times.</span><span lang="it">Voci di componente totali nella vista corrente — <strong>una per pacchetto per asset</strong>, dopo i filtri. La stessa libreria su dieci host conta dieci volte.</span></td>
+              </tr>
+              <tr>
+                <td><strong>UNIQUE PKGS</strong></td>
+                <td><span lang="en">Distinct package + version + ecosystem, deduplicated across all assets. The gap between this and COMPONENTS tells you how homogeneous your fleet is.</span><span lang="it">Combinazioni distinte di pacchetto + versione + ecosistema, deduplicate su tutti gli asset. Il divario rispetto a COMPONENTS indica quanto è omogeneo il tuo parco macchine.</span></td>
+              </tr>
+              <tr>
+                <td><strong>VULNERABLE</strong></td>
+                <td><span lang="en">Components with at least one known CVE (<code>cve_count &gt; 0</code>) in this view.</span><span lang="it">Componenti con almeno un CVE noto (<code>cve_count &gt; 0</code>) in questa vista.</span></td>
+              </tr>
+              <tr>
+                <td><strong>LICENSES</strong></td>
+                <td><span lang="en">Number of distinct licence identifiers seen; <code>NOASSERTION</code> counts as one.</span><span lang="it">Numero di identificativi di licenza distinti; <code>NOASSERTION</code> conta come uno.</span></td>
+              </tr>
+              <tr>
+                <td><strong>COPYLEFT / UNK</strong></td>
+                <td><span lang="en">Two numbers side by side: copyleft components (GPL, AGPL, LGPL, MPL…) and components with an unknown or unstated licence. <strong>These are the compliance-risk buckets</strong> — the first because of obligations, the second because you cannot assess what you cannot identify.</span><span lang="it">Due numeri affiancati: componenti copyleft (GPL, AGPL, LGPL, MPL…) e componenti con licenza sconosciuta o non dichiarata. <strong>Sono i due bucket di rischio conformità</strong> — il primo per gli obblighi, il secondo perché non puoi valutare ciò che non riesci a identificare.</span></td>
+              </tr>
+              <tr>
+                <td><strong>TOP ECOSYSTEM</strong></td>
+                <td><span lang="en">The package ecosystem contributing the most components in this view — Debian, PyPI, npm and so on.</span><span lang="it">L'ecosistema di pacchetti che contribuisce con più componenti in questa vista — Debian, PyPI, npm e così via.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= FILTERS -->
+      <section class="block" id="filters">
+        <h2><span lang="en">Filters and view controls</span><span lang="it">Filtri e controlli di vista</span></h2>
+
+        <figure>
+          <img src="img/sbom-filters.webp" alt="SBOM filter row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The filter row</b> — run selector, asset and package filters, free-text identifier search,
+              vulnerability and licence filters, and the grouping toggle.</span>
+            <span lang="it"><b>La riga dei filtri</b> — selettore di run, filtri per asset e pacchetto, ricerca libera sugli
+              identificativi, filtri per vulnerabilità e licenza e l'interruttore di raggruppamento.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Run selector</strong></span><span lang="it"><strong>Selettore di run</strong></span></td>
+                <td><span lang="en">Defaults to <em>Latest run</em>. Pick an older run to inspect a historical bill of materials — for instance the SBOM as it was at the date of a release you shipped.</span><span lang="it">Predefinito su <em>Latest run</em>. Scegli una run precedente per esaminare una distinta storica dei materiali — per esempio la SBOM alla data di una release rilasciata.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Filter by asset IP…</strong></td>
+                <td><span lang="en">Narrows the view to a single host.</span><span lang="it">Restringe la vista a un singolo host.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Filter by package…</strong></td>
+                <td><span lang="en">Substring match on the package name.</span><span lang="it">Corrispondenza per sottostringa sul nome del pacchetto.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Search purl, CPE, licence…</strong></td>
+                <td><span lang="en">Free-text search across the identifier fields. This is the fastest way to answer <em>“do we have X anywhere?”</em>, because purl and CPE are exactly what advisories quote.</span><span lang="it">Ricerca in testo libero sui campi identificativi. È il modo più rapido per rispondere a <em>«abbiamo X da qualche parte?»</em>, perché purl e CPE sono proprio ciò che citano gli advisory.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Vulnerability filter</strong></span><span lang="it"><strong>Filtro vulnerabilità</strong></span></td>
+                <td><em>All</em> · <em>Vulnerable only</em> · <em>Safe only</em></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Licence filter</strong></span><span lang="it"><strong>Filtro licenza</strong></span></td>
+                <td><em>Any licence</em> · <em>Copyleft</em> · <em>Permissive</em> · <em>Unknown</em></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">GROUP BY COMPONENT</span></td>
+                <td><span lang="en">Collapses identical package+version rows across hosts into a single line showing how many assets are affected. This is the deduplicated supply-chain view, and the one to use when answering an advisory.</span><span lang="it">Comprime le righe identiche pacchetto+versione dei vari host in un'unica riga che mostra quanti asset sono coinvolti. È la vista deduplicata della supply chain, quella da usare per rispondere a un advisory.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Per page and pager</strong></span><span lang="it"><strong>Per pagina e paginatore</strong></span></td>
+                <td><span lang="en">A page-size selector plus <span class="badge">‹ PREV</span> / <span class="badge">NEXT ›</span>, with <em>“{from}–{to} of {total}”</em> and <em>“Page {p} / {n}”</em>.</span><span lang="it">Un selettore di dimensione pagina più <span class="badge">‹ PREV</span> / <span class="badge">NEXT ›</span>, con <em>«{from}–{to} of {total}»</em> e <em>«Page {p} / {n}»</em>.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= TABLE -->
+      <section class="block" id="table">
+        <h2><span lang="en">The component table</span><span lang="it">La tabella dei componenti</span></h2>
+
+        <figure>
+          <img src="img/sbom-table.webp" alt="SBOM component table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Components</b> — asset, package, version, ecosystem, licence, CVE count, severity and status.</span>
+            <span lang="it"><b>Componenti</b> — asset, pacchetto, versione, ecosistema, licenza, numero di CVE, severità e
+              stato.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Column</span><span lang="it">Colonna</span></th><th><span lang="en">Content</span><span lang="it">Contenuto</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>ASSET</strong></td><td><span lang="en">The host the component was found on. Replaced by an asset count when grouping is on.</span><span lang="it">L'host su cui è stato trovato il componente. Sostituito da un conteggio di asset quando il raggruppamento è attivo.</span></td></tr>
+              <tr><td><strong>PACKAGE</strong> / <strong>VERSION</strong></td><td><span lang="en">Name and exact installed version.</span><span lang="it">Nome e versione installata esatta.</span></td></tr>
+              <tr><td><strong>ECOSYSTEM</strong></td><td><span lang="en">Debian, PyPI, npm, and so on — the namespace that makes a package name unambiguous.</span><span lang="it">Debian, PyPI, npm e così via — lo spazio dei nomi che rende non ambiguo il nome di un pacchetto.</span></td></tr>
+              <tr><td><strong>LICENSE</strong></td><td><span lang="en">The SPDX identifier where known, otherwise <code>NOASSERTION</code>.</span><span lang="it">L'identificativo SPDX quando noto, altrimenti <code>NOASSERTION</code>.</span></td></tr>
+              <tr><td><strong>CVE</strong></td><td><span lang="en">The number of known vulnerabilities affecting that exact version.</span><span lang="it">Il numero di vulnerabilità note che riguardano esattamente quella versione.</span></td></tr>
+              <tr><td><strong>SEVERITY</strong></td><td><span lang="en">The highest severity among those CVEs.</span><span lang="it">La severità più alta fra quei CVE.</span></td></tr>
+              <tr><td><strong>STATUS</strong></td><td><span lang="en"><span class="badge b-err">VULNERABLE</span> when <code>cve_count &gt; 0</code>, otherwise <span class="badge b-ok">OK</span>; clean components may also carry a <span class="badge b-ok">CLEAN</span> badge.</span><span lang="it"><span class="badge b-err">VULNERABLE</span> quando <code>cve_count &gt; 0</code>, altrimenti <span class="badge b-ok">OK</span>; i componenti puliti possono anche riportare il badge <span class="badge b-ok">CLEAN</span>.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p lang="en">States: <em>Loading…</em> · <em>“No SBOM data. Run a posture scan from the dashboard.”</em> · <em>“Error loading SBOM data.”</em></p>
+        <p lang="it">Stati: <em>Loading…</em> · <em>«No SBOM data. Run a posture scan from the dashboard.»</em> · <em>«Error loading SBOM data.»</em></p>
+      </section>
+
+      <!-- ======================================= EXPORT -->
+      <section class="block" id="export">
+        <h2><span lang="en">Standard export</span><span lang="it">Export standard</span></h2>
+
+        <figure class="narrow">
+          <img src="img/sbom-export.webp" alt="SBOM export buttons" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>CYCLONEDX and SPDX</b> — the two industry-standard formats, one click each.</span>
+            <span lang="it"><b>CYCLONEDX e SPDX</b> — i due formati standard di settore, un clic ciascuno.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Button</span><span lang="it">Pulsante</span></th><th>Endpoint</th><th><span lang="en">Produces</span><span lang="it">Produce</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-acc">CYCLONEDX</span></td>
+                <td><code>GET /api/sbom/export?format=cyclonedx</code></td>
+                <td><span lang="en"><strong>CycloneDX 1.5</strong> JSON.</span><span lang="it">JSON <strong>CycloneDX 1.5</strong>.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">SPDX</span></td>
+                <td><code>GET /api/sbom/export?format=spdx</code></td>
+                <td><span lang="en"><strong>SPDX 2.3</strong> JSON.</span><span lang="it">JSON <strong>SPDX 2.3</strong>.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          Both documents carry the full metadata set: <strong>purl</strong> and <strong>CPE</strong> identifiers,
+          licences, hashes, supplier, dependency relationships and the associated CVEs. That is enough for
+          Dependency-Track or any standard SBOM consumer to ingest the file without manual mapping.
+        </p>
+        <p lang="it">
+          Entrambi i documenti contengono l'insieme completo dei metadati: identificativi <strong>purl</strong> e
+          <strong>CPE</strong>, licenze, hash, fornitore, relazioni di dipendenza e i CVE associati. È abbastanza perché
+          Dependency-Track o qualsiasi consumatore SBOM standard acquisisca il file senza mappature manuali.
+        </p>
+        <div class="note">
+          <span lang="en">Exports respect the visibility cone: an editor's CycloneDX file contains only their own assets'
+            components. <strong>Viewers can browse this page but cannot export</strong> — the endpoint answers
+            <code>403</code>.</span>
+          <span lang="it">Gli export rispettano il cono di visibilità: il file CycloneDX di un editor contiene solo i componenti
+            dei suoi asset. <strong>I viewer possono consultare la pagina ma non esportare</strong> — l'endpoint risponde
+            <code>403</code>.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — answer a supply-chain question</span><span lang="it">Come funziona — rispondere a una domanda di supply chain</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Run a posture scan from the Dashboard or /intel — without one the page is empty by design.</span><span lang="it">Esegui una scansione di postura dalla Dashboard o da /intel — senza, la pagina è vuota per scelta.</span></li>
+          <li><span lang="en">Open <strong>SBOM</strong> and type the component name in <strong>Search purl, CPE, licence…</strong></span><span lang="it">Apri <strong>SBOM</strong> e digita il nome del componente in <strong>Search purl, CPE, licence…</strong></span></li>
+          <li><span lang="en">Enable <span class="badge b-acc">GROUP BY COMPONENT</span> — you now get one row per version with the affected asset count.</span><span lang="it">Attiva <span class="badge b-acc">GROUP BY COMPONENT</span> — ottieni una riga per versione con il numero di asset coinvolti.</span></li>
+          <li><span lang="en">Switch the vulnerability filter to <em>Vulnerable only</em> to see whether those versions actually carry CVEs.</span><span lang="it">Imposta il filtro vulnerabilità su <em>Vulnerable only</em> per vedere se quelle versioni portano davvero dei CVE.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CYCLONEDX</span> and attach the JSON to your answer.</span><span lang="it">Premi <span class="badge b-acc">CYCLONEDX</span> e allega il JSON alla tua risposta.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — a licence review</span><span lang="it">Come funziona — una revisione delle licenze</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Read the <strong>COPYLEFT / UNK</strong> KPI first — it frames the size of the problem.</span><span lang="it">Leggi prima il KPI <strong>COPYLEFT / UNK</strong> — inquadra la dimensione del problema.</span></li>
+          <li><span lang="en">Set the licence filter to <em>Copyleft</em> and export the view.</span><span lang="it">Imposta il filtro licenza su <em>Copyleft</em> ed esporta la vista.</span></li>
+          <li><span lang="en">Set it to <em>Unknown</em> and export again — this is the list somebody has to identify by hand.</span><span lang="it">Impostalo su <em>Unknown</em> ed esporta di nuovo — è l'elenco che qualcuno dovrà identificare a mano.</span></li>
+          <li><span lang="en">Repeat per environment by combining with the asset filter.</span><span lang="it">Ripeti per ambiente combinando con il filtro per asset.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">A filterable component inventory in which every row states its licence and its CVE exposure, and a
+            downloaded <code>.json</code> that validates as CycloneDX 1.5 or SPDX 2.3 and imports cleanly into standard
+            SBOM tooling.</span>
+          <span lang="it">Un inventario di componenti filtrabile in cui ogni riga dichiara licenza ed esposizione a CVE, e un
+            file <code>.json</code> scaricato che risulta valido come CycloneDX 1.5 o SPDX 2.3 e si importa senza attriti
+            negli strumenti SBOM standard.</span>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="07-findings.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          07 · <span lang="en">Unified Findings</span><span lang="it">Findings unificati</span>
+        </a>
+        <a class="nxt" href="09-audit.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          09 · <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="VUL.SCAN.O — User Manual" data-title-it="VUL.SCAN.O — Manuale d'uso">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VUL.SCAN.O — User Manual · Manuale d'uso</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+      <a class="brand" href="index.html">
+        <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+        <b>VUL.SCAN.O</b>
+      </a>
+      <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+      <div class="switches">
+        <button type="button" data-lang-btn="en">EN</button>
+        <button type="button" data-lang-btn="it">IT</button>
+        <button type="button" data-theme-btn="dark">DARK</button>
+        <button type="button" data-theme-btn="light">LIGHT</button>
+      </div>
+      <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+      <nav class="toc">
+        <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+        <ol>
+          <li><a href="index.html" aria-current="page"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+          <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+          <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+        <ol>
+          <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+          <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+          <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+          <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+          <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+          <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+          <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+          <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+          <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+        <ol>
+          <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+        <ol class="sub">
+          <li><a href="#what"><span lang="en">What the app does</span><span lang="it">Cosa fa l'app</span></a></li>
+          <li><a href="#howto"><span lang="en">How to read this manual</span><span lang="it">Come leggere il manuale</span></a></li>
+          <li><a href="#concepts"><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></a></li>
+          <li><a href="#pipeline"><span lang="en">Data pipeline</span><span lang="it">Flusso dei dati</span></a></li>
+          <li><a href="#quickstart"><span lang="en">Quick start</span><span lang="it">Avvio rapido</span></a></li>
+          <li><a href="#map"><span lang="en">Page map</span><span lang="it">Mappa delle pagine</span></a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="kicker">VUL &bull; SCAN &bull; O</div>
+        <h1>
+          <span lang="en">Complete User Manual</span>
+          <span lang="it">Manuale d'uso completo</span>
+        </h1>
+        <p lang="en">
+          Every page, every panel, every button and every field of the application — what it does, how to use it,
+          what you should see afterwards, and a dark-theme screenshot of the feature itself. Bilingual:
+          switch between English and Italian at any time from the sidebar.
+        </p>
+        <p lang="it">
+          Ogni pagina, ogni pannello, ogni pulsante e ogni campo dell'applicazione — cosa fa, come si usa,
+          cosa devi vedere dopo l'azione, con lo screenshot in tema scuro della funzionalità descritta. Bilingue:
+          puoi passare da inglese a italiano in qualsiasi momento dalla barra laterale.
+        </p>
+      </header>
+
+      <!-- ================================================= WHAT -->
+      <section class="block" id="what">
+        <h2><span lang="en">What the application does</span><span lang="it">Cosa fa l'applicazione</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          VUL.SCAN.O is a web application for <strong>authorized vulnerability audits</strong>. It keeps an inventory of
+          the hosts you are allowed to test, identifies vulnerable software starting from a free-text description (even
+          without an explicit CVE), runs network and software-composition scans, enriches every result with public
+          vulnerability data (OSV.dev, EPSS, CISA KEV) and tracks the resulting findings through a complete remediation
+          lifecycle with deduplication, workflow states, SLAs and ticketing.
+        </p>
+        <p lang="it">
+          VUL.SCAN.O è un'applicazione web per <strong>audit di vulnerabilità autorizzati</strong>. Gestisce un
+          inventario degli host che sei autorizzato a testare, identifica il software vulnerabile partendo da una
+          descrizione in testo libero (anche senza un CVE esplicito), esegue scansioni di rete e di composizione
+          software, arricchisce ogni risultato con dati pubblici sulle vulnerabilità (OSV.dev, EPSS, CISA KEV) e segue
+          i finding risultanti lungo un ciclo di vita completo di remediation con deduplica, stati di workflow, SLA e
+          ticketing.
+        </p>
+
+        <figure>
+          <img src="img/dash-page.webp" alt="VUL.SCAN.O dashboard, dark theme" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The Dashboard</b> — the operational home screen: KPI cards, the free-text scan console, the
+              measured dependency graph and the live asset health panel.</span>
+            <span lang="it"><b>La Dashboard</b> — la schermata operativa principale: card KPI, console di scansione in testo
+              libero, grafo delle dipendenze misurate e pannello live dello stato degli asset.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Scope of this manual</span><span lang="it">Ambito di questo manuale</span></h3>
+        <p lang="en">
+          This manual documents the application <em>as an operator sees it</em>. Installation, the <code>start.sh</code>
+          wizard, the Docker test machines, the Supabase stack and deployment topics live in the project
+          <code>README.md</code>. Here we assume the app is already running at <code>http://localhost:8000</code>.
+        </p>
+        <p lang="it">
+          Questo manuale documenta l'applicazione <em>dal punto di vista dell'operatore</em>. Installazione, wizard
+          <code>start.sh</code>, macchine di test Docker, stack Supabase e argomenti di deployment sono nel
+          <code>README.md</code> del progetto. Qui si assume che l'app sia già in esecuzione su
+          <code>http://localhost:8000</code>.
+        </p>
+
+        <div class="warn">
+          <span lang="en"><strong>Responsible use.</strong> Only scan or authenticate against assets you own or are
+            explicitly authorized to test. Real SSH logins, the deep version probe and the reachability probe generate
+            traffic on the target. Scanning third-party systems without permission is illegal.</span>
+          <span lang="it"><strong>Uso responsabile.</strong> Esegui scansioni o autenticazioni solo su asset di tua
+            proprietà o per cui hai autorizzazione esplicita. I login SSH reali, la sonda di versione approfondita e la
+            sonda di raggiungibilità generano traffico sul target. Scansionare sistemi di terzi senza permesso è
+            illegale.</span>
+        </div>
+      </section>
+
+      <!-- ================================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">How to read this manual</span><span lang="it">Come leggere questo manuale</span></h2>
+
+        <h3><span lang="en">Structure of every chapter</span><span lang="it">Struttura di ogni capitolo</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Section</span><span lang="it">Sezione</span></th>
+                <th><span lang="en">What you get</span><span lang="it">Cosa contiene</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Page Overview</strong></td>
+                <td>
+                  <span lang="en">What the page is for, when to open it, which data it reads, which endpoints feed it and who is allowed in.</span>
+                  <span lang="it">A cosa serve la pagina, quando aprirla, quali dati legge, quali endpoint la alimentano e chi può accedervi.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Features Breakdown</strong></td>
+                <td>
+                  <span lang="en">One entry per control — every button, field, filter, badge, column, chart and keyboard shortcut — with its exact behaviour, the API it calls, its states and its error messages. Each feature carries its own screenshot.</span>
+                  <span lang="it">Una voce per ogni controllo — pulsanti, campi, filtri, badge, colonne, grafici e scorciatoie — con comportamento esatto, API chiamata, stati e messaggi di errore. Ogni funzionalità ha il proprio screenshot.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>How It Works</strong></td>
+                <td>
+                  <span lang="en">A numbered procedure you can follow from a cold start, including the decisions to make along the way.</span>
+                  <span lang="it">Una procedura numerata seguibile da zero, comprese le decisioni da prendere lungo il percorso.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Expected Outcome</strong></td>
+                <td>
+                  <span lang="en">What must appear on screen and what gets persisted if the step succeeded — your verification checklist — plus the failure modes.</span>
+                  <span lang="it">Cosa deve comparire a schermo e cosa viene salvato se il passo è riuscito — la tua checklist di verifica — più le modalità di errore.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Conventions</span><span lang="it">Convenzioni</span></h3>
+        <ul class="tight">
+          <li>
+            <span class="badge b-acc">BUTTON</span>
+            <span lang="en">— a clickable control, written exactly as it is labelled in the interface.</span>
+            <span lang="it">— un controllo cliccabile, scritto esattamente come è etichettato nell'interfaccia.</span>
+          </li>
+          <li>
+            <code>/api/…</code>
+            <span lang="en">— the REST endpoint the control calls; useful for scripting and for reading the browser network tab.</span>
+            <span lang="it">— l'endpoint REST chiamato dal controllo; utile per gli script e per leggere il tab network del browser.</span>
+          </li>
+          <li>
+            <span class="badge b-err">admin</span> <span class="badge b-warn">manager</span>
+            <span class="badge b-ok">editor</span> <span class="badge">viewer</span>
+            <span lang="en">— the roles allowed to use a feature. Authorization is enforced <strong>server-side on every endpoint</strong>; the UI only hides what your role cannot use.</span>
+            <span lang="it">— i ruoli abilitati a usare la funzionalità. L'autorizzazione è applicata <strong>lato server su ogni endpoint</strong>; l'interfaccia si limita a nascondere ciò che il tuo ruolo non può usare.</span>
+          </li>
+          <li>
+            <span lang="en">Screenshots are taken in <strong>dark theme</strong> against a live installation with real scan data. Click any screenshot to enlarge it.</span>
+            <span lang="it">Gli screenshot sono in <strong>tema scuro</strong>, su un'installazione reale con dati di scansione veri. Clicca su uno screenshot per ingrandirlo.</span>
+          </li>
+          <li>
+            <span lang="en">The interface itself ships in English and Italian; the labels quoted here are the English ones, with the Italian equivalent shown when it differs materially.</span>
+            <span lang="it">L'interfaccia è disponibile in inglese e italiano; le etichette citate qui sono quelle inglesi, con l'equivalente italiano quando differisce in modo rilevante.</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ================================================= CONCEPTS -->
+      <section class="block" id="concepts">
+        <h2><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">Six ideas explain almost every screen in the product. Read this once and the rest of the manual becomes obvious.</p>
+        <p lang="it">Sei concetti spiegano quasi ogni schermata del prodotto. Leggili una volta e il resto del manuale diventa evidente.</p>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Concept</span><span lang="it">Concetto</span></th>
+                <th><span lang="en">What it means</span><span lang="it">Cosa significa</span></th>
+                <th><span lang="en">Where</span><span lang="it">Dove</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Asset</strong></td>
+                <td>
+                  <span lang="en">One host you are authorized to test: IP/hostname, optional SSH credentials (password encrypted at rest), OS type and version, an enabled flag, and business context (environment, internet-facing, criticality 1–5).</span>
+                  <span lang="it">Un host che sei autorizzato a testare: IP/hostname, credenziali SSH opzionali (password cifrata a riposo), tipo e versione del sistema operativo, flag di abilitazione e contesto di business (ambiente, esposizione a internet, criticità 1–5).</span>
+                </td>
+                <td><a href="04-assets.html">/assets</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Vulnerability scan</strong></span><span lang="it"><strong>Scansione di vulnerabilità</strong></span></td>
+                <td>
+                  <span lang="en">Targeted: you describe a vulnerability or paste a CVE, the app identifies the product, then checks each asset for that product via banner grabbing or an authenticated inventory query.</span>
+                  <span lang="it">Mirata: descrivi una vulnerabilità o incolli un CVE, l'app identifica il prodotto e poi verifica su ogni asset la presenza di quel prodotto tramite banner grabbing o interrogazione autenticata dell'inventario.</span>
+                </td>
+                <td><a href="03-dashboard.html">Dashboard</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Posture scan (SCA)</strong></span><span lang="it"><strong>Scansione di postura (SCA)</strong></span></td>
+                <td>
+                  <span lang="en">Broad: collects the <em>full installed package inventory</em> of each asset and matches every package against OSV.dev. Produces a per-asset posture score, the component list (SBOM) and internal findings.</span>
+                  <span lang="it">Ampia: raccoglie <em>l'intero inventario dei pacchetti installati</em> di ogni asset e confronta ogni pacchetto con OSV.dev. Produce uno score di postura per asset, l'elenco dei componenti (SBOM) e i finding interni.</span>
+                </td>
+                <td><a href="05-posture.html">/intel</a>, <a href="08-sbom.html">/sbom</a></td>
+              </tr>
+              <tr>
+                <td><strong>Finding</strong></td>
+                <td>
+                  <span lang="en">A deduplicated defect with a stable fingerprint, a workflow status (<code>open → triaged → accepted | fixed</code>), a remediation SLA and an optional ticket link. Fed by posture scans <em>and</em> by imported third-party scanner reports.</span>
+                  <span lang="it">Un difetto deduplicato con fingerprint stabile, stato di workflow (<code>open → triaged → accepted | fixed</code>), SLA di remediation e link opzionale al ticket. Alimentato dalle scansioni di postura <em>e</em> dai report importati di scanner esterni.</span>
+                </td>
+                <td><a href="07-findings.html">/findings</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Contextual risk</strong></span><span lang="it"><strong>Rischio contestuale</strong></span></td>
+                <td>
+                  <span lang="en">Posture findings re-scored with real-world exploitability (EPSS probability, CISA KEV catalogue), live port reachability and your business context — so you patch what is actually dangerous first.</span>
+                  <span lang="it">I finding di postura ricalcolati con l'exploitability reale (probabilità EPSS, catalogo CISA KEV), la raggiungibilità live delle porte e il tuo contesto di business — così correggi per primo ciò che è davvero pericoloso.</span>
+                </td>
+                <td><a href="06-risk.html">/risk</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Visibility cone</strong></span><span lang="it"><strong>Cono di visibilità</strong></span></td>
+                <td>
+                  <span lang="en">The subset of assets a user may see. Admin, manager and viewer see everything; an <em>editor</em> sees only the assets assigned to them or to one of their groups. Aggregates are <strong>recomputed</strong> inside the cone, never merely masked.</span>
+                  <span lang="it">Il sottoinsieme di asset che un utente può vedere. Admin, manager e viewer vedono tutto; un <em>editor</em> vede solo gli asset assegnati a lui o a un suo gruppo. Gli aggregati sono <strong>ricalcolati</strong> dentro il cono, mai semplicemente mascherati.</span>
+                </td>
+                <td><a href="10-admin.html">/admin</a>, <a href="04-assets.html">/assets</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================================================= PIPELINE -->
+      <section class="block" id="pipeline">
+        <h2><span lang="en">Data pipeline</span><span lang="it">Flusso dei dati</span></h2>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <pre><code>            ┌──────────────┐
+            │   /assets    │  <span lang="en">inventory: host, credentials (encrypted), OS, context</span><span lang="it">inventario: host, credenziali (cifrate), OS, contesto</span>
+            └──────┬───────┘
+                   │
+      ┌────────────┴─────────────┐
+      ▼                          ▼
+┌─────────────┐          ┌────────────────┐
+│  Dashboard  │          │  /intel        │
+│  <span lang="en">targeted</span><span lang="it">scansione</span>   │          │  <span lang="en">posture (SCA)</span><span lang="it">postura (SCA)</span>  │  <span lang="en">package inventory → OSV.dev</span><span lang="it">inventario pacchetti → OSV.dev</span>
+│  <span lang="en">scan (SSE)</span><span lang="it">mirata (SSE)</span> │          └───────┬────────┘
+└──────┬──────┘                  │
+       │                         ├────────► /sbom      <span lang="en">components, licences, CycloneDX / SPDX</span><span lang="it">componenti, licenze, CycloneDX / SPDX</span>
+       │                         ├────────► /findings  <span lang="en">internal findings (dedup + SLA)</span><span lang="it">finding interni (dedup + SLA)</span>
+       │                         └────────► /risk      + EPSS + KEV + <span lang="en">reachability + context</span><span lang="it">raggiungibilità + contesto</span>
+       │
+       └──────────────────────────────────► /audit     <span lang="en">tamper-evident scan history</span><span lang="it">storico scansioni a prova di manomissione</span>
+
+   <span lang="en">external scanners (Trivy, Grype, Nuclei,</span><span lang="it">scanner esterni (Trivy, Grype, Nuclei,</span>
+   Semgrep, Gitleaks, Trufflehog)  ───────► /findings  <span lang="en">(import / local scan)</span><span lang="it">(import / scansione locale)</span></code></pre>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">You should be able to answer: <em>“Which host do I patch first, why, by when, and who is working on
+            it?”</em> — <strong>/risk</strong> answers <em>which and why</em>, <strong>/findings</strong> answers <em>by
+            when and who</em>, <strong>/audit</strong> proves <em>what was done and by whom</em>.</span>
+          <span lang="it">Devi poter rispondere a: <em>«Quale host correggo per primo, perché, entro quando e chi ci sta
+            lavorando?»</em> — <strong>/risk</strong> risponde a <em>quale e perché</em>, <strong>/findings</strong>
+            risponde a <em>entro quando e chi</em>, <strong>/audit</strong> dimostra <em>cosa è stato fatto e da
+            chi</em>.</span>
+        </div>
+      </section>
+
+      <!-- ================================================= QUICKSTART -->
+      <section class="block" id="quickstart">
+        <h2><span lang="en">Quick start (day one)</span><span lang="it">Avvio rapido (primo giorno)</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">The shortest path from a fresh installation to actionable, prioritized findings — roughly ten minutes plus scan time.</p>
+        <p lang="it">Il percorso più breve da un'installazione nuova a finding prioritizzati e azionabili — circa dieci minuti più il tempo di scansione.</p>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li>
+            <span lang="en">Open <code>http://localhost:8000</code>. You are redirected to <a href="02-auth.html">/login</a>.</span>
+            <span lang="it">Apri <code>http://localhost:8000</code>. Vieni reindirizzato a <a href="02-auth.html">/login</a>.</span>
+          </li>
+          <li>
+            <span lang="en">Sign in with the seeded administrator <code>admin</code> / <code>admin</code>. The app immediately forces you to <a href="02-auth.html#changepw">/change-password</a> — set a password of at least 12 characters.</span>
+            <span lang="it">Accedi con l'amministratore predefinito <code>admin</code> / <code>admin</code>. L'app ti obbliga subito ad andare su <a href="02-auth.html#changepw">/change-password</a> — imposta una password di almeno 12 caratteri.</span>
+          </li>
+          <li>
+            <span lang="en">Go to <a href="11-settings.html">Settings</a> and confirm the AI provider (local Ollama by default), the OSINT search engine and — if you want email onboarding — the SMTP block. Press <span class="badge b-acc">SAVE</span>.</span>
+            <span lang="it">Vai in <a href="11-settings.html">Impostazioni</a> e verifica il provider AI (Ollama locale di default), il motore di ricerca OSINT e — se vuoi l'onboarding via email — il blocco SMTP. Premi <span class="badge b-acc">SAVE</span>.</span>
+          </li>
+          <li>
+            <span lang="en">Go to <a href="04-assets.html">Assets</a> and add at least one host: IP, optional username/password, operating system. Passwords are encrypted automatically on save.</span>
+            <span lang="it">Vai in <a href="04-assets.html">Assets</a> e aggiungi almeno un host: IP, username/password opzionali, sistema operativo. Le password vengono cifrate automaticamente al salvataggio.</span>
+          </li>
+          <li>
+            <span lang="en">Check the asset's <span class="badge">ACTIVE</span> column reports <span class="badge b-ok">AVAILABLE</span> or <span class="badge b-ok">SSH OK</span>. <span class="badge b-warn">SSH FAIL</span> means the credentials or the encryption are wrong.</span>
+            <span lang="it">Controlla che la colonna <span class="badge">ACTIVE</span> dell'asset riporti <span class="badge b-ok">AVAILABLE</span> o <span class="badge b-ok">SSH OK</span>. <span class="badge b-warn">SSH FAIL</span> significa credenziali o cifratura errate.</span>
+          </li>
+          <li>
+            <span lang="en">Back on the <a href="03-dashboard.html">Dashboard</a>, press <span class="badge b-acc">RUN POSTURE SCAN</span> (or open <a href="05-posture.html">/intel</a> and press <span class="badge b-acc">RUN FULL POSTURE SCAN</span>). Watch the progress bar advance asset by asset.</span>
+            <span lang="it">Torna sulla <a href="03-dashboard.html">Dashboard</a> e premi <span class="badge b-acc">RUN POSTURE SCAN</span> (oppure apri <a href="05-posture.html">/intel</a> e premi <span class="badge b-acc">RUN FULL POSTURE SCAN</span>). Osserva la barra di avanzamento procedere asset per asset.</span>
+          </li>
+          <li>
+            <span lang="en">When the run finishes, review <a href="06-risk.html">/risk</a> for the ranked asset list and <a href="07-findings.html">/findings</a> for the SLA-tracked work queue.</span>
+            <span lang="it">A fine run, consulta <a href="06-risk.html">/risk</a> per la classifica degli asset e <a href="07-findings.html">/findings</a> per la coda di lavoro tracciata a SLA.</span>
+          </li>
+          <li>
+            <span lang="en">Optional: set each asset's <strong>Environment</strong>, <strong>Internet</strong> and <strong>Criticality</strong> in the /risk table, then press <span class="badge b-acc">RECOMPUTE</span> — the ranking now reflects your business reality.</span>
+            <span lang="it">Facoltativo: imposta per ogni asset <strong>Environment</strong>, <strong>Internet</strong> e <strong>Criticality</strong> nella tabella /risk, poi premi <span class="badge b-acc">RECOMPUTE</span> — la classifica riflette ora la tua realtà di business.</span>
+          </li>
+          <li>
+            <span lang="en">Optional: invite your team in <a href="10-admin.html">/admin</a> and assign assets to users or groups from the <strong>ASSIGNED</strong> column in /assets.</span>
+            <span lang="it">Facoltativo: invita il tuo team in <a href="10-admin.html">/admin</a> e assegna gli asset a utenti o gruppi dalla colonna <strong>ASSIGNED</strong> in /assets.</span>
+          </li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">The Dashboard KPI cards stop showing zeros: <strong>ASSETS SCANNED</strong> shows <code>n of m</code>,
+            <strong>ACTIVE VULNERABILITIES</strong> shows a CVE count with severity chips, and <strong>SECURITY POSTURE
+              SCORE</strong> shows a 0–100 value with a trend sparkline. /findings lists rows with SLA countdowns, /sbom
+            lists components, /audit lists the run.</span>
+          <span lang="it">Le card KPI della Dashboard smettono di mostrare zeri: <strong>ASSETS SCANNED</strong> mostra
+            <code>n di m</code>, <strong>ACTIVE VULNERABILITIES</strong> mostra un conteggio CVE con i chip di severità e
+            <strong>SECURITY POSTURE SCORE</strong> mostra un valore 0–100 con lo sparkline di tendenza. /findings elenca
+            righe con il conto alla rovescia SLA, /sbom elenca i componenti, /audit elenca la run.</span>
+        </div>
+      </section>
+
+      <!-- ================================================= MAP -->
+      <section class="block" id="map">
+        <h2><span lang="en">Page map</span><span lang="it">Mappa delle pagine</span></h2>
+        <div class="cards">
+          <a class="card" href="01-shell.html">
+            <div class="t">01 <span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></div>
+            <div class="r">topbar · nav · ⌘K</div>
+            <div class="d"><span lang="en">Navigation, command palette, theme and language, session chip, update banner.</span><span lang="it">Navigazione, command palette, tema e lingua, chip di sessione, banner aggiornamenti.</span></div>
+          </a>
+          <a class="card" href="02-auth.html">
+            <div class="t">02 <span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></div>
+            <div class="r">/login · /activate · /change-password</div>
+            <div class="d"><span lang="en">Login, one-time activation links, forced and voluntary password changes.</span><span lang="it">Login, link di attivazione monouso, cambio password forzato e volontario.</span></div>
+          </a>
+          <a class="card" href="03-dashboard.html">
+            <div class="t">03 Dashboard</div>
+            <div class="r">/</div>
+            <div class="d"><span lang="en">KPIs, targeted scan console, dependency graph, asset health, exploitability.</span><span lang="it">KPI, console di scansione mirata, grafo dipendenze, salute asset, exploitability.</span></div>
+          </a>
+          <a class="card" href="04-assets.html">
+            <div class="t">04 <span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></div>
+            <div class="r">/assets</div>
+            <div class="d"><span lang="en">CRUD, password encryption, SSH health check, visibility-cone assignments.</span><span lang="it">CRUD, cifratura password, health check SSH, assegnazioni del cono di visibilità.</span></div>
+          </a>
+          <a class="card" href="05-posture.html">
+            <div class="t">05 <span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></div>
+            <div class="r">/intel</div>
+            <div class="d"><span lang="en">SCA runs, six charts, CVE bubble pack, 3D exposure graph, fix planner.</span><span lang="it">Run SCA, sei grafici, bubble pack CVE, grafo 3D di esposizione, pianificatore fix.</span></div>
+          </a>
+          <a class="card" href="06-risk.html">
+            <div class="t">06 <span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></div>
+            <div class="r">/risk</div>
+            <div class="d"><span lang="en">EPSS, KEV, reachability probe, business context, trend and run delta.</span><span lang="it">EPSS, KEV, sonda di raggiungibilità, contesto di business, trend e delta fra run.</span></div>
+          </a>
+          <a class="card" href="07-findings.html">
+            <div class="t">07 <span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></div>
+            <div class="r">/findings</div>
+            <div class="d"><span lang="en">Import, dedup, workflow, SLA, OWASP/NIS2 compliance bars, ticketing.</span><span lang="it">Import, dedup, workflow, SLA, barre di conformità OWASP/NIS2, ticketing.</span></div>
+          </a>
+          <a class="card" href="08-sbom.html">
+            <div class="t">08 SBOM</div>
+            <div class="r">/sbom</div>
+            <div class="d"><span lang="en">Component inventory, licence risk, CycloneDX 1.5 and SPDX 2.3 export.</span><span lang="it">Inventario componenti, rischio licenze, export CycloneDX 1.5 e SPDX 2.3.</span></div>
+          </a>
+          <a class="card" href="09-audit.html">
+            <div class="t">09 <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></div>
+            <div class="r">/audit</div>
+            <div class="d"><span lang="en">Tamper-evident scan history, integrity verification, actor facets, export.</span><span lang="it">Storico scansioni a prova di manomissione, verifica integrità, faccette per attore, export.</span></div>
+          </a>
+          <a class="card" href="10-admin.html">
+            <div class="t">10 <span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></div>
+            <div class="r">/admin</div>
+            <div class="d"><span lang="en">Invitations, roles, groups, resets, the role visibility matrix.</span><span lang="it">Inviti, ruoli, gruppi, reset, matrice di visibilità dei ruoli.</span></div>
+          </a>
+          <a class="card" href="11-settings.html">
+            <div class="t">11 <span lang="en">Settings</span><span lang="it">Impostazioni</span></div>
+            <div class="r">/settings</div>
+            <div class="d"><span lang="en">AI/LLM, OSINT, scanner, OSV, SMTP and auth policy, ticketing.</span><span lang="it">AI/LLM, OSINT, scanner, OSV, SMTP e policy di autenticazione, ticketing.</span></div>
+          </a>
+          <a class="card" href="12-reference.html">
+            <div class="t">12 <span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <div class="r">matrix · API · <span lang="en">formulas</span><span lang="it">formule</span></div>
+            <div class="d"><span lang="en">Permission matrix, REST API, score formulas, workflows, troubleshooting, glossary.</span><span lang="it">Matrice permessi, API REST, formule degli score, workflow, risoluzione problemi, glossario.</span></div>
+          </a>
+        </div>
+      </section>
+
+      <div class="pager">
+        <span></span>
+        <a class="nxt" href="01-shell.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          01 · <span lang="en">Application shell</span><span lang="it">Interfaccia comune</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="11 · Settings" data-title-it="11 · Impostazioni">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>11 · Settings — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html" aria-current="page"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#search">SEARCH ENGINE</a></li>
+              <li><a href="#ai">AI / LLM</a></li>
+              <li><a href="#scanner">SCANNER · OSV</a></li>
+              <li><a href="#smtp">SMTP · AUTH</a></li>
+              <li><a href="#ticketing">TICKETING</a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">11 · <span lang="en">Settings</span><span lang="it">Impostazioni</span> <span class="route">/settings</span></div>
+        <h1><span lang="en">Application Settings</span><span lang="it">Impostazioni dell'applicazione</span></h1>
+        <p lang="en">
+          Everything in <code>config.json</code>, editable from the browser: which model interprets advisories, which
+          search engine backs OSINT, whether SSH logins are simulated or real, where CVE data comes from, how email and
+          password policy behave, and which ticketing system receives remediation issues.
+        </p>
+        <p lang="it">
+          Tutto ciò che sta in <code>config.json</code>, modificabile dal browser: quale modello interpreta gli advisory,
+          quale motore di ricerca sostiene l'OSINT, se i login SSH sono simulati o reali, da dove arrivano i dati CVE,
+          come si comportano email e policy delle password e quale sistema di ticketing riceve le issue di remediation.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">write: admin only · read: admin, manager</span><span lang="it">scrittura: solo admin · lettura: admin, manager</span></span></h2>
+
+        <p lang="en">
+          The page reads the current configuration through <code>GET /api/settings</code> and writes it back with
+          <code>POST /api/settings</code>. A <em>“Persisted in”</em> line shows the exact file path being written —
+          useful when several installations share a host.
+        </p>
+        <p lang="it">
+          La pagina legge la configurazione corrente tramite <code>GET /api/settings</code> e la riscrive con
+          <code>POST /api/settings</code>. Una riga <em>«Persisted in»</em> mostra il percorso esatto del file scritto —
+          utile quando più installazioni condividono lo stesso host.
+        </p>
+
+        <figure>
+          <img src="img/settings-page.webp" alt="Settings page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The settings page</b> — one panel per subsystem, all saved together by a single SAVE.</span>
+            <span lang="it"><b>La pagina impostazioni</b> — un pannello per sottosistema, tutti salvati insieme da un unico
+              SAVE.</span>
+          </figcaption>
+        </figure>
+
+        <div class="warn">
+          <span lang="en"><strong>Writing settings is admin-only by design.</strong> The configuration holds secrets — API keys,
+            SMTP credentials, ticketing tokens — and whoever can write it can redirect LLM and ticketing traffic
+            elsewhere. That is a global privilege, and no per-cone variant of it would make sense. Managers can read the
+            page; everyone else receives <code>403</code>.</span>
+          <span lang="it"><strong>La scrittura delle impostazioni è riservata all'admin per scelta progettuale.</strong> La
+            configurazione contiene segreti — chiavi API, credenziali SMTP, token di ticketing — e chi può scriverla può
+            dirottare altrove il traffico verso LLM e ticketing. È un privilegio globale, e una sua variante per cono non
+            avrebbe senso. I manager possono leggere la pagina; tutti gli altri ricevono <code>403</code>.</span>
+        </div>
+        <div class="tip">
+          <span lang="en"><strong>Masked secrets survive saving.</strong> <code>GET /api/settings</code> returns
+            <code>••••</code> for stored tokens, and sending that placeholder back preserves the existing value — so you
+            can edit an unrelated field without wiping your credentials.</span>
+          <span lang="it"><strong>I segreti mascherati sopravvivono al salvataggio.</strong> <code>GET /api/settings</code>
+            restituisce <code>••••</code> per i token memorizzati, e reinviare quel segnaposto preserva il valore
+            esistente — così puoi modificare un campo non correlato senza cancellare le tue credenziali.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= SEARCH -->
+      <section class="block" id="search">
+        <h2>SEARCH ENGINE (OSINT)</h2>
+
+        <figure>
+          <img src="img/settings-search.webp" alt="Search engine settings" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>OSINT search</b> — the provider used to enrich product identification when local heuristics are not
+              enough.</span>
+            <span lang="it"><b>Ricerca OSINT</b> — il provider usato per arricchire l'identificazione del prodotto quando le
+              euristiche locali non bastano.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Field</span><span lang="it">Campo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Provider</strong></td><td><span lang="en"><code>duckduckgo</code> (no key, the default) or <code>serper</code>. The hint reads <em>“Web search engine used for OSINT enrichment.”</em></span><span lang="it"><code>duckduckgo</code> (senza chiave, predefinito) o <code>serper</code>. Il suggerimento recita <em>«Web search engine used for OSINT enrichment.»</em></span></td></tr>
+              <tr><td><strong>Serper API Key</strong></td><td><span lang="en">Only for the Serper provider. <em>“Get a key at serper.dev — free tier: 2500 queries/month.”</em> Masked on read.</span><span lang="it">Solo per il provider Serper. <em>«Get a key at serper.dev — free tier: 2500 queries/month.»</em> Mascherata in lettura.</span></td></tr>
+              <tr><td><strong>Min OSINT Hits</strong></td><td><span lang="en">The product must appear at least N times in the results before OSINT is trusted — default 2. Raise it to reduce false identifications on ambiguous product names.</span><span lang="it">Il prodotto deve comparire almeno N volte nei risultati prima che l'OSINT venga considerato attendibile — predefinito 2. Aumentalo per ridurre le identificazioni errate su nomi di prodotto ambigui.</span></td></tr>
+              <tr><td><strong>Min Query Length</strong></td><td><span lang="en">Minimum alphanumeric characters before OSINT is attempted at all — default 4. Prevents spending queries on noise.</span><span lang="it">Caratteri alfanumerici minimi prima di tentare l'OSINT — predefinito 4. Evita di sprecare query sul rumore.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= AI -->
+      <section class="block" id="ai">
+        <h2>AI / LLM</h2>
+
+        <figure>
+          <img src="img/settings-ai.webp" alt="AI and LLM settings" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>AI provider</b> — local Ollama or the Claude API, with the model list, the timeouts and the privacy
+              notice.</span>
+            <span lang="it"><b>Provider AI</b> — Ollama locale o l'API Claude, con l'elenco dei modelli, i timeout e l'avviso sulla
+              privacy.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Field</span><span lang="it">Campo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Provider</strong></td>
+                <td><span lang="en"><strong>OLLAMA (LOCAL)</strong> — inference stays entirely on your infrastructure — or <strong>Claude API</strong>. The hint states the use: <em>“Used for CVE summaries and advisory extraction.”</em></span><span lang="it"><strong>OLLAMA (LOCAL)</strong> — l'inferenza resta interamente sulla tua infrastruttura — oppure <strong>Claude API</strong>. Il suggerimento indica l'uso: <em>«Used for CVE summaries and advisory extraction.»</em></span></td>
+              </tr>
+              <tr>
+                <td><strong>Ollama URL</strong></td>
+                <td><span lang="en">Default <code>http://localhost:11434/api/generate</code>.</span><span lang="it">Predefinito <code>http://localhost:11434/api/generate</code>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Ollama Model</strong></td>
+                <td>
+                  <span lang="en">A dropdown populated from <code>GET /api/ollama/models</code> — the models actually pulled on that instance, not a hard-coded list. Its states are explicit: <em>“— load models —”</em>, <em>“Loading…”</em>, <em>“— Ollama offline or no models pulled —”</em>, <em>“— fetch failed —”</em>, and <em>(saved)</em> next to the stored value. The circular button beside it re-queries Ollama.</span>
+                  <span lang="it">Un menu popolato da <code>GET /api/ollama/models</code> — i modelli effettivamente scaricati su quell'istanza, non un elenco fisso. Gli stati sono espliciti: <em>«— load models —»</em>, <em>«Loading…»</em>, <em>«— Ollama offline or no models pulled —»</em>, <em>«— fetch failed —»</em> e <em>(saved)</em> accanto al valore memorizzato. Il pulsante circolare a fianco interroga di nuovo Ollama.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Claude API Key</strong></td>
+                <td><span lang="en"><em>“Get a key at console.anthropic.com.”</em> Masked on read; leaving the mask untouched preserves the stored value.</span><span lang="it"><em>«Get a key at console.anthropic.com.»</em> Mascherata in lettura; lasciando la maschera intatta si conserva il valore memorizzato.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Privacy notice</strong></span><span lang="it"><strong>Avviso privacy</strong></span></td>
+                <td><span lang="en"><em>“Prompts (product name, version, CVE IDs — no personal data) are sent to the Anthropic API outside your infrastructure. Use Ollama for fully local processing.”</em></span><span lang="it"><em>«Prompts (product name, version, CVE IDs — no personal data) are sent to the Anthropic API outside your infrastructure. Use Ollama for fully local processing.»</em></span></td>
+              </tr>
+              <tr>
+                <td><strong>Claude Model</strong></td>
+                <td><span lang="en">The model identifier used when the provider is Claude.</span><span lang="it">L'identificativo del modello usato quando il provider è Claude.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Summary Timeout (s)</strong></td>
+                <td><span lang="en">Budget for CVE summary generation. Exceeding it produces an empty summary — <strong>the scan is never blocked</strong>.</span><span lang="it">Budget per la generazione del riepilogo CVE. Superarlo produce un riepilogo vuoto — <strong>la scansione non viene mai bloccata</strong>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Advisory Timeout (s)</strong></td>
+                <td><span lang="en">Budget for extracting an affected-version constraint from advisory free text.</span><span lang="it">Budget per estrarre un vincolo di versione affetta dal testo libero di un advisory.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span lang="en"><strong>AI output is advisory, always.</strong> CVE lists and counts come from OSV, not from the model.
+            Extracted version constraints pass a strict regular-expression allow-list, and an unparsable answer is
+            discarded rather than guessed. Every AI text in the interface carries the
+            <span class="badge b-acc">AI-GENERATED</span> badge, and the scan log names the provider and model actually
+            invoked. Verify version constraints against the linked CVE records before acting on them.</span>
+          <span lang="it"><strong>L'output dell'AI è sempre indicativo.</strong> Elenchi e conteggi dei CVE provengono da OSV, non
+            dal modello. I vincoli di versione estratti passano attraverso una allow-list di espressioni regolari
+            rigorosa, e una risposta non interpretabile viene scartata invece che indovinata. Ogni testo AI
+            nell'interfaccia porta il badge <span class="badge b-acc">AI-GENERATED</span>, e il log di scansione nomina
+            provider e modello effettivamente invocati. Verifica i vincoli di versione sui record CVE collegati prima di
+            agire.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= SCANNER -->
+      <section class="block" id="scanner">
+        <h2>SCANNER <span lang="en">and</span><span lang="it">e</span> OSV.DEV</h2>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/settings-scanner.webp" alt="Scanner settings" loading="lazy" />
+            <figcaption><span lang="en"><b>Scanner</b> — the simulation switch and the socket timeout.</span><span lang="it"><b>Scanner</b> — l'interruttore di simulazione e il timeout del socket.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/settings-osv.webp" alt="OSV settings" loading="lazy" />
+            <figcaption><span lang="en"><b>OSV.DEV</b> — the vulnerability database endpoint and its timeout.</span><span lang="it"><b>OSV.DEV</b> — l'endpoint del database delle vulnerabilità e il suo timeout.</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Field</span><span lang="it">Campo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Simulate Authenticated Scans</strong></td>
+                <td>
+                  <span lang="en"><strong>On by default.</strong> While it is on, SSH logins are simulated — deterministic responses for demonstrations and offline testing, with no real connection attempted. Switch it off to perform <em>real</em> SSH logins using the password decrypted by <code>encdec</code>. The hint is blunt: <em>“Disable only on assets you own.”</em></span>
+                  <span lang="it"><strong>Attivo di default.</strong> Finché è attivo, i login SSH sono simulati — risposte deterministiche per dimostrazioni e test offline, senza alcun tentativo di connessione reale. Disattivalo per eseguire login SSH <em>reali</em> usando la password decifrata da <code>encdec</code>. Il suggerimento è netto: <em>«Disable only on assets you own.»</em></span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Socket Timeout (s)</strong></td>
+                <td><span lang="en">TCP connection timeout for banner grabbing — default 4. Raise it on slow links, lower it for faster sweeps of a large fleet.</span><span lang="it">Timeout di connessione TCP per il banner grabbing — predefinito 4. Aumentalo su collegamenti lenti, riducilo per passate più rapide su parchi ampi.</span></td>
+              </tr>
+              <tr>
+                <td><strong>OSV API URL</strong></td>
+                <td><span lang="en">Default <code>https://api.osv.dev/v1/query</code>. Point it at a mirror in an air-gapped environment.</span><span lang="it">Predefinito <code>https://api.osv.dev/v1/query</code>. Puntalo a un mirror in un ambiente isolato dalla rete.</span></td>
+              </tr>
+              <tr>
+                <td><strong>OSV Timeout (s)</strong></td>
+                <td><span lang="en">Request budget for CVE lookups — default 15.</span><span lang="it">Budget di richiesta per le ricerche CVE — predefinito 15.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="warn">
+          <span lang="en">Turning simulation off is the moment the application starts authenticating against real hosts. Make sure
+            every asset you intend to reach has an encrypted password and that you are authorized to log into it. The SSH
+            host key policy is <code>RejectPolicy</code>: unknown host keys are refused rather than auto-accepted.</span>
+          <span lang="it">Disattivare la simulazione è il momento in cui l'applicazione inizia ad autenticarsi su host reali.
+            Assicurati che ogni asset che intendi raggiungere abbia una password cifrata e che tu sia autorizzato ad
+            accedervi. La policy sulle chiavi host SSH è <code>RejectPolicy</code>: le chiavi sconosciute vengono
+            rifiutate invece che accettate automaticamente.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= SMTP -->
+      <section class="block" id="smtp">
+        <h2>EMAIL (SMTP) &amp; AUTH POLICY</h2>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/settings-smtp.webp" alt="SMTP settings" loading="lazy" />
+            <figcaption><span lang="en"><b>SMTP</b> — host, port, credentials, sender and the base URL used inside email links.</span><span lang="it"><b>SMTP</b> — host, porta, credenziali, mittente e la base URL usata nei link delle email.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/settings-auth.webp" alt="Auth policy settings" loading="lazy" />
+            <figcaption><span lang="en"><b>Auth policy</b> — rotation days, minimum password length, invitation link lifetime.</span><span lang="it"><b>Policy di autenticazione</b> — giorni di rotazione, lunghezza minima della password, durata del link di invito.</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Field</span><span lang="it">Campo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Host</strong></td><td><span lang="en">SMTP server, for example <code>smtp.example.com</code>. <strong>An empty host disables email entirely</strong>; invitation and reset links are then shown in /admin for manual delivery.</span><span lang="it">Server SMTP, per esempio <code>smtp.example.com</code>. <strong>Un host vuoto disattiva del tutto l'email</strong>; i link di invito e reset vengono allora mostrati in /admin per la consegna manuale.</span></td></tr>
+              <tr><td><strong>Port</strong></td><td><span lang="en">Typically 587 for STARTTLS.</span><span lang="it">Tipicamente 587 per STARTTLS.</span></td></tr>
+              <tr><td><span lang="en"><strong>Username / Password</strong></span><span lang="it"><strong>Username / Password</strong></span></td><td><span lang="en">SMTP credentials; the password is masked on read like every other secret.</span><span lang="it">Credenziali SMTP; la password è mascherata in lettura come ogni altro segreto.</span></td></tr>
+              <tr><td><span lang="en"><strong>From address</strong></span><span lang="it"><strong>Indirizzo mittente</strong></span></td><td><span lang="en">The sender shown to recipients, for example <code>vulnscan@example.com</code>.</span><span lang="it">Il mittente mostrato ai destinatari, per esempio <code>vulnscan@example.com</code>.</span></td></tr>
+              <tr>
+                <td><strong>Base URL</strong></td>
+                <td><span lang="en">The origin used to build links inside emails, for example <code>http://localhost:8000</code>. <strong>Get this wrong and every invitation link is broken</strong> — it must be an address your users can actually reach, not necessarily the one you use.</span><span lang="it">L'origine usata per costruire i link nelle email, per esempio <code>http://localhost:8000</code>. <strong>Sbagliarlo rende inutilizzabile ogni link di invito</strong> — deve essere un indirizzo che i tuoi utenti possono davvero raggiungere, non necessariamente quello che usi tu.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Rotation days</strong></span><span lang="it"><strong>Giorni di rotazione</strong></span></td>
+                <td><span lang="en">Maximum password age. <code>0</code> disables rotation and is the default, in line with NIST SP 800-63B, because mandatory rotation encourages weak incremental passwords. Any positive value forces a change once a password is older than that.</span><span lang="it">Età massima della password. <code>0</code> disattiva la rotazione ed è il valore predefinito, in linea con NIST SP 800-63B, perché la rotazione obbligatoria incoraggia password incrementali deboli. Qualsiasi valore positivo forza il cambio quando una password supera quell'età.</span></td>
+              </tr>
+              <tr><td><span lang="en"><strong>Min password length</strong></span><span lang="it"><strong>Lunghezza minima password</strong></span></td><td><span lang="en">The policy floor: 8 to 128, default 12.</span><span lang="it">Il minimo di policy: da 8 a 128, predefinito 12.</span></td></tr>
+              <tr><td><span lang="en"><strong>Invite TTL (hours)</strong></span><span lang="it"><strong>TTL invito (ore)</strong></span></td><td><span lang="en">Activation-link lifetime: 1 to 720, default 48.</span><span lang="it">Durata del link di attivazione: da 1 a 720, predefinito 48.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= TICKETING -->
+      <section class="block" id="ticketing">
+        <h2>TICKETING</h2>
+
+        <figure>
+          <img src="img/settings-ticketing.webp" alt="Ticketing settings" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Ticketing</b> — choose GitHub or Jira (or leave it off) and supply the credentials the findings page
+              will use.</span>
+            <span lang="it"><b>Ticketing</b> — scegli GitHub o Jira (o lascia disattivato) e fornisci le credenziali che userà la
+              pagina findings.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Field</span><span lang="it">Campo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Provider</strong></td><td><span class="badge">OFF</span> · <span class="badge b-acc">GITHUB</span> · <span class="badge b-acc">JIRA</span>. <span lang="en">The hint points at the consumer: <em>“Create remediation tickets from findings (page FINDINGS).”</em></span><span lang="it">Il suggerimento indica dove serve: <em>«Create remediation tickets from findings (page FINDINGS).»</em></span></td></tr>
+              <tr><td><strong>GitHub Token (PAT)</strong></td><td><span lang="en">A personal access token with permission to create issues. Masked as <code>••••</code> on read.</span><span lang="it">Un personal access token con permesso di creare issue. Mascherato come <code>••••</code> in lettura.</span></td></tr>
+              <tr><td><strong>Repository</strong></td><td><span lang="en"><code>owner/repo</code> — the repository that will receive the issues.</span><span lang="it"><code>owner/repo</code> — il repository che riceverà le issue.</span></td></tr>
+              <tr><td><strong>Jira URL</strong></td><td><code>https://org.atlassian.net</code></td></tr>
+              <tr><td><strong>Project Key</strong></td><td><span lang="en">The target Jira project.</span><span lang="it">Il progetto Jira di destinazione.</span></td></tr>
+              <tr><td><strong>Email / API Token</strong></td><td><span lang="en">Jira Cloud credentials; the token is masked on read.</span><span lang="it">Credenziali Jira Cloud; il token è mascherato in lettura.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — from demonstration to real scanning</span><span lang="it">Come funziona — da dimostrazione a scansione reale</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Confirm you are signed in as <strong>admin</strong> — the SAVE button is inert for anyone else.</span><span lang="it">Verifica di essere connesso come <strong>admin</strong> — il pulsante SAVE è inerte per chiunque altro.</span></li>
+          <li><span lang="en">In <strong>SCANNER</strong>, turn <strong>Simulate Authenticated Scans</strong> off.</span><span lang="it">In <strong>SCANNER</strong>, disattiva <strong>Simulate Authenticated Scans</strong>.</span></li>
+          <li><span lang="en">Make sure every asset you intend to authenticate against has an encrypted password — no <span class="badge b-warn">NOT ENCRYPTED</span> badge in <a href="04-assets.html">/assets</a>.</span><span lang="it">Assicurati che ogni asset su cui vuoi autenticarti abbia una password cifrata — nessun badge <span class="badge b-warn">NOT ENCRYPTED</span> in <a href="04-assets.html">/assets</a>.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">SAVE</span>.</span><span lang="it">Premi <span class="badge b-acc">SAVE</span>.</span></li>
+          <li><span lang="en">Return to /assets, reload, and confirm the ACTIVE column now reports <span class="badge b-acc">SSH OK</span> on those hosts.</span><span lang="it">Torna in /assets, ricarica e verifica che la colonna ACTIVE ora riporti <span class="badge b-acc">SSH OK</span> su quegli host.</span></li>
+          <li><span lang="en">Run a posture scan — package inventories are now real, and the results are dramatically richer than banner data.</span><span lang="it">Esegui una scansione di postura — gli inventari dei pacchetti sono ora reali e i risultati sono molto più ricchi dei dati di banner.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — enable ticketing</span><span lang="it">Come funziona — attivare il ticketing</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Create a GitHub personal access token with issue-write scope, or a Jira Cloud API token.</span><span lang="it">Crea un personal access token GitHub con permesso di scrittura sulle issue, oppure un token API di Jira Cloud.</span></li>
+          <li><span lang="en">In <strong>TICKETING</strong> pick the provider and fill its fields — <code>owner/repo</code>, or Jira URL plus project key, email and token.</span><span lang="it">In <strong>TICKETING</strong> scegli il provider e compila i campi — <code>owner/repo</code>, oppure URL Jira più project key, email e token.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">SAVE</span>.</span><span lang="it">Premi <span class="badge b-acc">SAVE</span>.</span></li>
+          <li><span lang="en">Open <a href="07-findings.html">/findings</a> and press <span class="badge b-acc">CREATE</span> in the TICKET column of any finding.</span><span lang="it">Apri <a href="07-findings.html">/findings</a> e premi <span class="badge b-acc">CREATE</span> nella colonna TICKET di un qualsiasi finding.</span></li>
+          <li><span lang="en">Confirm <em>“Ticket created: {ref}”</em> and that the cell became a link to the real issue.</span><span lang="it">Verifica <em>«Ticket created: {ref}»</em> e che la cella sia diventata un link all'issue reale.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en"><em>“Settings saved.”</em> appears, <code>config.json</code> on disk reflects the change, and behaviour
+            shifts immediately: the scan console names the newly selected model in its <code>[AI]</code> lines, real SSH
+            logins begin appearing as <span class="badge b-acc">SSH OK</span>, invitation emails start being delivered,
+            and the ticket button in /findings stops returning <em>“Ticket not created.”</em></p>
+          <p lang="en"><strong>Failures</strong> are reported inline: <em>“Failed to load config: …”</em>, <em>“Save failed: …”</em>,
+            <em>“Error: …”</em></p>
+          <p lang="it">Compare <em>«Settings saved.»</em>, il file <code>config.json</code> su disco riflette la modifica e il
+            comportamento cambia subito: la console di scansione nomina il nuovo modello nelle righe <code>[AI]</code>, i
+            login SSH reali iniziano a comparire come <span class="badge b-acc">SSH OK</span>, le email di invito vengono
+            consegnate e il pulsante ticket in /findings smette di restituire <em>«Ticket not created.»</em></p>
+          <p lang="it">Gli <strong>errori</strong> sono riportati in linea: <em>«Failed to load config: …»</em>, <em>«Save failed:
+              …»</em>, <em>«Error: …»</em></p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="10-admin.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          10 · <span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span>
+        </a>
+        <a class="nxt" href="12-reference.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          12 · <span lang="en">Reference</span><span lang="it">Riferimento</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

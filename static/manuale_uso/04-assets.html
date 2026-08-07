@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="04 · Asset Inventory" data-title-it="04 · Inventario asset">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>04 · Asset Inventory — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html" aria-current="page"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#new"><span lang="en">New asset</span><span lang="it">Nuovo asset</span></a></li>
+              <li><a href="#table"><span lang="en">Inventory table</span><span lang="it">Tabella inventario</span></a></li>
+              <li><a href="#health"><span lang="en">Health check</span><span lang="it">Health check</span></a></li>
+              <li><a href="#toolbar"><span lang="en">Toolbar &amp; export</span><span lang="it">Barra e export</span></a></li>
+              <li><a href="#cone"><span lang="en">Visibility cone</span><span lang="it">Cono di visibilità</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">04 · <span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span> <span class="route">/assets</span></div>
+        <h1><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></h1>
+        <p lang="en">
+          The source of truth for everything the scanner touches. Every row is a host you are authorized to test, with
+          its credentials, its operating system, its scan flag and — for administrators and managers — the set of people
+          allowed to see it.
+        </p>
+        <p lang="it">
+          La fonte di verità per tutto ciò che lo scanner tocca. Ogni riga è un host che sei autorizzato a testare, con
+          le sue credenziali, il sistema operativo, il flag di scansione e — per amministratori e manager — l'insieme
+          delle persone autorizzate a vederlo.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all · write: admin, manager, editor (in cone)</span><span lang="it">lettura: tutti · scrittura: admin, manager, editor (nel cono)</span></span></h2>
+
+        <p lang="en">
+          Nothing gets scanned unless it is in this table, and the quality of every other page depends on the quality of
+          what you put here. In particular the difference between an asset with working SSH credentials and one without
+          is the difference between a full package inventory (hundreds of components, precise CVE matching, a real SBOM)
+          and a single banner string.
+        </p>
+        <p lang="it">
+          Nulla viene scansionato se non è in questa tabella e la qualità di ogni altra pagina dipende dalla qualità di
+          ciò che inserisci qui. In particolare, la differenza fra un asset con credenziali SSH funzionanti e uno senza
+          è la differenza fra un inventario pacchetti completo (centinaia di componenti, matching CVE preciso, una SBOM
+          reale) e una singola stringa di banner.
+        </p>
+        <p lang="en">
+          The inventory lives in the <code>public.assets</code> table on the local Supabase instance. Passwords are
+          encrypted with the <code>encdec</code> binary — AES-GCM under a secret prefix compiled into the binary itself —
+          on create and on edit, and stored as <code>ENC:&lt;hex&gt;</code>. The API never returns a password:
+          <code>GET /api/assets/all</code> exposes only the booleans <code>has_password</code> and
+          <code>password_encrypted</code>.
+        </p>
+        <p lang="it">
+          L'inventario risiede nella tabella <code>public.assets</code> dell'istanza Supabase locale. Le password vengono
+          cifrate con il binario <code>encdec</code> — AES-GCM con un prefisso segreto compilato nel binario stesso —
+          alla creazione e alla modifica, e salvate come <code>ENC:&lt;hex&gt;</code>. L'API non restituisce mai una
+          password: <code>GET /api/assets/all</code> espone solo i booleani <code>has_password</code> e
+          <code>password_encrypted</code>.
+        </p>
+
+        <figure>
+          <img src="img/assets-page.webp" alt="Asset inventory page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The inventory page</b> — creation panel on top, then the toolbar and the table with one row per
+              host.</span>
+            <span lang="it"><b>La pagina inventario</b> — pannello di creazione in alto, poi la barra strumenti e la tabella con
+              una riga per host.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= NEW -->
+      <section class="block" id="new">
+        <h2><span lang="en">NEW ASSET panel</span><span lang="it">Pannello NEW ASSET</span></h2>
+
+        <figure>
+          <img src="img/assets-new.webp" alt="New asset panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Creating an asset</b> — host, optional credentials, operating system (mandatory) and OS version.</span>
+            <span lang="it"><b>Creazione di un asset</b> — host, credenziali opzionali, sistema operativo (obbligatorio) e versione
+              del sistema operativo.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Field</span><span lang="it">Campo</span></th>
+                <th><span lang="en">Required</span><span lang="it">Obbligatorio</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>IP / hostname</strong></td>
+                <td><span class="badge b-err"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+                <td>
+                  <span lang="en">The target host. URLs are normalised on the way in — scheme and path are stripped, so <code>https://example.com/app</code> becomes <code>example.com</code>. Both IPv4 addresses and DNS names are accepted.</span>
+                  <span lang="it">L'host di destinazione. Le URL vengono normalizzate in ingresso — schema e percorso vengono rimossi, quindi <code>https://example.com/app</code> diventa <code>example.com</code>. Sono accettati sia indirizzi IPv4 sia nomi DNS.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>username</strong></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td>
+                  <span lang="en">The SSH account used for authenticated scanning. Left empty, the asset is scanned unauthenticated and its AUTH column shows <span class="badge">OPEN</span>.</span>
+                  <span lang="it">L'account SSH usato per la scansione autenticata. Se lasciato vuoto, l'asset viene scansionato senza autenticazione e la colonna AUTH mostra <span class="badge">OPEN</span>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>password</strong></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td>
+                  <span lang="en">Encrypted immediately on save and never echoed back by any endpoint. In the table it is rendered as a row of dots — the value itself is not retrievable through the web interface at all.</span>
+                  <span lang="it">Cifrata immediatamente al salvataggio e mai restituita da alcun endpoint. In tabella è resa come una fila di puntini — il valore non è affatto recuperabile tramite l'interfaccia web.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Operating system</strong></span><span lang="it"><strong>Sistema operativo</strong></span></td>
+                <td><span class="badge b-err"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+                <td>
+                  <span lang="en"><code>linux</code> or <code>windows</code>. This is not cosmetic: it decides the inventory strategy — <code>dpkg</code>/<code>rpm</code> on Linux, <code>winget</code> plus the Uninstall registry through PowerShell on Windows. Submitting without it raises <em>“Please choose an operating system — it decides how the asset is scanned”</em>.</span>
+                  <span lang="it"><code>linux</code> o <code>windows</code>. Non è un dettaglio estetico: determina la strategia di inventario — <code>dpkg</code>/<code>rpm</code> su Linux, <code>winget</code> più il registro Uninstall via PowerShell su Windows. Inviando senza sceglierlo compare <em>«Please choose an operating system — it decides how the asset is scanned»</em>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>OS version</strong></span><span lang="it"><strong>Versione OS</strong></span></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td>
+                  <span lang="en">Free text — <code>Ubuntu 22.04</code>, <code>Windows 11</code>, <code>CentOS 7</code>. It feeds the OS distribution chart and version table in <a href="05-posture.html">/intel</a>.</span>
+                  <span lang="it">Testo libero — <code>Ubuntu 22.04</code>, <code>Windows 11</code>, <code>CentOS 7</code>. Alimenta il grafico della distribuzione OS e la tabella delle versioni in <a href="05-posture.html">/intel</a>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">ADD ASSET</span></td>
+                <td>—</td>
+                <td>
+                  <span lang="en"><code>POST /api/assets</code>. An <em>editor</em> creating an asset gets it <strong>auto-assigned to themselves</strong> (or to one of their groups), so an editor can never create an asset outside their own visibility cone.</span>
+                  <span lang="it"><code>POST /api/assets</code>. Un <em>editor</em> che crea un asset se lo vede <strong>auto-assegnato</strong> (o assegnato a un suo gruppo), quindi un editor non può mai creare un asset fuori dal proprio cono di visibilità.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Help line</strong></span><span lang="it"><strong>Riga di aiuto</strong></span></td>
+                <td>—</td>
+                <td><span lang="en"><em>“Without username and password the asset is NOT REQUIRED (unauthenticated banner-grab).”</em></span><span lang="it"><em>«Without username and password the asset is NOT REQUIRED (unauthenticated banner-grab).»</em></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= TABLE -->
+      <section class="block" id="table">
+        <h2><span lang="en">The inventory table</span><span lang="it">La tabella dell'inventario</span></h2>
+
+        <figure>
+          <img src="img/assets-table.webp" alt="Asset inventory table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>One row per host</b> — index, host, credentials state, AUTH, OS badge, live ACTIVE state, SCAN
+              toggle, ASSIGNED chips and the row actions.</span>
+            <span lang="it"><b>Una riga per host</b> — indice, host, stato credenziali, AUTH, badge OS, stato ACTIVE live, toggle
+              SCAN, chip ASSIGNED e le azioni di riga.</span>
+          </figcaption>
+        </figure>
+
+        <figure>
+          <img src="img/assets-thead.webp" alt="Asset table header row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The header row</b> — the <em>#</em>, <em>ACTIVE</em> and <em>SCAN</em> headers carry sort arrows
+              and information tooltips.</span>
+            <span lang="it"><b>La riga di intestazione</b> — le intestazioni <em>#</em>, <em>ACTIVE</em> e <em>SCAN</em> hanno
+              frecce di ordinamento e tooltip informativi.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Column</span><span lang="it">Colonna</span></th>
+                <th><span lang="en">Content</span><span lang="it">Contenuto</span></th>
+                <th><span lang="en">Interaction</span><span lang="it">Interazione</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>#</strong></td>
+                <td><span lang="en">The asset index used by the REST API in <code>/api/assets/{index}</code>.</span><span lang="it">L'indice dell'asset usato dall'API REST in <code>/api/assets/{index}</code>.</span></td>
+                <td><span lang="en">Sortable.</span><span lang="it">Ordinabile.</span></td>
+              </tr>
+              <tr>
+                <td><strong>IP / HOST</strong></td>
+                <td><span lang="en">The normalised host string; long values are truncated with an ellipsis.</span><span lang="it">La stringa host normalizzata; i valori lunghi sono troncati con i puntini.</span></td>
+                <td><span lang="en">Editable through <span class="badge b-acc">EDIT</span>.</span><span lang="it">Modificabile con <span class="badge b-acc">EDIT</span>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>USERNAME</strong></td>
+                <td><span lang="en">The SSH account, or a dash.</span><span lang="it">L'account SSH, oppure un trattino.</span></td>
+                <td><span lang="en"><strong>Redacted for the viewer role</strong> — viewers see the asset but not who logs into it.</span><span lang="it"><strong>Oscurata per il ruolo viewer</strong> — i viewer vedono l'asset ma non chi vi accede.</span></td>
+              </tr>
+              <tr>
+                <td><strong>PASSWORD</strong></td>
+                <td>
+                  <span lang="en">Never the value — only a state: a row of dots when a password is stored, a dash when none is, and an orange <span class="badge b-warn">NOT ENCRYPTED</span> badge when a legacy plaintext password is still present.</span>
+                  <span lang="it">Mai il valore — solo uno stato: una fila di puntini quando una password è memorizzata, un trattino quando non c'è e un badge arancione <span class="badge b-warn">NOT ENCRYPTED</span> quando è ancora presente una password legacy in chiaro.</span>
+                </td>
+                <td><span lang="en">Re-saving the asset with a password re-encrypts it and clears the warning.</span><span lang="it">Risalvare l'asset con una password la ricifra e rimuove l'avviso.</span></td>
+              </tr>
+              <tr>
+                <td><strong>AUTH</strong></td>
+                <td><span lang="en"><span class="badge b-acc">AUTH</span> when credentials exist, <span class="badge">OPEN</span> when they do not.</span><span lang="it"><span class="badge b-acc">AUTH</span> quando esistono credenziali, <span class="badge">OPEN</span> quando non ci sono.</span></td>
+                <td><span lang="en">Derived, not editable.</span><span lang="it">Derivata, non modificabile.</span></td>
+              </tr>
+              <tr>
+                <td><strong>OS</strong></td>
+                <td><span lang="en">A compact badge — <span class="badge b-acc">LNX</span> or <span class="badge b-acc">WIN 11</span> — showing the OS type and, when provided, the major version.</span><span lang="it">Un badge compatto — <span class="badge b-acc">LNX</span> o <span class="badge b-acc">WIN 11</span> — che mostra il tipo di OS e, se fornita, la versione principale.</span></td>
+                <td><span lang="en">Editable.</span><span lang="it">Modificabile.</span></td>
+              </tr>
+              <tr>
+                <td><strong>ACTIVE</strong></td>
+                <td><span lang="en">The live health state — see <a href="#health">the next section</a>.</span><span lang="it">Lo stato di salute live — vedi <a href="#health">la sezione seguente</a>.</span></td>
+                <td><span lang="en">Recomputed on every page load.</span><span lang="it">Ricalcolato a ogni caricamento della pagina.</span></td>
+              </tr>
+              <tr>
+                <td><strong>SCAN</strong></td>
+                <td><span lang="en">A toggle reading <span class="badge b-ok">ENABLED</span> or <span class="badge">DISABLED</span>.</span><span lang="it">Un interruttore che riporta <span class="badge b-ok">ENABLED</span> o <span class="badge">DISABLED</span>.</span></td>
+                <td>
+                  <span lang="en"><code>PATCH /api/assets/{id}/enabled</code>. A disabled asset stays in the inventory but is skipped by <strong>both</strong> the vulnerability scan and the posture scan, and is counted in the Dashboard's <em>“excluded from scans”</em> line. Confirmations: <em>“Asset enabled for scans”</em> / <em>“Asset disabled for scans”</em>; failure: <em>“Toggle error”</em>.</span>
+                  <span lang="it"><code>PATCH /api/assets/{id}/enabled</code>. Un asset disabilitato resta in inventario ma viene saltato da <strong>entrambe</strong> le scansioni, di vulnerabilità e di postura, ed è conteggiato nella riga <em>«excluded from scans»</em> della Dashboard. Conferme: <em>«Asset enabled for scans»</em> / <em>«Asset disabled for scans»</em>; errore: <em>«Toggle error»</em>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ASSIGNED</strong></td>
+                <td><span lang="en">Chips for the assigned users and groups, or the word <em>unassigned</em>.</span><span lang="it">Chip per utenti e gruppi assegnati, oppure la parola <em>unassigned</em>.</span></td>
+                <td><span lang="en">Administrators and managers open the assignment panel from here; editors see <span class="badge">read-only</span>.</span><span lang="it">Amministratori e manager aprono da qui il pannello di assegnazione; gli editor vedono <span class="badge">read-only</span>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>ACTIONS</strong></td>
+                <td><span lang="en">Two icon buttons: edit (cyan pencil) and delete (red bin).</span><span lang="it">Due pulsanti icona: modifica (matita ciano) ed elimina (cestino rosso).</span></td>
+                <td>
+                  <span lang="en"><code>PUT /api/assets/{id}</code> and <code>DELETE /api/assets/{id}</code>. Deletion asks first: <em>“Delete asset &quot;{ip}&quot; from inventory?”</em></span>
+                  <span lang="it"><code>PUT /api/assets/{id}</code> e <code>DELETE /api/assets/{id}</code>. L'eliminazione chiede conferma: <em>«Delete asset &quot;{ip}&quot; from inventory?»</em></span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="mid">
+          <img src="img/assets-row.webp" alt="A single asset row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>A single row</b> — everything you need to predict what the next scan will collect from this host.</span>
+            <span lang="it"><b>Una singola riga</b> — tutto il necessario per prevedere cosa raccoglierà la prossima scansione da
+              questo host.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= HEALTH -->
+      <section class="block" id="health">
+        <h2><span lang="en">The ACTIVE column — live health check</span><span lang="it">La colonna ACTIVE — health check live</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          Every time this page loads, the application probes each asset and reports what it found. The tooltip on the
+          column header states the method plainly: it attempts a TCP connection to the common ports 80, 443, 22 and 8080.
+          If the host answers it is <em>Available</em>; if not, <em>Not available</em>. This is a reachability test, not
+          a port scan, and it runs again on every reload.
+        </p>
+        <p lang="it">
+          Ogni volta che questa pagina si carica, l'applicazione sonda ciascun asset e riporta ciò che ha trovato. Il
+          tooltip sull'intestazione della colonna dichiara il metodo con chiarezza: tenta una connessione TCP alle porte
+          comuni 80, 443, 22 e 8080. Se l'host risponde è <em>Available</em>; altrimenti <em>Not available</em>. È un
+          test di raggiungibilità, non una scansione di porte, e viene rieseguito a ogni ricaricamento.
+        </p>
+
+        <h3><span lang="en">Features Breakdown — the four states</span><span lang="it">Dettaglio funzionalità — i quattro stati</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Badge</span><span lang="it">Badge</span></th>
+                <th><span lang="en">Condition</span><span lang="it">Condizione</span></th>
+                <th><span lang="en">What the next scan will collect</span><span lang="it">Cosa raccoglierà la prossima scansione</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-err">NOT AVAILABLE</span></td>
+                <td><span lang="en">The host did not answer on any probed TCP port.</span><span lang="it">L'host non ha risposto su nessuna porta TCP sondata.</span></td>
+                <td><span lang="en">Nothing.</span><span lang="it">Nulla.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-ok">AVAILABLE</span></td>
+                <td><span lang="en">Reachable, and no credentials are stored on the asset.</span><span lang="it">Raggiungibile e senza credenziali salvate sull'asset.</span></td>
+                <td><span lang="en">Banner data only — a service string, sometimes a version.</span><span lang="it">Solo dati di banner — una stringa di servizio, a volte una versione.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">SSH OK</span></td>
+                <td><span lang="en">Reachable <em>and</em> the SSH login succeeded using the password decrypted by <code>encdec</code>.</span><span lang="it">Raggiungibile <em>e</em> login SSH riuscito usando la password decifrata da <code>encdec</code>.</span></td>
+                <td><span lang="en">The full installed package inventory — the good case.</span><span lang="it">L'inventario completo dei pacchetti installati — il caso buono.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">SSH FAIL</span></td>
+                <td><span lang="en">Reachable, but the login failed — wrong credentials, a refused host key, <strong>or a password that is not encrypted</strong>.</span><span lang="it">Raggiungibile, ma il login è fallito — credenziali errate, chiave host rifiutata, <strong>oppure una password non cifrata</strong>.</span></td>
+                <td><span lang="en">Banner data only, plus a warning you should act on.</span><span lang="it">Solo dati di banner, più un avviso su cui intervenire.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge"><span lang="en">Checking…</span><span lang="it">Checking…</span></span></td>
+                <td><span lang="en">The probe is still in flight.</span><span lang="it">La sonda è ancora in corso.</span></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span lang="en">Two details explain most <span class="badge b-warn">SSH FAIL</span> results. First, the health-check
+            login uses the password decrypted through <code>encdec</code>: if the stored password is <em>not</em>
+            encrypted (no <code>ENC:</code> prefix) the outcome is automatically SSH FAIL, by design. Second, the SSH host
+            key policy is <code>RejectPolicy</code> — unknown host keys are refused rather than auto-accepted, which is
+            the safe behaviour but does mean a brand-new host needs its key known first.</span>
+          <span lang="it">Due dettagli spiegano la maggior parte dei risultati <span class="badge b-warn">SSH FAIL</span>. Primo:
+            il login dell'health check usa la password decifrata da <code>encdec</code>; se la password memorizzata
+            <em>non</em> è cifrata (manca il prefisso <code>ENC:</code>) l'esito è automaticamente SSH FAIL, per scelta
+            progettuale. Secondo: la policy sulle chiavi host SSH è <code>RejectPolicy</code> — le chiavi sconosciute
+            vengono rifiutate invece che accettate automaticamente, comportamento sicuro che però richiede di conoscere
+            in anticipo la chiave di un host nuovo.</span>
+        </div>
+        <div class="tip">
+          <span lang="en">Real SSH logins only happen when <em>Simulate Authenticated Scans</em> is switched <strong>off</strong>
+            in <a href="11-settings.html#scanner">Settings → SCANNER</a>. On a fresh installation that switch is on, so a
+            perfectly configured asset can still look unauthenticated until you change it.</span>
+          <span lang="it">I login SSH reali avvengono solo quando <em>Simulate Authenticated Scans</em> è
+            <strong>disattivato</strong> in <a href="11-settings.html#scanner">Impostazioni → SCANNER</a>. Su
+            un'installazione nuova quell'interruttore è attivo, quindi un asset configurato perfettamente può comunque
+            apparire non autenticato finché non lo cambi.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= TOOLBAR -->
+      <section class="block" id="toolbar">
+        <h2><span lang="en">Toolbar, export and pagination</span><span lang="it">Barra strumenti, export e paginazione</span></h2>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/assets-toolbar.webp" alt="Asset page toolbar" loading="lazy" />
+            <figcaption><span lang="en"><b>Count and reload</b> — the live asset count and the refresh action.</span><span lang="it"><b>Conteggio e ricarica</b> — il conteggio live degli asset e l'azione di aggiornamento.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/assets-export.webp" alt="Asset export buttons" loading="lazy" />
+            <figcaption><span lang="en"><b>CSV / XLS export</b> — the current table, without any password material.</span><span lang="it"><b>Export CSV / XLS</b> — la tabella corrente, senza alcun materiale di password.</span></figcaption>
+          </figure>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>{n} ASSET(S)</strong></td><td><span lang="en">Live row count, updated after filtering, creation and deletion.</span><span lang="it">Conteggio righe live, aggiornato dopo filtri, creazioni ed eliminazioni.</span></td></tr>
+              <tr><td><span class="badge b-acc">RELOAD</span></td><td><span lang="en">Re-reads the inventory <em>and</em> re-runs every health check — the way to refresh the ACTIVE column after fixing credentials.</span><span lang="it">Rilegge l'inventario <em>e</em> riesegue tutti gli health check — il modo per aggiornare la colonna ACTIVE dopo aver corretto le credenziali.</span></td></tr>
+              <tr><td><span class="badge b-acc">CSV</span> / <span class="badge b-acc">XLS</span></td><td><span lang="en">Download the current table. Passwords are never included in either format.</span><span lang="it">Scaricano la tabella corrente. Le password non sono mai incluse in nessuno dei due formati.</span></td></tr>
+              <tr><td><span lang="en"><strong>Pager</strong></span><span lang="it"><strong>Paginatore</strong></span></td><td><span lang="en">Client-side pagination, so a few hundred assets stay usable.</span><span lang="it">Paginazione lato client, così anche qualche centinaio di asset resta gestibile.</span></td></tr>
+              <tr><td><span lang="en"><strong>Empty state</strong></span><span lang="it"><strong>Stato vuoto</strong></span></td><td><span lang="en"><em>“Inventory empty. Add the first asset.”</em></span><span lang="it"><em>«Inventory empty. Add the first asset.»</em></span></td></tr>
+              <tr><td><strong>Toast</strong></td><td><span lang="en"><em>Asset added</em> · <em>Asset updated</em> · <em>Asset deleted</em> · <em>Assignments updated</em>, with the matching failures <em>Create error</em>, <em>Update error</em>, <em>Delete error</em>, <em>Inventory load failed</em>.</span><span lang="it"><em>Asset added</em> · <em>Asset updated</em> · <em>Asset deleted</em> · <em>Assignments updated</em>, con i corrispondenti errori <em>Create error</em>, <em>Update error</em>, <em>Delete error</em>, <em>Inventory load failed</em>.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= CONE -->
+      <section class="block" id="cone">
+        <h2><span lang="en">ASSIGN · VISIBILITY CONE</span><span lang="it">ASSIGN · CONO DI VISIBILITÀ</span> <span class="roles">admin · manager</span></h2>
+
+        <figure class="mid">
+          <img src="img/assets-assign.webp" alt="Visibility cone assignment panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Assignment panel</b> — tick the users and groups allowed to see this asset.</span>
+            <span lang="it"><b>Pannello di assegnazione</b> — spunta gli utenti e i gruppi autorizzati a vedere questo asset.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          This panel is where multi-team separation actually happens. An <em>editor</em> sees an asset if it is assigned
+          to them directly <strong>or</strong> to a group they belong to. Everything else in the product follows from
+          that single decision: their /risk score, their /findings queue, their /sbom export and their /audit history are
+          all recomputed over exactly this set.
+        </p>
+        <p lang="it">
+          È in questo pannello che la separazione fra team avviene davvero. Un <em>editor</em> vede un asset se è
+          assegnato direttamente a lui <strong>oppure</strong> a un gruppo di cui fa parte. Tutto il resto del prodotto
+          discende da questa singola decisione: il suo score in /risk, la sua coda in /findings, il suo export in /sbom e
+          il suo storico in /audit sono tutti ricalcolati esattamente su questo insieme.
+        </p>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>USERS</strong></td><td><span lang="en">A checkbox per user. Empty state: <em>“No users.”</em></span><span lang="it">Una casella per utente. Stato vuoto: <em>«No users.»</em></span></td></tr>
+              <tr><td><strong>GROUPS</strong></td><td><span lang="en">A checkbox per group; every member of a ticked group inherits access. Groups are managed in <a href="10-admin.html">/admin</a>. Empty state: <em>“No groups.”</em></span><span lang="it">Una casella per gruppo; ogni membro di un gruppo spuntato eredita l'accesso. I gruppi si gestiscono in <a href="10-admin.html">/admin</a>. Stato vuoto: <em>«No groups.»</em></span></td></tr>
+              <tr><td><span class="badge b-acc">SAVE</span></td><td><span lang="en"><code>PUT /api/assets/{id}/assignments</code> → <em>“Assignments updated”</em>; on failure <em>“Assignment update failed”</em>. If the user and group lists cannot be loaded at all: <em>“Failed to load users/groups”</em>.</span><span lang="it"><code>PUT /api/assets/{id}/assignments</code> → <em>«Assignments updated»</em>; in caso di errore <em>«Assignment update failed»</em>. Se gli elenchi di utenti e gruppi non si caricano affatto: <em>«Failed to load users/groups»</em>.</span></td></tr>
+              <tr><td><span class="badge">CANCEL</span></td><td><span lang="en">Closes without writing anything.</span><span lang="it">Chiude senza scrivere nulla.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="warn">
+          <span lang="en"><strong>Editors cannot change assignments.</strong> This is deliberate self-escalation prevention: an
+            editor who could edit the cone could widen it. The server returns <code>403</code> on
+            <code>PUT /api/assets/{id}/assignments</code> for editors regardless of what the interface shows.</span>
+          <span lang="it"><strong>Gli editor non possono modificare le assegnazioni.</strong> È una prevenzione voluta
+            dell'auto-escalation: un editor che potesse modificare il cono potrebbe allargarlo. Il server restituisce
+            <code>403</code> su <code>PUT /api/assets/{id}/assignments</code> per gli editor, indipendentemente da ciò che
+            mostra l'interfaccia.</span>
+        </div>
+        <div class="note">
+          <span lang="en">An <strong>unassigned (orphan) asset</strong> is visible to administrators, managers and viewers only —
+            no editor sees it. Auditing for orphans periodically is a good habit: they are the assets nobody owns.</span>
+          <span lang="it">Un <strong>asset non assegnato (orfano)</strong> è visibile solo ad amministratori, manager e viewer —
+            nessun editor lo vede. Verificare periodicamente gli orfani è una buona abitudine: sono gli asset di cui
+            nessuno è responsabile.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — add and verify an asset</span><span lang="it">Come funziona — aggiungere e verificare un asset</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Fill <strong>IP / hostname</strong>.</span><span lang="it">Compila <strong>IP / hostname</strong>.</span></li>
+          <li><span lang="en">For an authenticated scan — strongly recommended, because banner grabbing sees very little — add the SSH <strong>username</strong> and <strong>password</strong>.</span><span lang="it">Per una scansione autenticata — fortemente consigliata, perché il banner grabbing vede pochissimo — aggiungi <strong>username</strong> e <strong>password</strong> SSH.</span></li>
+          <li><span lang="en">Pick the <strong>operating system</strong>. This is mandatory and determines how packages are enumerated.</span><span lang="it">Scegli il <strong>sistema operativo</strong>. È obbligatorio e determina come vengono enumerati i pacchetti.</span></li>
+          <li><span lang="en">Optionally type the OS version, e.g. <code>Ubuntu 22.04</code>.</span><span lang="it">Facoltativamente digita la versione OS, es. <code>Ubuntu 22.04</code>.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">ADD ASSET</span>. The row appears with the password already encrypted.</span><span lang="it">Premi <span class="badge b-acc">ADD ASSET</span>. La riga compare con la password già cifrata.</span></li>
+          <li><span lang="en">Watch the <strong>ACTIVE</strong> column resolve from <em>Checking…</em> to a final state.</span><span lang="it">Osserva la colonna <strong>ACTIVE</strong> passare da <em>Checking…</em> a uno stato definitivo.</span></li>
+          <li><span lang="en">If it reads <span class="badge b-warn">SSH FAIL</span>: verify the credentials, confirm there is no <span class="badge b-warn">NOT ENCRYPTED</span> badge, and check that simulation is off in Settings.</span><span lang="it">Se riporta <span class="badge b-warn">SSH FAIL</span>: verifica le credenziali, controlla che non ci sia il badge <span class="badge b-warn">NOT ENCRYPTED</span> e assicurati che la simulazione sia disattivata nelle Impostazioni.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — assign a visibility cone</span><span lang="it">Come funziona — assegnare un cono di visibilità</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Sign in as <strong>admin</strong> or <strong>manager</strong>.</span><span lang="it">Accedi come <strong>admin</strong> o <strong>manager</strong>.</span></li>
+          <li><span lang="en">Click the <strong>ASSIGNED</strong> cell of the target asset.</span><span lang="it">Clicca la cella <strong>ASSIGNED</strong> dell'asset desiderato.</span></li>
+          <li><span lang="en">Tick the users and/or groups that must see it. <strong>Prefer groups</strong> — membership changes then propagate without touching any asset.</span><span lang="it">Spunta gli utenti e/o i gruppi che devono vederlo. <strong>Preferisci i gruppi</strong> — i cambi di appartenenza si propagano poi senza toccare alcun asset.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">SAVE</span>.</span><span lang="it">Premi <span class="badge b-acc">SAVE</span>.</span></li>
+          <li><span lang="en">Verify by signing in as one of those editors: the asset appears in their /assets, and their /risk, /findings, /sbom and /audit figures now include it.</span><span lang="it">Verifica accedendo come uno di quegli editor: l'asset compare nel suo /assets e i suoi numeri in /risk, /findings, /sbom e /audit ora lo includono.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">A complete, colour-coded inventory in which every row's ACTIVE badge predicts what the next scan will
+            manage to collect: <span class="badge b-acc">SSH OK</span> rows yield a full package inventory,
+            <span class="badge b-ok">AVAILABLE</span> rows yield banner data only, <span class="badge b-err">NOT
+              AVAILABLE</span> rows yield nothing, and <span class="badge">DISABLED</span> rows are skipped entirely.</span>
+          <span lang="it">Un inventario completo e codificato a colori in cui il badge ACTIVE di ogni riga predice cosa riuscirà a
+            raccogliere la prossima scansione: le righe <span class="badge b-acc">SSH OK</span> danno un inventario
+            pacchetti completo, le righe <span class="badge b-ok">AVAILABLE</span> solo dati di banner, le righe
+            <span class="badge b-err">NOT AVAILABLE</span> nulla e le righe <span class="badge">DISABLED</span> vengono
+            saltate del tutto.</span>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="03-dashboard.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          03 · Dashboard
+        </a>
+        <a class="nxt" href="05-posture.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          05 · <span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

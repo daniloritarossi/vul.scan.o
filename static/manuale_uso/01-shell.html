@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="01 · Application shell" data-title-it="01 · Interfaccia comune">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>01 · Application shell — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+      <a class="brand" href="index.html">
+        <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+        <b>VUL.SCAN.O</b>
+      </a>
+      <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+      <div class="switches">
+        <button type="button" data-lang-btn="en">EN</button>
+        <button type="button" data-lang-btn="it">IT</button>
+        <button type="button" data-theme-btn="dark">DARK</button>
+        <button type="button" data-theme-btn="light">LIGHT</button>
+      </div>
+      <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+      <nav class="toc">
+        <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+        <ol>
+          <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+          <li><a href="01-shell.html" aria-current="page"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+          <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+        <ol>
+          <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+          <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+          <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+          <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+          <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+          <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+          <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+          <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+          <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+        <ol>
+          <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+        </ol>
+        <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+        <ol class="sub">
+          <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+          <li><a href="#topbar"><span lang="en">Top app bar</span><span lang="it">Barra superiore</span></a></li>
+          <li><a href="#cmdk"><span lang="en">Command palette</span><span lang="it">Command palette</span></a></li>
+          <li><a href="#nav"><span lang="en">Navigation</span><span lang="it">Navigazione</span></a></li>
+          <li><a href="#mobile"><span lang="en">Mobile navigation</span><span lang="it">Navigazione mobile</span></a></li>
+          <li><a href="#shared"><span lang="en">Shared behaviours</span><span lang="it">Comportamenti comuni</span></a></li>
+        </ol>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="kicker">01 · <span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></div>
+        <h1><span lang="en">The application shell</span><span lang="it">L'interfaccia comune</span></h1>
+        <p lang="en">
+          The top app bar, the navigation drawer, the mobile dock and the command palette are shared by every
+          authenticated page. Learning them once saves a click on every screen — and explains why some pages simply do
+          not exist for some roles.
+        </p>
+        <p lang="it">
+          La barra superiore, il drawer di navigazione, la dock mobile e la command palette sono condivisi da tutte le
+          pagine autenticate. Impararli una volta fa risparmiare un clic su ogni schermata — e spiega perché alcune
+          pagine semplicemente non esistono per certi ruoli.
+        </p>
+      </header>
+
+      <!-- ============================================ OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h2>
+        <p lang="en">
+          Every authenticated page is built from the same three fixed regions: a top bar 64&nbsp;px high pinned to the
+          window, a 256&nbsp;px navigation drawer on the left (desktop only, from 768&nbsp;px up), and the scrollable
+          content area. Below 768&nbsp;px the drawer is replaced by a floating bottom dock. Nothing in the shell scrolls
+          away, so the current identity, the search entry point and the destinations are always one glance away.
+        </p>
+        <p lang="it">
+          Ogni pagina autenticata è costruita sulle stesse tre regioni fisse: una barra superiore alta 64&nbsp;px
+          ancorata alla finestra, un drawer di navigazione da 256&nbsp;px a sinistra (solo desktop, da 768&nbsp;px in su)
+          e l'area di contenuto scorrevole. Sotto i 768&nbsp;px il drawer è sostituito da una dock inferiore
+          flottante. Nessun elemento della shell scorre via: identità corrente, punto di ingresso della ricerca e
+          destinazioni sono sempre a colpo d'occhio.
+        </p>
+        <p lang="en">
+          The shell is also where the security model becomes visible: it calls <code>GET /api/me</code> once per page
+          load and hides the destinations your role cannot open. That is a convenience, not the defence — every endpoint
+          re-checks authorization server-side.
+        </p>
+        <p lang="it">
+          La shell è anche il punto in cui il modello di sicurezza diventa visibile: chiama <code>GET /api/me</code> una
+          volta per caricamento pagina e nasconde le destinazioni che il tuo ruolo non può aprire. È una comodità, non
+          la difesa: ogni endpoint ricontrolla l'autorizzazione lato server.
+        </p>
+      </section>
+
+      <!-- ============================================ TOPBAR -->
+      <section class="block" id="topbar">
+        <h2><span lang="en">Top app bar</span><span lang="it">Barra superiore</span></h2>
+
+        <figure>
+          <img src="img/shell-topbar.webp" alt="Top app bar" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The complete top bar</b> — logo and wordmark, breadcrumb or status chip, then on the right:
+              user chip with role pill, logout, command palette trigger, language switch, theme toggle.</span>
+            <span lang="it"><b>La barra superiore completa</b> — logo e wordmark, breadcrumb o chip di stato, poi a destra:
+              chip utente con pillola del ruolo, logout, apertura della command palette, cambio lingua, toggle
+              tema.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+
+        <h4><span class="n">1</span><span lang="en">Logo, wordmark and breadcrumb</span><span lang="it">Logo, wordmark e breadcrumb</span></h4>
+        <p lang="en">
+          The animated mark on the far left is a link back to the Dashboard on some pages and decorative on others; an
+          <code>h1</code> containing the application name is present but visually hidden, so screen readers announce the
+          product on every page. Next to it the breadcrumb shows <em>Home › Current page</em>; every crumb except the
+          last is a link, and the last carries <code>aria-current="page"</code>. On the Dashboard the breadcrumb is
+          replaced by a cyan status chip reading <strong>System active</strong>. The breadcrumb is hidden below
+          768&nbsp;px to leave room for the controls on the right.
+        </p>
+        <p lang="it">
+          Il marchio animato all'estrema sinistra è un link alla Dashboard su alcune pagine e decorativo su altre; è
+          presente un <code>h1</code> con il nome dell'applicazione, visivamente nascosto, così gli screen reader
+          annunciano il prodotto su ogni pagina. Accanto, il breadcrumb mostra <em>Home › Pagina corrente</em>: tutte le
+          voci tranne l'ultima sono link e l'ultima porta <code>aria-current="page"</code>. Sulla Dashboard il breadcrumb
+          è sostituito da un chip di stato ciano con scritto <strong>System active</strong>. Il breadcrumb è nascosto
+          sotto i 768&nbsp;px per lasciare spazio ai controlli di destra.
+        </p>
+
+        <h4><span class="n">2</span><span lang="en">User chip and logout</span><span lang="it">Chip utente e logout</span></h4>
+        <figure class="narrow">
+          <img src="img/shell-userchip.webp" alt="User chip with role pill" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>User chip</b> — the signed-in username followed by the role pill, then the logout icon.</span>
+            <span lang="it"><b>Chip utente</b> — lo username connesso seguito dalla pillola del ruolo, poi l'icona di logout.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">
+          Populated from <code>GET /api/me</code>, which returns <code>username</code>, <code>role</code> and the
+          <code>must_change_password</code> flag. The pill is colour-coded so you can tell at a glance which visibility
+          cone you are working inside — this matters when you are testing what an editor can actually see:
+        </p>
+        <p lang="it">
+          Popolato da <code>GET /api/me</code>, che restituisce <code>username</code>, <code>role</code> e il flag
+          <code>must_change_password</code>. La pillola è codificata a colori così capisci a colpo d'occhio in quale
+          cono di visibilità stai lavorando — utile quando verifichi cosa vede davvero un editor:
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Pill</span><span lang="it">Pillola</span></th>
+                <th><span lang="en">Colour</span><span lang="it">Colore</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge b-err">ADMIN</span></td><td><span lang="en">rose</span><span lang="it">rosa</span></td><td><span lang="en">Full control, including configuration and user management.</span><span lang="it">Controllo totale, inclusi configurazione e gestione utenti.</span></td></tr>
+              <tr><td><span class="badge b-acc">MANAGER</span></td><td><span lang="en">cyan</span><span lang="it">ciano</span></td><td><span lang="en">Everything except writing configuration and managing users.</span><span lang="it">Tutto tranne scrivere la configurazione e gestire gli utenti.</span></td></tr>
+              <tr><td><span class="badge b-ok">EDITOR</span></td><td><span lang="en">emerald</span><span lang="it">smeraldo</span></td><td><span lang="en">Confined to their visibility cone.</span><span lang="it">Confinato al proprio cono di visibilità.</span></td></tr>
+              <tr><td><span class="badge">VIEWER</span></td><td><span lang="en">slate</span><span lang="it">ardesia</span></td><td><span lang="en">Read-only; no scans, imports, exports or audit.</span><span lang="it">Sola lettura; nessuna scansione, import, export o audit.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          The logout icon calls <code>GET /logout</code>, which clears the session cookie and returns you to
+          <code>/login</code>. Sessions are HttpOnly cookies signed with HMAC-SHA256 and last 12 hours.
+        </p>
+        <p lang="it">
+          L'icona di logout chiama <code>GET /logout</code>, che cancella il cookie di sessione e ti riporta a
+          <code>/login</code>. Le sessioni sono cookie HttpOnly firmati con HMAC-SHA256 e durano 12 ore.
+        </p>
+
+        <h4><span class="n">3</span><span lang="en">Language and theme</span><span lang="it">Lingua e tema</span></h4>
+        <figure class="narrow">
+          <img src="img/shell-lang-theme.webp" alt="Language switch and theme toggle" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>EN / IT and the theme toggle</b> — both persist in <code>localStorage</code>.</span>
+            <span lang="it"><b>EN / IT e il toggle del tema</b> — entrambi persistono in <code>localStorage</code>.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>EN / IT</strong></td>
+                <td>
+                  <span lang="en">Switches the whole interface between English and Italian instantly — no page reload, no loss of filter state or scroll position. The choice is stored in <code>localStorage</code> and a <code>langchange</code> event is dispatched so charts, dynamically rendered tables and <code>aria-label</code>s re-render in the new language.</span>
+                  <span lang="it">Commuta l'intera interfaccia fra inglese e italiano istantaneamente — nessun ricaricamento, nessuna perdita di filtri o posizione di scroll. La scelta è salvata in <code>localStorage</code> e viene emesso un evento <code>langchange</code> così grafici, tabelle generate dinamicamente e <code>aria-label</code> si ridisegnano nella nuova lingua.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Theme toggle</strong></span><span lang="it"><strong>Toggle tema</strong></span></td>
+                <td>
+                  <span lang="en">Cycles <em>Light → Dark → System</em>. The icon reflects the mode: <code>light_mode</code>, <code>dark_mode</code>, <code>brightness_auto</code>. In <em>System</em> mode it follows the operating system live via <code>prefers-color-scheme</code>. The class is applied before first paint to avoid a flash of the wrong theme, and a <code>themechange</code> event tells canvas and SVG charts to redraw with the new palette (their colours cannot be handled by CSS alone). You can also force a theme with the <code>?theme=dark</code> or <code>?theme=light</code> query parameter — handy for screenshots and kiosk displays.</span>
+                  <span lang="it">Cicla <em>Chiaro → Scuro → Sistema</em>. L'icona riflette la modalità: <code>light_mode</code>, <code>dark_mode</code>, <code>brightness_auto</code>. In modalità <em>Sistema</em> segue il sistema operativo in tempo reale via <code>prefers-color-scheme</code>. La classe viene applicata prima del primo paint per evitare il lampo del tema sbagliato, e un evento <code>themechange</code> segnala a grafici canvas e SVG di ridisegnarsi con la nuova palette (i loro colori non sono gestibili solo via CSS). Puoi anche forzare un tema con il parametro <code>?theme=dark</code> o <code>?theme=light</code> — comodo per screenshot e display kiosk.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">
+          <span lang="en">All screenshots in this manual were taken with <code>?theme=dark</code>. If your interface looks
+            lighter than the pictures, that is only the theme setting — nothing is missing.</span>
+          <span lang="it">Tutti gli screenshot di questo manuale sono stati fatti con <code>?theme=dark</code>. Se la tua
+            interfaccia appare più chiara delle immagini è solo l'impostazione del tema — non manca nulla.</span>
+        </div>
+
+        <h4><span class="n">4</span><span lang="en">Update banner</span><span lang="it">Banner aggiornamenti</span></h4>
+        <p lang="en">
+          On every page load the shell calls <code>GET /api/version/check</code>, which compares the running git tag
+          against the latest GitHub release (result cached six hours server-side). If a newer version exists, a dark pill
+          appears at the bottom-left: <em>“New version X available — update with ./start.sh update”</em>, with a link to
+          the releases page. Dismissing it stores that version number in <code>localStorage</code>, so the banner stays
+          quiet until the <em>next</em> release.
+        </p>
+        <p lang="it">
+          A ogni caricamento la shell chiama <code>GET /api/version/check</code>, che confronta il tag git in esecuzione
+          con l'ultima release su GitHub (risultato in cache sei ore lato server). Se esiste una versione più recente
+          compare una pillola scura in basso a sinistra: <em>«New version X available — update with ./start.sh
+          update»</em>, con link alla pagina delle release. Chiudendola il numero di versione viene salvato in
+          <code>localStorage</code>, così il banner resta silenzioso fino alla release <em>successiva</em>.
+        </p>
+      </section>
+
+      <!-- ============================================ CMDK -->
+      <section class="block" id="cmdk">
+        <h2><span lang="en">Command palette</span><span lang="it">Command palette</span> <span class="route">Ctrl / Cmd + K</span></h2>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/shell-search.webp" alt="Search trigger in the top bar" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>The trigger</b> — click it, or press <span class="kbd">Ctrl/Cmd + K</span> from anywhere.</span>
+              <span lang="it"><b>Il pulsante</b> — cliccalo, oppure premi <span class="kbd">Ctrl/Cmd + K</span> da qualsiasi punto.</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="img/shell-cmdk.webp" alt="Command palette open" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>The palette</b> — type to filter destinations and actions; <span class="kbd">Esc</span> closes.</span>
+              <span lang="it"><b>La palette</b> — digita per filtrare destinazioni e azioni; <span class="kbd">Esc</span> chiude.</span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Element</span><span lang="it">Elemento</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Input field</strong></span><span lang="it"><strong>Campo di input</strong></span></td>
+                <td>
+                  <span lang="en">Placeholder <em>“Jump to a page or action…”</em>. It is a proper <code>role="combobox"</code> with <code>aria-autocomplete="list"</code>, so assistive technology announces the result count as you type.</span>
+                  <span lang="it">Placeholder <em>«Jump to a page or action…»</em>. È un vero <code>role="combobox"</code> con <code>aria-autocomplete="list"</code>, così le tecnologie assistive annunciano il numero di risultati mentre digiti.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Destination entries</strong></span><span lang="it"><strong>Voci di destinazione</strong></span></td>
+                <td>
+                  <span lang="en">Built at open time from the navigation links actually present in the DOM. Because role-based hiding removes those links first, a page you are not allowed to open <strong>never appears in the palette</strong> — the filter is inherited, not re-implemented.</span>
+                  <span lang="it">Costruite all'apertura dai link di navigazione effettivamente presenti nel DOM. Poiché il nascondimento per ruolo rimuove prima quei link, una pagina che non puoi aprire <strong>non compare mai nella palette</strong>: il filtro è ereditato, non re-implementato.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Action entries</strong></span><span lang="it"><strong>Voci di azione</strong></span></td>
+                <td>
+                  <span lang="en">Two actions ship with the palette: <em>Toggle theme</em> and <em>Log out</em>.</span>
+                  <span lang="it">Due azioni sono incluse nella palette: <em>Toggle theme</em> (cambia tema) e <em>Log out</em> (esci).</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Keyboard</strong></span><span lang="it"><strong>Tastiera</strong></span></td>
+                <td>
+                  <span lang="en"><span class="kbd">↑</span>/<span class="kbd">↓</span> move the highlighted entry, <span class="kbd">Enter</span> activates it, <span class="kbd">Esc</span> closes the palette, and clicking the backdrop closes it too.</span>
+                  <span lang="it"><span class="kbd">↑</span>/<span class="kbd">↓</span> spostano la voce evidenziata, <span class="kbd">Invio</span> la attiva, <span class="kbd">Esc</span> chiude la palette e anche un clic sullo sfondo la chiude.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Empty state</strong></span><span lang="it"><strong>Stato vuoto</strong></span></td>
+                <td><span lang="en"><em>“No results”</em> when nothing matches what you typed.</span><span lang="it"><em>«No results»</em> quando nulla corrisponde a ciò che hai digitato.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Press <span class="kbd">Ctrl/Cmd + K</span> from any page.</span><span lang="it">Premi <span class="kbd">Ctrl/Cmd + K</span> da qualsiasi pagina.</span></li>
+          <li><span lang="en">Type two or three letters — <code>fin</code> for Findings, <code>sbo</code> for SBOM, <code>adm</code> for Admin.</span><span lang="it">Digita due o tre lettere — <code>fin</code> per Findings, <code>sbo</code> per SBOM, <code>adm</code> per Admin.</span></li>
+          <li><span lang="en">Press <span class="kbd">Enter</span> on the highlighted result.</span><span lang="it">Premi <span class="kbd">Invio</span> sul risultato evidenziato.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">The target page loads directly. If a destination you expected is absent, that is the role filter
+            working — check the role pill in the top bar and, if needed, the <a href="12-reference.html#matrix">permission
+              matrix</a>.</span>
+          <span lang="it">La pagina di destinazione si carica direttamente. Se una destinazione attesa non c'è, è il filtro
+            per ruolo che sta funzionando — controlla la pillola del ruolo nella barra superiore e, se serve, la
+            <a href="12-reference.html#matrix">matrice dei permessi</a>.</span>
+        </div>
+      </section>
+
+      <!-- ============================================ NAV -->
+      <section class="block" id="nav">
+        <h2><span lang="en">Navigation drawer (desktop)</span><span lang="it">Drawer di navigazione (desktop)</span></h2>
+
+        <figure class="narrow">
+          <img src="img/shell-sidebar.webp" alt="Desktop navigation drawer" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The drawer</b> — grouped under the <em>ACTIONS</em> label, with the active destination
+              inverted and its icon in cyan. The running build's git tag sits at the bottom.</span>
+            <span lang="it"><b>Il drawer</b> — raggruppato sotto l'etichetta <em>ACTIONS</em>, con la destinazione attiva
+              invertita e la sua icona in ciano. Il tag git della build in esecuzione è in basso.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Destination</span><span lang="it">Destinazione</span></th>
+                <th>Route</th>
+                <th><span lang="en">Visible to</span><span lang="it">Visibile a</span></th>
+                <th><span lang="en">Purpose</span><span lang="it">Scopo</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Dashboard</td><td><code>/</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">KPIs, targeted scan console, posture launcher.</span><span lang="it">KPI, console di scansione mirata, avvio della postura.</span></td></tr>
+              <tr><td>Assets</td><td><code>/assets</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">Inventory CRUD, health check, assignments.</span><span lang="it">CRUD inventario, health check, assegnazioni.</span></td></tr>
+              <tr><td><span lang="en">Security posture</span><span lang="it">Postura di sicurezza</span></td><td><code>/intel</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">SCA results, charts, CVE graphs.</span><span lang="it">Risultati SCA, grafici, grafi CVE.</span></td></tr>
+              <tr><td>Risk</td><td><code>/risk</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">Contextual prioritization.</span><span lang="it">Prioritizzazione contestuale.</span></td></tr>
+              <tr><td>Findings</td><td><code>/findings</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">Unified lifecycle, import, SLA, tickets.</span><span lang="it">Ciclo di vita unificato, import, SLA, ticket.</span></td></tr>
+              <tr><td>Audit</td><td><code>/audit</code></td><td><span class="badge b-err">admin</span> <span class="badge b-warn">manager</span> <span class="badge b-ok">editor</span></td><td><span lang="en">Tamper-evident scan history.</span><span lang="it">Storico scansioni a prova di manomissione.</span></td></tr>
+              <tr><td>SBOM</td><td><code>/sbom</code></td><td><span lang="en">all roles</span><span lang="it">tutti i ruoli</span></td><td><span lang="en">Component inventory and standard export.</span><span lang="it">Inventario componenti ed export standard.</span></td></tr>
+              <tr><td>Admin</td><td><code>/admin</code></td><td><span class="badge b-err">admin</span></td><td><span lang="en">Users, groups, membership.</span><span lang="it">Utenti, gruppi, appartenenze.</span></td></tr>
+              <tr><td>Settings</td><td><code>/settings</code></td><td><span class="badge b-err">admin</span> <span class="badge b-warn">manager</span></td><td><span lang="en">AI, search, scanner, SMTP, ticketing.</span><span lang="it">AI, ricerca, scanner, SMTP, ticketing.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          Hidden entries are removed with <code>display:none</code> on the whole list item, which is why they also
+          vanish from the command palette. The rules applied are: <em>Admin</em> only for administrators;
+          <em>Settings</em> for administrators and managers; <em>Audit</em> hidden from viewers.
+        </p>
+        <p lang="it">
+          Le voci nascoste vengono rimosse con <code>display:none</code> sull'intero elemento di lista, ed è per questo
+          che spariscono anche dalla command palette. Le regole applicate sono: <em>Admin</em> solo per gli
+          amministratori; <em>Settings</em> per amministratori e manager; <em>Audit</em> nascosto ai viewer.
+        </p>
+        <p lang="en">
+          At the bottom of the drawer, separated by a rule, sits the <strong>version chip</strong>: the git tag of the
+          running build, with the full version string in its tooltip. Quote it in any bug report.
+        </p>
+        <p lang="it">
+          In fondo al drawer, separato da una linea, c'è il <strong>chip di versione</strong>: il tag git della build in
+          esecuzione, con la stringa completa nel tooltip. Citalo in ogni segnalazione di bug.
+        </p>
+      </section>
+
+      <!-- ============================================ MOBILE -->
+      <section class="block" id="mobile">
+        <h2><span lang="en">Mobile navigation</span><span lang="it">Navigazione mobile</span></h2>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/shell-bottomnav.webp" alt="Mobile bottom dock" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>Bottom dock</b> — four primary destinations plus <em>MORE</em>.</span>
+              <span lang="it"><b>Dock inferiore</b> — quattro destinazioni principali più <em>MORE</em>.</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="img/shell-mnav-sheet.webp" alt="Mobile more sheet" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>The MORE sheet</b> — every destination in a three-column grid.</span>
+              <span lang="it"><b>Il pannello MORE</b> — tutte le destinazioni in una griglia a tre colonne.</span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <ul class="tight">
+          <li>
+            <span lang="en">The dock is a dark floating bar with four labelled destinations — <strong>DASH</strong>, <strong>ASSETS</strong>, <strong>POSTURE</strong>, <strong>FINDINGS</strong> — chosen because they cover the daily loop.</span>
+            <span lang="it">La dock è una barra scura flottante con quattro destinazioni etichettate — <strong>DASH</strong>, <strong>ASSETS</strong>, <strong>POSTURE</strong>, <strong>FINDINGS</strong> — scelte perché coprono il ciclo quotidiano.</span>
+          </li>
+          <li>
+            <span lang="en"><strong>MORE</strong> opens a sheet listing all nine destinations. The button itself highlights when the current page is one of the “hidden” five (Risk, Audit, SBOM, Admin, Settings), so you never lose your place.</span>
+            <span lang="it"><strong>MORE</strong> apre un pannello con tutte e nove le destinazioni. Il pulsante si evidenzia quando la pagina corrente è una delle cinque “nascoste” (Risk, Audit, SBOM, Admin, Settings), così non perdi mai il segno.</span>
+          </li>
+          <li>
+            <span lang="en">Every item is labelled, not icon-only (recognition over recall), and every touch target is at least 48&nbsp;px tall — 64&nbsp;px inside the sheet — satisfying WCAG 2.5.5.</span>
+            <span lang="it">Ogni voce è etichettata, non solo icona (riconoscimento invece di memoria) e ogni area di tocco è alta almeno 48&nbsp;px — 64&nbsp;px nel pannello — soddisfacendo WCAG 2.5.5.</span>
+          </li>
+          <li>
+            <span lang="en">The sheet is a proper <code>role="dialog"</code> with <code>aria-modal="true"</code>; <span class="kbd">Esc</span> or a tap on the backdrop closes it.</span>
+            <span lang="it">Il pannello è un vero <code>role="dialog"</code> con <code>aria-modal="true"</code>; <span class="kbd">Esc</span> o un tocco sullo sfondo lo chiude.</span>
+          </li>
+          <li>
+            <span lang="en">Role-based hiding works identically here: the sheet items are ordinary links inside a <code>&lt;nav&gt;</code>, so the same code removes them.</span>
+            <span lang="it">Il nascondimento per ruolo funziona allo stesso modo: le voci del pannello sono normali link dentro un <code>&lt;nav&gt;</code>, quindi lo stesso codice le rimuove.</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ============================================ SHARED -->
+      <section class="block" id="shared">
+        <h2><span lang="en">Shared behaviours</span><span lang="it">Comportamenti comuni</span></h2>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Element</span><span lang="it">Elemento</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Skip to content</strong></span><span lang="it"><strong>Salta al contenuto</strong></span></td>
+                <td>
+                  <span lang="en">The first focusable element on every page. Press <span class="kbd">Tab</span> once on load and it appears; activating it jumps focus to <code>#main</code>, bypassing the whole navigation (WCAG 2.4.1 Bypass Blocks).</span>
+                  <span lang="it">Il primo elemento focalizzabile di ogni pagina. Premi <span class="kbd">Tab</span> una volta al caricamento e compare; attivandolo il focus salta a <code>#main</code>, bypassando l'intera navigazione (WCAG 2.4.1 Bypass Blocks).</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Toast</strong></td>
+                <td>
+                  <span lang="en">A single unified notification element shared by every page. Green for success (<em>“Asset added”</em>, <em>“Settings saved.”</em>), red for failure (<em>“Create error”</em>, <em>“Save failed:”</em>). It appears near the bottom of the content area and fades on its own.</span>
+                  <span lang="it">Un unico elemento di notifica condiviso da tutte le pagine. Verde per il successo (<em>«Asset added»</em>, <em>«Settings saved.»</em>), rosso per l'errore (<em>«Create error»</em>, <em>«Save failed:»</em>). Compare in basso nell'area contenuti e sparisce da solo.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>AI-GENERATED badge</strong></span><span lang="it"><strong>Badge AI-GENERATED</strong></span></td>
+                <td>
+                  <span lang="en">Attached to every piece of text produced by a language model — the scan console summary, the triage report, the audit page advisory. Its tooltip reads <em>“Content generated by an AI model — may contain errors, verify before acting.”</em> This is the EU AI Act Art. 50 transparency measure in practice.</span>
+                  <span lang="it">Applicato a ogni testo prodotto da un modello linguistico — il riepilogo nella console di scansione, il report di triage, l'advisory nella pagina audit. Il tooltip recita <em>«Content generated by an AI model — may contain errors, verify before acting.»</em> È la misura di trasparenza dell'art. 50 dell'AI Act europeo, in pratica.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Reduced motion</strong></span><span lang="it"><strong>Movimento ridotto</strong></span></td>
+                <td>
+                  <span lang="en">The animated background shader, the rotating product graph, the pulsing pipeline states and the panel transitions all respect <code>prefers-reduced-motion</code>.</span>
+                  <span lang="it">Lo shader animato di sfondo, il grafo prodotti rotante, gli stati pulsanti della pipeline e le transizioni dei pannelli rispettano tutti <code>prefers-reduced-motion</code>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Focus ring</strong></span><span lang="it"><strong>Anello di focus</strong></span></td>
+                <td>
+                  <span lang="en">A shared <code>:focus-visible</code> style makes keyboard focus obvious on every interactive element without adding a ring for mouse users.</span>
+                  <span lang="it">Uno stile <code>:focus-visible</code> condiviso rende evidente il focus da tastiera su ogni elemento interattivo, senza aggiungere l'anello per chi usa il mouse.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Session</strong></span><span lang="it"><strong>Sessione</strong></span></td>
+                <td>
+                  <span lang="en">HttpOnly cookie signed with HMAC-SHA256, 12-hour TTL. The token carries only the user id and the expiry: <strong>role and group membership are re-read from the database on every request</strong>, so a role change or a group removal takes effect immediately — there are no stale claims to wait out.</span>
+                  <span lang="it">Cookie HttpOnly firmato con HMAC-SHA256, TTL di 12 ore. Il token contiene solo l'id utente e la scadenza: <strong>ruolo e appartenenza ai gruppi vengono riletti dal database a ogni richiesta</strong>, quindi un cambio di ruolo o la rimozione da un gruppo ha effetto immediato — non ci sono claim obsoleti da attendere.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Forced password change</strong></span><span lang="it"><strong>Cambio password forzato</strong></span></td>
+                <td>
+                  <span lang="en">While your account carries the <code>must_change_password</code> flag the shell is effectively a wall: every page redirects to <a href="02-auth.html#changepw">/change-password</a> until you comply.</span>
+                  <span lang="it">Finché il tuo account ha il flag <code>must_change_password</code> la shell è di fatto un muro: ogni pagina reindirizza a <a href="02-auth.html#changepw">/change-password</a> finché non provvedi.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">Navigation never requires a detour through the Dashboard; the user chip always tells you which role
+            you are acting as; language and theme survive navigation and reloads; and any page your role cannot open is
+            absent from the drawer, the mobile sheet and the command palette alike.</span>
+          <span lang="it">La navigazione non richiede mai un giro dalla Dashboard; il chip utente dice sempre con quale ruolo
+            stai agendo; lingua e tema sopravvivono a navigazione e ricaricamenti; e ogni pagina che il tuo ruolo non può
+            aprire è assente sia dal drawer, sia dal pannello mobile, sia dalla command palette.</span>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="index.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          00 · <span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span>
+        </a>
+        <a class="nxt" href="02-auth.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          02 · <span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

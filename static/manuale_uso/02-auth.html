@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="02 · Sign in &amp; accounts" data-title-it="02 · Accesso e account">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>02 · Sign in &amp; accounts — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html" aria-current="page"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#login"><span lang="en">Sign in</span><span lang="it">Accesso</span> · /login</a></li>
+              <li><a href="#forgot"><span lang="en">Forgot password</span><span lang="it">Password dimenticata</span></a></li>
+              <li><a href="#activate"><span lang="en">Activation</span><span lang="it">Attivazione</span> · /activate</a></li>
+              <li><a href="#changepw"><span lang="en">Change password</span><span lang="it">Cambio password</span></a></li>
+              <li><a href="#model"><span lang="en">Credential model</span><span lang="it">Modello credenziali</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">02 · <span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></div>
+        <h1><span lang="en">Sign in, activation and password changes</span><span lang="it">Accesso, attivazione e cambio password</span></h1>
+        <p lang="en">
+          Three small pages carry the entire credential lifecycle: <code>/login</code> for signing in and recovering
+          access, <code>/activate</code> for one-time links, and <code>/change-password</code> for voluntary and forced
+          changes. They are deliberately plain — no data, no navigation, nothing to leak.
+        </p>
+        <p lang="it">
+          Tre pagine piccole reggono l'intero ciclo di vita delle credenziali: <code>/login</code> per accedere e
+          recuperare l'accesso, <code>/activate</code> per i link monouso e <code>/change-password</code> per i cambi
+          volontari e forzati. Sono volutamente spoglie: nessun dato, nessuna navigazione, nulla che possa trapelare.
+        </p>
+      </header>
+
+      <!-- ============================================ LOGIN -->
+      <section class="block" id="login">
+        <h2><span lang="en">Sign in</span><span lang="it">Accesso</span> <span class="route">/login</span> <span class="roles"><span lang="en">unauthenticated</span><span lang="it">non autenticato</span></span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          The entry point of the application. Every other page and every API call requires a valid session, so an
+          unauthenticated request to any URL lands here. The page carries the product wordmark, the two credential
+          fields, the submit button, the self-service recovery link and — in small type at the bottom — the running
+          version string, which is useful when you support several installations.
+        </p>
+        <p lang="it">
+          Il punto di ingresso dell'applicazione. Ogni altra pagina e ogni chiamata API richiedono una sessione valida,
+          quindi una richiesta non autenticata a qualsiasi URL finisce qui. La pagina mostra il wordmark del prodotto, i
+          due campi credenziali, il pulsante di invio, il link di recupero self-service e — in piccolo, in fondo — la
+          stringa di versione in esecuzione, utile quando gestisci più installazioni.
+        </p>
+
+        <figure class="mid">
+          <img src="img/login-page.webp" alt="Sign-in page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The sign-in page</b> — centred card on the dark background. The version string at the bottom
+              identifies the running build.</span>
+            <span lang="it"><b>La pagina di accesso</b> — card centrata su sfondo scuro. La stringa di versione in fondo
+              identifica la build in esecuzione.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Type</span><span lang="it">Tipo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>USERNAME</strong></td>
+                <td><span lang="en">text field</span><span lang="it">campo testo</span></td>
+                <td>
+                  <span lang="en">The account name. Case-sensitive and unique across the installation. Autofocused on load, so you can start typing immediately.</span>
+                  <span lang="it">Il nome dell'account. Sensibile alle maiuscole e unico nell'installazione. Riceve il focus al caricamento, così puoi digitare subito.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>PASSWORD</strong></td>
+                <td><span lang="en">password field</span><span lang="it">campo password</span></td>
+                <td>
+                  <span lang="en">Verified server-side against a PBKDF2-HMAC-SHA256 hash — 200 000 iterations with a random per-user salt. The plaintext exists only for the duration of the request and is never logged.</span>
+                  <span lang="it">Verificata lato server contro un hash PBKDF2-HMAC-SHA256 — 200 000 iterazioni con salt casuale per utente. Il testo in chiaro esiste solo per la durata della richiesta e non viene mai registrato nei log.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Show password</strong> (eye icon)</span><span lang="it"><strong>Mostra password</strong> (icona occhio)</span></td>
+                <td><span lang="en">toggle</span><span lang="it">interruttore</span></td>
+                <td>
+                  <span lang="en">Reveals the typed password so you can check it before submitting — particularly useful with the long passphrases the 12-character policy encourages.</span>
+                  <span lang="it">Rivela la password digitata per controllarla prima dell'invio — particolarmente utile con le passphrase lunghe incoraggiate dalla policy dei 12 caratteri.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">SIGN IN</span></td>
+                <td>submit</td>
+                <td>
+                  <span lang="en"><code>POST /api/login</code>. On success the server sets the signed HttpOnly session cookie (12-hour TTL, <code>SameSite=lax</code>) and the browser is redirected. If the account carries <code>must_change_password</code> — first login of the seeded admin, an administrator-set temporary password, or an expired rotation — you are redirected to <a href="#changepw">/change-password</a> and blocked from everything else until you comply.</span>
+                  <span lang="it"><code>POST /api/login</code>. In caso di successo il server imposta il cookie di sessione firmato HttpOnly (TTL 12 ore, <code>SameSite=lax</code>) e il browser viene reindirizzato. Se l'account ha <code>must_change_password</code> — primo accesso dell'admin predefinito, password temporanea impostata da un amministratore o rotazione scaduta — vieni reindirizzato a <a href="#changepw">/change-password</a> e bloccato su tutto il resto finché non provvedi.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Forgot password?</strong></span><span lang="it"><strong>Password dimenticata?</strong></span></td>
+                <td>link</td>
+                <td><span lang="en">Reveals the recovery block described <a href="#forgot">below</a>.</span><span lang="it">Rivela il blocco di recupero descritto <a href="#forgot">qui sotto</a>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Error line</strong></span><span lang="it"><strong>Riga di errore</strong></span></td>
+                <td><span lang="en">message</span><span lang="it">messaggio</span></td>
+                <td>
+                  <span lang="en"><em>“Login failed”</em> for wrong credentials <strong>or</strong> a deactivated account — the two cases are deliberately indistinguishable. <em>“Server unreachable”</em> when the backend does not answer at all.</span>
+                  <span lang="it"><em>«Login failed»</em> per credenziali errate <strong>oppure</strong> account disattivato — i due casi sono volutamente indistinguibili. <em>«Server unreachable»</em> quando il backend non risponde affatto.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>EN / IT and theme</strong></span><span lang="it"><strong>EN / IT e tema</strong></span></td>
+                <td><span lang="en">toggles</span><span lang="it">interruttori</span></td>
+                <td><span lang="en">Available before signing in; the preference carries into the session.</span><span lang="it">Disponibili prima dell'accesso; la preferenza viene mantenuta nella sessione.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/login-form.webp" alt="Sign-in form fields" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>The form</b> — username, password, submit, recovery link.</span>
+              <span lang="it"><b>Il form</b> — username, password, invio, link di recupero.</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="img/login-pweye.webp" alt="Password field with reveal toggle" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>Password field</b> — the eye icon on the right reveals what you typed.</span>
+              <span lang="it"><b>Campo password</b> — l'icona a forma di occhio a destra rivela quanto digitato.</span>
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open <code>http://localhost:8000/login</code>, or let any protected URL redirect you there.</span><span lang="it">Apri <code>http://localhost:8000/login</code>, oppure lascia che una URL protetta ti reindirizzi.</span></li>
+          <li><span lang="en">Type your username and password and press <span class="kbd">Enter</span> or <span class="badge b-acc">SIGN IN</span>.</span><span lang="it">Digita username e password e premi <span class="kbd">Invio</span> o <span class="badge b-acc">SIGN IN</span>.</span></li>
+          <li><span lang="en"><strong>First ever login of a new installation:</strong> use <code>admin</code> / <code>admin</code>. You will be forced to change it immediately — this is the single most important step of the whole setup.</span><span lang="it"><strong>Primo accesso in assoluto su un'installazione nuova:</strong> usa <code>admin</code> / <code>admin</code>. Sarai obbligato a cambiarla subito — è il passo più importante dell'intera configurazione.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en"><strong>Success:</strong> the Dashboard loads, the top bar shows your username with its role pill, and
+            the navigation drawer lists only the destinations your role may open.</p>
+          <p lang="en"><strong>Forced change:</strong> you land on <code>/change-password</code> with the notice <em>“Password
+              change required before continuing.”</em></p>
+          <p lang="en"><strong>Failure:</strong> you stay on <code>/login</code> with the error line filled in; the fields are
+            not cleared, so you can correct a typo without retyping everything.</p>
+          <p lang="it"><strong>Successo:</strong> si carica la Dashboard, la barra superiore mostra il tuo username con la
+            pillola del ruolo e il drawer elenca solo le destinazioni che il tuo ruolo può aprire.</p>
+          <p lang="it"><strong>Cambio forzato:</strong> arrivi su <code>/change-password</code> con l'avviso <em>«Password
+              change required before continuing.»</em></p>
+          <p lang="it"><strong>Errore:</strong> resti su <code>/login</code> con la riga di errore compilata; i campi non
+            vengono svuotati, così puoi correggere un refuso senza riscrivere tutto.</p>
+        </div>
+      </section>
+
+      <!-- ============================================ FORGOT -->
+      <section class="block" id="forgot">
+        <h2><span lang="en">Forgot password (self-service)</span><span lang="it">Password dimenticata (self-service)</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          Lets a user regain access without an administrator ever seeing, choosing or transmitting a password. It is the
+          same one-time token machinery used for invitations, with a shorter lifetime.
+        </p>
+        <p lang="it">
+          Permette a un utente di riottenere l'accesso senza che un amministratore veda, scelga o trasmetta mai una
+          password. Usa lo stesso meccanismo di token monouso degli inviti, con durata più breve.
+        </p>
+
+        <figure class="narrow">
+          <img src="img/login-forgot.webp" alt="Recovery email field" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>RECOVERY EMAIL</b> — revealed by the “Forgot password?” link, with its own SEND button.</span>
+            <span lang="it"><b>RECOVERY EMAIL</b> — mostrato dal link «Forgot password?», con il proprio pulsante SEND.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>RECOVERY EMAIL</strong></td>
+                <td><span lang="en">An <code>type="email"</code> field with placeholder <code>you@example.com</code>. It must match the address recorded on the account in <a href="10-admin.html">/admin</a>.</span><span lang="it">Un campo <code>type="email"</code> con placeholder <code>you@example.com</code>. Deve corrispondere all'indirizzo registrato sull'account in <a href="10-admin.html">/admin</a>.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">SEND</span></td>
+                <td><span lang="en"><code>POST /api/forgot</code>. If the address exists the server generates a one-time reset token, stores <strong>only its SHA-256 hash</strong> with a 4-hour expiry (<code>auth.reset_ttl_hours</code>) and emails the <code>/activate?token=…</code> link.</span><span lang="it"><code>POST /api/forgot</code>. Se l'indirizzo esiste il server genera un token di reset monouso, salva <strong>solo il suo hash SHA-256</strong> con scadenza 4 ore (<code>auth.reset_ttl_hours</code>) e invia via email il link <code>/activate?token=…</code>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Confirmation</strong></span><span lang="it"><strong>Conferma</strong></span></td>
+                <td><span lang="en"><em>“If the address exists, a reset link has been sent.”</em></span><span lang="it"><em>«If the address exists, a reset link has been sent.»</em></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span lang="en"><strong>No user enumeration.</strong> The response is identical whether the email exists or not, and
+            the timing is not informative either. Never read that message as proof that an account exists.</span>
+          <span lang="it"><strong>Nessuna enumerazione utenti.</strong> La risposta è identica sia che l'email esista sia che
+            non esista, e nemmeno i tempi sono informativi. Non interpretare mai quel messaggio come prova che un account
+            esista.</span>
+        </div>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">The confirmation line appears immediately. A mail with the reset link arrives if SMTP is configured
+            (<a href="11-settings.html#smtp">Settings → EMAIL (SMTP)</a>). <strong>If SMTP is not configured, self-service
+              recovery cannot deliver anything</strong> — ask an administrator to press <span class="badge b-acc">SEND
+              RESET</span> in <a href="10-admin.html">/admin</a>, which also prints the link on screen for manual
+            delivery.</span>
+          <span lang="it">La riga di conferma compare subito. Una mail con il link di reset arriva se SMTP è configurato
+            (<a href="11-settings.html#smtp">Impostazioni → EMAIL (SMTP)</a>). <strong>Se SMTP non è configurato il recupero
+              self-service non può consegnare nulla</strong>: chiedi a un amministratore di premere <span class="badge b-acc">SEND
+              RESET</span> in <a href="10-admin.html">/admin</a>, che mostra anche il link a schermo per la consegna
+            manuale.</span>
+        </div>
+      </section>
+
+      <!-- ============================================ ACTIVATE -->
+      <section class="block" id="activate">
+        <h2><span lang="en">Activate account / reset password</span><span lang="it">Attiva account / reimposta password</span> <span class="route">/activate?token=…</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          Where invited users choose their own password for the first time, and where password-reset links land. No
+          session is required: <strong>possession of the one-time token is the authentication</strong>. Only the SHA-256
+          hash of the token is stored server-side, so the link cannot be reconstructed from a database dump, and the
+          token is burned the moment it is used.
+        </p>
+        <p lang="it">
+          È qui che gli utenti invitati scelgono la propria password per la prima volta ed è qui che atterrano i link di
+          reset. Non serve alcuna sessione: <strong>il possesso del token monouso è l'autenticazione</strong>. Lato
+          server viene conservato solo l'hash SHA-256 del token, quindi il link non è ricostruibile da un dump del
+          database, e il token viene bruciato nel momento in cui viene usato.
+        </p>
+
+        <figure class="mid">
+          <img src="img/activate-page.webp" alt="Set your password page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>SET YOUR PASSWORD</b> — the same screen serves both activation and reset; the token's stored
+              purpose decides which flow runs.</span>
+            <span lang="it"><b>SET YOUR PASSWORD</b> — la stessa schermata serve sia l'attivazione sia il reset; è lo scopo
+              memorizzato nel token a decidere quale flusso venga eseguito.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>NEW PASSWORD</strong></td>
+                <td><span lang="en">Must satisfy <code>auth.min_password_len</code> — 12 characters by default, configurable between 8 and 128 in <a href="11-settings.html#smtp">Settings</a>.</span><span lang="it">Deve soddisfare <code>auth.min_password_len</code> — 12 caratteri di default, configurabile fra 8 e 128 in <a href="11-settings.html#smtp">Impostazioni</a>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>CONFIRM PASSWORD</strong></td>
+                <td><span lang="en">Must match exactly; the check runs client-side before the request is sent, so a mismatch costs no round trip.</span><span lang="it">Deve corrispondere esattamente; il controllo avviene lato client prima dell'invio, quindi una discrepanza non costa alcuna richiesta al server.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Strength meter</strong></span><span lang="it"><strong>Indicatore di robustezza</strong></span></td>
+                <td><span lang="en">Live rating as you type: <span class="badge b-err">Weak</span> · <span class="badge b-warn">Fair</span> · <span class="badge b-acc">Good</span> · <span class="badge b-ok">Strong</span>. Advisory only — the server enforces length, not the meter's verdict.</span><span lang="it">Valutazione in tempo reale mentre digiti: <span class="badge b-err">Weak</span> · <span class="badge b-warn">Fair</span> · <span class="badge b-acc">Good</span> · <span class="badge b-ok">Strong</span>. Solo indicativa — il server impone la lunghezza, non il verdetto dell'indicatore.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">SET PASSWORD</span></td>
+                <td><span lang="en"><code>POST /api/activate</code> with the token and the new password. In one transaction it sets the password, activates the account, marks the email as <strong>verified</strong> (only the inbox owner could have opened the link) and burns the token.</span><span lang="it"><code>POST /api/activate</code> con il token e la nuova password. In un'unica transazione imposta la password, attiva l'account, marca l'email come <strong>verificata</strong> (solo il proprietario della casella poteva aprire il link) e brucia il token.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Note</strong></span><span lang="it"><strong>Nota</strong></span></td>
+                <td><span lang="en"><em>“The link can be used only once.”</em></span><span lang="it"><em>«The link can be used only once.»</em> (Il link è utilizzabile una sola volta.)</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Go to login</strong></span><span lang="it"><strong>Vai al login</strong></span></td>
+                <td><span lang="en">Shown after success, and also as the recovery path when the token is expired or already consumed.</span><span lang="it">Mostrato dopo il successo e anche come via d'uscita quando il token è scaduto o già consumato.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Error line</strong></span><span lang="it"><strong>Riga di errore</strong></span></td>
+                <td><span lang="en"><em>“Passwords do not match”</em> (client-side) or <em>“Activation failed”</em> (expired, already used, or unknown token).</span><span lang="it"><em>«Passwords do not match»</em> (lato client) o <em>«Activation failed»</em> (token scaduto, già usato o sconosciuto).</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Token purpose</span><span lang="it">Scopo del token</span></th>
+                <th><span lang="en">Default lifetime</span><span lang="it">Durata predefinita</span></th>
+                <th><span lang="en">Config key</span><span lang="it">Chiave di configurazione</span></th>
+                <th><span lang="en">Issued by</span><span lang="it">Emesso da</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>activation</code></td><td><span lang="en">48 hours</span><span lang="it">48 ore</span></td><td><code>auth.invite_ttl_hours</code></td><td><span class="badge b-acc">INVITE USER</span> / <span class="badge b-acc">RESEND INVITE</span></td></tr>
+              <tr><td><code>reset</code></td><td><span lang="en">4 hours</span><span lang="it">4 ore</span></td><td><code>auth.reset_ttl_hours</code></td><td><span class="badge b-acc">SEND RESET</span> / <span lang="en">self-service</span><span lang="it">self-service</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open the link you received by email — or the link the administrator handed you if SMTP is disabled. It looks like <code>http://host:8000/activate?token=…</code>.</span><span lang="it">Apri il link ricevuto via email — o quello consegnato dall'amministratore se SMTP è disattivato. Ha la forma <code>http://host:8000/activate?token=…</code>.</span></li>
+          <li><span lang="en">Choose a password of at least 12 characters; aim for <span class="badge b-ok">Strong</span> on the meter. A four-word passphrase beats a short complex string.</span><span lang="it">Scegli una password di almeno 12 caratteri; punta a <span class="badge b-ok">Strong</span> sull'indicatore. Una passphrase di quattro parole batte una stringa corta e complessa.</span></li>
+          <li><span lang="en">Repeat it in <strong>CONFIRM PASSWORD</strong> and press <span class="badge b-acc">SET PASSWORD</span>.</span><span lang="it">Ripetila in <strong>CONFIRM PASSWORD</strong> e premi <span class="badge b-acc">SET PASSWORD</span>.</span></li>
+          <li><span lang="en">If the page reports <em>“Activation failed”</em>, the link has expired or was already used — ask an administrator for a fresh <span class="badge b-acc">RESEND INVITE</span> or <span class="badge b-acc">SEND RESET</span>.</span><span lang="it">Se la pagina mostra <em>«Activation failed»</em>, il link è scaduto o già usato — chiedi a un amministratore un nuovo <span class="badge b-acc">RESEND INVITE</span> o <span class="badge b-acc">SEND RESET</span>.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">The message <em>“Password set. Redirecting to login…”</em> appears and the browser moves to
+            <code>/login</code> after a short delay. In <a href="10-admin.html">/admin</a> the user's row flips from
+            <span class="badge b-warn">PENDING</span> to <span class="badge b-ok">ACTIVE</span> and gains the <em>Email
+              verified</em> badge. Every session issued before this change is invalidated.</span>
+          <span lang="it">Compare il messaggio <em>«Password set. Redirecting to login…»</em> e dopo una breve pausa il browser
+            va a <code>/login</code>. In <a href="10-admin.html">/admin</a> la riga dell'utente passa da
+            <span class="badge b-warn">PENDING</span> a <span class="badge b-ok">ACTIVE</span> e ottiene il badge <em>Email
+              verified</em>. Tutte le sessioni emesse prima di questo cambio vengono invalidate.</span>
+        </div>
+      </section>
+
+      <!-- ============================================ CHANGE PW -->
+      <section class="block" id="changepw">
+        <h2><span lang="en">Change password</span><span lang="it">Cambio password</span> <span class="route">/change-password</span> <span class="roles"><span lang="en">any authenticated user</span><span lang="it">qualsiasi utente autenticato</span></span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          Voluntary password change, and the mandatory gate the application forces you through in three situations: the
+          first login of the seeded <code>admin</code> account, a temporary password set directly by an administrator,
+          and an expired password when rotation is enabled.
+        </p>
+        <p lang="it">
+          Cambio password volontario, e il varco obbligatorio che l'applicazione ti impone in tre situazioni: il primo
+          accesso dell'account <code>admin</code> predefinito, una password temporanea impostata direttamente da un
+          amministratore e una password scaduta quando la rotazione è attiva.
+        </p>
+
+        <figure class="mid">
+          <img src="img/changepw-page.webp" alt="Change password page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>CHANGE PASSWORD</b> — current password, new password, confirmation. In forced mode a notice
+              explains why you are here and every other page redirects back.</span>
+            <span lang="it"><b>CHANGE PASSWORD</b> — password attuale, nuova password, conferma. In modalità forzata un avviso
+              spiega perché sei qui e ogni altra pagina ti riporta indietro.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>CURRENT PASSWORD</strong></td><td><span lang="en">Verified server-side; a wrong value fails the whole request, so a stolen session alone cannot change a password.</span><span lang="it">Verificata lato server; un valore errato fa fallire l'intera richiesta, quindi una sessione rubata da sola non basta a cambiare la password.</span></td></tr>
+              <tr><td><strong>NEW PASSWORD</strong></td><td><span lang="en">Subject to <code>auth.min_password_len</code>, with the same live strength meter as the activation page.</span><span lang="it">Soggetta a <code>auth.min_password_len</code>, con lo stesso indicatore di robustezza della pagina di attivazione.</span></td></tr>
+              <tr><td><strong>CONFIRM NEW PASSWORD</strong></td><td><span lang="en">Must match; checked before the request is sent.</span><span lang="it">Deve corrispondere; controllata prima dell'invio.</span></td></tr>
+              <tr><td><span class="badge b-acc">CHANGE PASSWORD</span></td><td><span lang="en"><code>POST /api/change-password</code>. Rehashes with PBKDF2, stamps <code>password_changed_at</code> and clears <code>must_change_password</code>.</span><span lang="it"><code>POST /api/change-password</code>. Ricalcola l'hash con PBKDF2, aggiorna <code>password_changed_at</code> e azzera <code>must_change_password</code>.</span></td></tr>
+              <tr><td><span lang="en"><strong>Forced-mode notice</strong></span><span lang="it"><strong>Avviso modalità forzata</strong></span></td><td><span lang="en"><em>“Password change required before continuing (first login, administrative reset or expired password).”</em> While it is displayed, every other page redirects back here.</span><span lang="it"><em>«Password change required before continuing (first login, administrative reset or expired password).»</em> Finché è visibile, ogni altra pagina rimanda qui.</span></td></tr>
+              <tr><td><span lang="en"><strong>Error line</strong></span><span lang="it"><strong>Riga di errore</strong></span></td><td><span lang="en"><em>“Passwords do not match”</em> or <em>“Change failed”</em> (wrong current password, or new password below the policy length).</span><span lang="it"><em>«Passwords do not match»</em> o <em>«Change failed»</em> (password attuale errata, o nuova password sotto la lunghezza minima).</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="warn">
+          <span lang="en"><strong>Global logout.</strong> Session tokens carry their issue time, and any session issued
+            <em>before</em> the last password change is rejected. Changing your password therefore signs you out of every
+            other browser and device instantly — exactly what you want after a suspected compromise, and worth knowing
+            before you do it on a busy afternoon.</span>
+          <span lang="it"><strong>Logout globale.</strong> I token di sessione contengono il momento di emissione e ogni
+            sessione emessa <em>prima</em> dell'ultimo cambio password viene rifiutata. Cambiare la password ti disconnette
+            quindi all'istante da ogni altro browser e dispositivo — esattamente ciò che serve dopo un sospetto
+            compromissione, e utile da sapere prima di farlo in un pomeriggio di lavoro intenso.</span>
+        </div>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open the page from the forced redirect, or navigate to <code>/change-password</code> directly at any time.</span><span lang="it">Apri la pagina dal reindirizzamento forzato, oppure vai direttamente a <code>/change-password</code> quando vuoi.</span></li>
+          <li><span lang="en">Enter your current password.</span><span lang="it">Inserisci la password attuale.</span></li>
+          <li><span lang="en">Enter and confirm the new one.</span><span lang="it">Inserisci e conferma quella nuova.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CHANGE PASSWORD</span>, then sign in again on your other devices.</span><span lang="it">Premi <span class="badge b-acc">CHANGE PASSWORD</span>, poi riaccedi sugli altri dispositivi.</span></li>
+        </ol>
+
+        <div class="note">
+          <span lang="en">Periodic rotation is <strong>disabled by default</strong> (<code>auth.rotation_days: 0</code>) in line
+            with NIST SP 800-63B, because mandatory rotation encourages weak incremental passwords. Enable it in
+            <a href="11-settings.html#smtp">Settings → EMAIL (SMTP) &amp; AUTH POLICY</a> only if a compliance framework
+            requires it.</span>
+          <span lang="it">La rotazione periodica è <strong>disattivata di default</strong> (<code>auth.rotation_days: 0</code>)
+            in linea con NIST SP 800-63B, perché la rotazione obbligatoria incoraggia password incrementali deboli.
+            Attivala in <a href="11-settings.html#smtp">Impostazioni → EMAIL (SMTP) &amp; AUTH POLICY</a> solo se un
+            framework di conformità lo richiede.</span>
+        </div>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">A success confirmation, followed by a redirect to the Dashboard (or to <code>/login</code> if the
+            session was rotated). The forced-change banner disappears permanently for that account, and in /admin the
+            <em>“Password change forced at next login”</em> badge is cleared.</span>
+          <span lang="it">Una conferma di successo, seguita dal reindirizzamento alla Dashboard (o a <code>/login</code> se la
+            sessione è stata ruotata). Il banner di cambio forzato sparisce definitivamente per quell'account e in /admin
+            il badge <em>«Password change forced at next login»</em> viene rimosso.</span>
+        </div>
+      </section>
+
+      <!-- ============================================ MODEL -->
+      <section class="block" id="model">
+        <h2><span lang="en">The credential model in one table</span><span lang="it">Il modello delle credenziali in una tabella</span></h2>
+        <p lang="en">
+          Two completely different kinds of password live in this application, and mixing them up causes most of the
+          confusion around the <code>NOT ENCRYPTED</code> badge in the asset inventory.
+        </p>
+        <p lang="it">
+          In questa applicazione convivono due tipi di password completamente diversi, e confonderli è all'origine della
+          maggior parte dei dubbi sul badge <code>NOT ENCRYPTED</code> nell'inventario asset.
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th><span lang="en">User passwords</span><span lang="it">Password utente</span></th>
+                <th><span lang="en">Asset SSH passwords</span><span lang="it">Password SSH degli asset</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Purpose</strong></span><span lang="it"><strong>Scopo</strong></span></td>
+                <td><span lang="en">Sign in to the web application.</span><span lang="it">Accedere all'applicazione web.</span></td>
+                <td><span lang="en">Open an SSH session on a scanned host.</span><span lang="it">Aprire una sessione SSH su un host scansionato.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Stored as</strong></span><span lang="it"><strong>Memorizzate come</strong></span></td>
+                <td><span lang="en"><strong>Hashed</strong> — PBKDF2-HMAC-SHA256, 200 000 iterations, random salt. Irreversible.</span><span lang="it"><strong>Hash</strong> — PBKDF2-HMAC-SHA256, 200 000 iterazioni, salt casuale. Irreversibile.</span></td>
+                <td><span lang="en"><strong>Encrypted</strong> — AES-GCM through the <code>encdec</code> binary, stored as <code>ENC:&lt;hex&gt;</code>. Reversible by design.</span><span lang="it"><strong>Cifrate</strong> — AES-GCM tramite il binario <code>encdec</code>, salvate come <code>ENC:&lt;hex&gt;</code>. Reversibili per necessità.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Why the difference</strong></span><span lang="it"><strong>Perché la differenza</strong></span></td>
+                <td><span lang="en">They only ever need to be <em>verified</em>.</span><span lang="it">Devono solo essere <em>verificate</em>.</span></td>
+                <td><span lang="en">They must be <em>recovered</em> in plaintext to authenticate to the target host.</span><span lang="it">Devono essere <em>recuperate</em> in chiaro per autenticarsi sull'host di destinazione.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Ever shown in the UI</strong></span><span lang="it"><strong>Mai mostrate nell'interfaccia</strong></span></td>
+                <td><span lang="en">Never.</span><span lang="it">Mai.</span></td>
+                <td><span lang="en">Never — the API returns only <code>has_password</code> and <code>password_encrypted</code>.</span><span lang="it">Mai — l'API restituisce solo <code>has_password</code> e <code>password_encrypted</code>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Ever sent by email</strong></span><span lang="it"><strong>Mai inviate per email</strong></span></td>
+                <td><span lang="en">Never — only one-time links are emailed.</span><span lang="it">Mai — via email viaggiano solo link monouso.</span></td>
+                <td><span lang="en">Never.</span><span lang="it">Mai.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="01-shell.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          01 · <span lang="en">Application shell</span><span lang="it">Interfaccia comune</span>
+        </a>
+        <a class="nxt" href="03-dashboard.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          03 · Dashboard
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

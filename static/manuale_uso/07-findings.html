@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="07 · Unified Findings" data-title-it="07 · Findings unificati">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>07 · Unified Findings — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html" aria-current="page"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#lifecycle"><span lang="en">Dedup &amp; lifecycle</span><span lang="it">Dedup e ciclo di vita</span></a></li>
+              <li><a href="#import"><span lang="en">Import reports</span><span lang="it">Import report</span></a></li>
+              <li><a href="#local"><span lang="en">Local scan</span><span lang="it">Scansione locale</span></a></li>
+              <li><a href="#kpi"><span lang="en">KPIs &amp; compliance</span><span lang="it">KPI e conformità</span></a></li>
+              <li><a href="#table"><span lang="en">Findings table</span><span lang="it">Tabella findings</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">07 · <span lang="en">Unified Findings</span><span lang="it">Findings unificati</span> <span class="route">/findings</span></div>
+        <h1><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></h1>
+        <p lang="en">
+          The remediation work queue and the ASPM heart of the product. Every defect — discovered by this application or
+          imported from a third-party scanner — lands here as a deduplicated finding with a status, a deadline and, if
+          you want it, a ticket.
+        </p>
+        <p lang="it">
+          La coda di lavoro della remediation e il cuore ASPM del prodotto. Ogni difetto — scoperto da questa
+          applicazione o importato da uno scanner di terze parti — arriva qui come finding deduplicato con uno stato, una
+          scadenza e, se lo desideri, un ticket.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all · write: admin, manager, editor (in cone)</span><span lang="it">lettura: tutti · scrittura: admin, manager, editor (nel cono)</span></span></h2>
+
+        <p lang="en">
+          The subtitle states the ambition: <em>“Deduplicated findings from internal posture scans and imported scanner
+            reports — with workflow states and remediation SLA.”</em> In other words, this page exists so that a
+          vulnerability reported by three different tools is one piece of work, with one owner and one deadline, rather
+          than three tickets nobody closes.
+        </p>
+        <p lang="it">
+          Il sottotitolo dichiara l'obiettivo: <em>«Deduplicated findings from internal posture scans and imported
+            scanner reports — with workflow states and remediation SLA.»</em> In altre parole, questa pagina esiste
+          perché una vulnerabilità segnalata da tre strumenti diversi sia un solo lavoro, con un solo responsabile e una
+          sola scadenza, invece di tre ticket che nessuno chiude.
+        </p>
+
+        <figure>
+          <img src="img/findings-page.webp" alt="Unified findings page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The findings page</b> — import and local-scan panels at the top, then KPIs, the compliance bars,
+              the filter row and the table.</span>
+            <span lang="it"><b>La pagina findings</b> — pannelli di import e scansione locale in alto, poi KPI, barre di
+              conformità, riga dei filtri e tabella.</span>
+          </figcaption>
+        </figure>
+
+        <div class="note">
+          <span lang="en">This page needs the local Supabase stack. Without it a banner reads <em>“Supabase unreachable — start the
+            local stack to use findings.”</em> Scanning still works; the lifecycle does not.</span>
+          <span lang="it">Questa pagina richiede lo stack Supabase locale. Senza, compare un banner: <em>«Supabase unreachable —
+            start the local stack to use findings.»</em> Le scansioni continuano a funzionare; il ciclo di vita no.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= LIFECYCLE -->
+      <section class="block" id="lifecycle">
+        <h2><span lang="en">Deduplication, workflow and SLA</span><span lang="it">Deduplica, workflow e SLA</span></h2>
+
+        <h4><span class="n">1</span><span lang="en">Fingerprint deduplication</span><span lang="it">Deduplica per fingerprint</span></h4>
+        <p lang="en">
+          Identity is computed from <em>(asset, package, primary CVE)</em> — or from the location, for findings without a
+          CVE such as a hardcoded secret. <strong>The source is deliberately not part of the key.</strong> The same
+          defect reported by Trivy <em>and</em> Grype is one finding with source <code>trivy+grype</code> and an
+          incremented <span class="badge">seen ×n</span> counter, not two rows to triage twice. Internal posture findings
+          flow into the same lifecycle automatically on every run.
+        </p>
+        <p lang="it">
+          L'identità è calcolata da <em>(asset, pacchetto, CVE principale)</em> — o dalla posizione, per i finding senza
+          CVE come un segreto hardcoded. <strong>La sorgente non fa volutamente parte della chiave.</strong> Lo stesso
+          difetto segnalato da Trivy <em>e</em> da Grype è un unico finding con sorgente <code>trivy+grype</code> e un
+          contatore <span class="badge">seen ×n</span> incrementato, non due righe da esaminare due volte. I finding
+          interni di postura confluiscono automaticamente nello stesso ciclo di vita a ogni run.
+        </p>
+
+        <h4><span class="n">2</span><span lang="en">Workflow states</span><span lang="it">Stati del workflow</span></h4>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Status</span><span lang="it">Stato</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+                <th><span lang="en">Automation</span><span lang="it">Automatismi</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-err">OPEN</span></td>
+                <td><span lang="en">Newly observed, not yet triaged.</span><span lang="it">Osservato per la prima volta, non ancora triato.</span></td>
+                <td><span lang="en">Assigned on first observation, together with an SLA due date derived from the severity.</span><span lang="it">Assegnato alla prima osservazione, insieme a una scadenza SLA derivata dalla severità.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">TRIAGED</span></td>
+                <td><span lang="en">Reviewed, work planned.</span><span lang="it">Esaminato, lavoro pianificato.</span></td>
+                <td><span lang="en">Manual.</span><span lang="it">Manuale.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">ACCEPTED</span></td>
+                <td><span lang="en">Risk accepted — a deliberate decision not to fix.</span><span lang="it">Rischio accettato — decisione deliberata di non correggere.</span></td>
+                <td><span lang="en">Excluded from SLA breach counting, so accepted risk stops polluting your overdue number.</span><span lang="it">Escluso dal conteggio delle violazioni SLA, così il rischio accettato smette di inquinare il numero dei ritardi.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-ok">FIXED</span></td>
+                <td><span lang="en">Remediated.</span><span lang="it">Corretto.</span></td>
+                <td>
+                  <span lang="en">Posture findings no longer observed in the asset's latest run are <strong>auto-closed</strong>. A fixed finding that reappears in a later report is <strong>automatically reopened</strong>, with a visible <span class="badge b-warn">reopened ×n</span> counter.</span>
+                  <span lang="it">I finding di postura non più osservati nell'ultima run dell'asset vengono <strong>chiusi automaticamente</strong>. Un finding corretto che ricompare in un report successivo viene <strong>riaperto automaticamente</strong>, con un contatore visibile <span class="badge b-warn">reopened ×n</span>.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Transitions are free — any status to any status — through <code>PATCH /api/findings/{id}/status</code>.</p>
+        <p lang="it">Le transizioni sono libere — da qualsiasi stato a qualsiasi altro — tramite <code>PATCH /api/findings/{id}/status</code>.</p>
+
+        <h4><span class="n">3</span><span lang="en">Remediation SLA</span><span lang="it">SLA di remediation</span></h4>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Severity</span><span lang="it">Severità</span></th>
+                <th><span lang="en">Default days</span><span lang="it">Giorni predefiniti</span></th>
+                <th><span lang="en">Configuration</span><span lang="it">Configurazione</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Critical</td><td>7</td><td rowspan="5"><code>sla</code> <span lang="en">section of <code>config.json</code></span><span lang="it">sezione di <code>config.json</code></span></td></tr>
+              <tr><td>High</td><td>30</td></tr>
+              <tr><td>Medium</td><td>90</td></tr>
+              <tr><td>Low</td><td>180</td></tr>
+              <tr><td>Unknown</td><td>90</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          The due date is computed at <strong>first observation</strong>, not at each sighting — so a finding you have
+          been ignoring for two months does not quietly get a fresh deadline. Past due and neither fixed nor accepted
+          produces the <span class="badge b-err">BREACHED</span> badge.
+        </p>
+        <p lang="it">
+          La scadenza è calcolata alla <strong>prima osservazione</strong>, non a ogni avvistamento — così un finding
+          ignorato per due mesi non riceve silenziosamente una scadenza nuova. Scaduto e né corretto né accettato produce
+          il badge <span class="badge b-err">BREACHED</span>.
+        </p>
+      </section>
+
+      <!-- ======================================= IMPORT -->
+      <section class="block" id="import">
+        <h2>IMPORT SCANNER REPORT</h2>
+
+        <figure>
+          <img src="img/findings-import.webp" alt="Import scanner report panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Import panel</b> — file picker, tool selector (auto-detect by default), optional asset attribution
+              and the IMPORT button.</span>
+            <span lang="it"><b>Pannello di import</b> — selettore file, selettore strumento (rilevamento automatico di default),
+              attribuzione asset opzionale e pulsante IMPORT.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>REPORT FILE (JSON / JSONL)</strong></td>
+                <td><span lang="en">A file picker accepting <code>.json</code> and <code>.jsonl</code>, plus <code>application/json</code> and plain text.</span><span lang="it">Un selettore file che accetta <code>.json</code> e <code>.jsonl</code>, oltre a <code>application/json</code> e testo semplice.</span></td>
+              </tr>
+              <tr>
+                <td><strong>TOOL</strong></td>
+                <td><span lang="en"><code>auto</code> by default — the format is detected from the payload itself. Force a specific parser only when auto-detection fails, for instance with a heavily post-processed report.</span><span lang="it"><code>auto</code> di default — il formato viene rilevato dal contenuto stesso. Forza un parser specifico solo quando il rilevamento automatico fallisce, per esempio con un report pesantemente post-elaborato.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Asset IP (optional)</strong></td>
+                <td><span lang="en">Attributes the imported findings to an inventory asset. This is what makes them appear in <a href="06-risk.html">/risk</a> and inside cone-scoped views — without it the findings exist but belong to no host.</span><span lang="it">Attribuisce i finding importati a un asset dell'inventario. È ciò che li fa comparire in <a href="06-risk.html">/risk</a> e nelle viste limitate al cono — senza, i finding esistono ma non appartengono a nessun host.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">IMPORT</span></td>
+                <td><span lang="en"><code>POST /api/findings/import</code>. Result line: <em>“Imported: {parsed} findings from {tool} — {new} new, {updated} updated, {reopened} reopened.”</em> On failure: <em>“Import failed: {msg}”</em>.</span><span lang="it"><code>POST /api/findings/import</code>. Riga di risultato: <em>«Imported: {parsed} findings from {tool} — {new} new, {updated} updated, {reopened} reopened.»</em> In caso di errore: <em>«Import failed: {msg}»</em>.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Supported tools</span><span lang="it">Strumenti supportati</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Tool</span><span lang="it">Strumento</span></th>
+                <th><span lang="en">Produce the report with</span><span lang="it">Genera il report con</span></th>
+                <th><span lang="en">Content ingested</span><span lang="it">Contenuto acquisito</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Trivy</strong></td><td><code>trivy … -f json</code></td><td><span lang="en">Package and image vulnerabilities, plus secrets found in layers.</span><span lang="it">Vulnerabilità di pacchetti e immagini, più segreti trovati nei layer.</span></td></tr>
+              <tr><td><strong>Grype</strong></td><td><code>grype … -o json</code></td><td><span lang="en">Package and image vulnerabilities.</span><span lang="it">Vulnerabilità di pacchetti e immagini.</span></td></tr>
+              <tr><td><strong>Nuclei</strong></td><td><span lang="en">JSON export or JSONL</span><span lang="it">Export JSON o JSONL</span></td><td><span lang="en">Template-based host findings.</span><span lang="it">Finding su host basati su template.</span></td></tr>
+              <tr><td><strong>Semgrep</strong></td><td><code>semgrep --json</code></td><td><span lang="en">SAST code findings.</span><span lang="it">Finding SAST sul codice.</span></td></tr>
+              <tr><td><strong>Gitleaks</strong></td><td><code>gitleaks detect -f json</code></td><td><span lang="en">Hardcoded secrets in a repository or directory.</span><span lang="it">Segreti hardcoded in un repository o in una directory.</span></td></tr>
+              <tr><td><strong>Trufflehog</strong></td><td><code>trufflehog … --json</code></td><td><span lang="en">Secrets — rated <span class="badge b-err">CRITICAL</span> when verified live.</span><span lang="it">Segreti — classificati <span class="badge b-err">CRITICAL</span> quando verificati in tempo reale.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tip">
+          <span lang="en"><strong>Secret values are never persisted.</strong> For gitleaks, trufflehog and Trivy secret findings
+            the application stores the rule, the path and non-sensitive metadata only — the detected secret itself is
+            discarded. Importing a secrets report does not turn your findings database into a credential store.</span>
+          <span lang="it"><strong>I valori dei segreti non vengono mai salvati.</strong> Per i finding di gitleaks, trufflehog e
+            Trivy l'applicazione memorizza solo la regola, il percorso e metadati non sensibili — il segreto rilevato
+            viene scartato. Importare un report di segreti non trasforma il database dei finding in un archivio di
+            credenziali.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= LOCAL -->
+      <section class="block" id="local">
+        <h2>LOCAL SCAN (GITLEAKS / TRIVY IMAGE)</h2>
+
+        <figure>
+          <img src="img/findings-local.webp" alt="Local scan panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Local scan</b> — pick a scan type, give it a target, optionally attribute it to an asset, press
+              RUN.</span>
+            <span lang="it"><b>Scansione locale</b> — scegli il tipo, indica un target, eventualmente attribuiscilo a un asset,
+              premi RUN.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>TYPE</strong></td>
+                <td><span lang="en">Either <em>SECRETS (gitleaks · directory)</em> or <em>CONTAINER IMAGE (trivy · vuln+secret)</em>.</span><span lang="it">O <em>SECRETS (gitleaks · directory)</em> oppure <em>CONTAINER IMAGE (trivy · vuln+secret)</em>.</span></td>
+              </tr>
+              <tr>
+                <td><strong>TARGET</strong></td>
+                <td><span lang="en">A filesystem path for gitleaks (<code>/path/to/repo</code>) or an image reference for Trivy (<code>nginx:1.25</code>) — the placeholder shows both forms.</span><span lang="it">Un percorso sul filesystem per gitleaks (<code>/path/to/repo</code>) o un riferimento immagine per Trivy (<code>nginx:1.25</code>) — il placeholder mostra entrambe le forme.</span></td>
+              </tr>
+              <tr>
+                <td><strong>Asset IP (optional)</strong></td>
+                <td><span lang="en">Attribution. <strong>Mandatory for editors</strong>, and it must fall inside their visibility cone.</span><span lang="it">Attribuzione. <strong>Obbligatoria per gli editor</strong> e deve rientrare nel loro cono di visibilità.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">RUN</span></td>
+                <td><span lang="en"><code>POST /api/findings/scan-local</code> — runs the scanner <strong>on the server</strong> and ingests its report through the same pipeline as an upload. Shows <em>“running scanner…”</em> while it works.</span><span lang="it"><code>POST /api/findings/scan-local</code> — esegue lo scanner <strong>sul server</strong> e acquisisce il report attraverso la stessa pipeline di un upload. Mostra <em>«running scanner…»</em> durante l'esecuzione.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Missing binary</strong></span><span lang="it"><strong>Binario mancante</strong></span></td>
+                <td><span lang="en">Returns <code>400</code> with installation instructions rather than failing opaquely. Neither gitleaks nor Trivy is a hard dependency of the application.</span><span lang="it">Restituisce <code>400</code> con le istruzioni di installazione invece di fallire in modo opaco. Né gitleaks né Trivy sono dipendenze obbligatorie dell'applicazione.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">KPIs, compliance bars and filters</span><span lang="it">KPI, barre di conformità e filtri</span></h2>
+
+        <figure>
+          <img src="img/findings-kpis.webp" alt="Findings KPI cards" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Five KPI cards</b> — each one is also a status filter: click it and the table below narrows.</span>
+            <span lang="it"><b>Cinque card KPI</b> — ciascuna è anche un filtro di stato: cliccala e la tabella sotto si
+              restringe.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">
+          <span class="badge b-err">OPEN</span> · <span class="badge b-err">SLA BREACHED</span> ·
+          <span class="badge b-warn">TRIAGED</span> · <span class="badge">ACCEPTED</span> ·
+          <span class="badge b-ok">FIXED</span>. In a weekly report, <strong>SLA BREACHED</strong> is the number that
+          matters: OPEN measures how much exists, BREACHED measures how much is late.
+        </p>
+        <p lang="it">
+          <span class="badge b-err">OPEN</span> · <span class="badge b-err">SLA BREACHED</span> ·
+          <span class="badge b-warn">TRIAGED</span> · <span class="badge">ACCEPTED</span> ·
+          <span class="badge b-ok">FIXED</span>. In un report settimanale il numero che conta è <strong>SLA
+            BREACHED</strong>: OPEN misura quanto esiste, BREACHED misura quanto è in ritardo.
+        </p>
+
+        <h4><span class="n">4</span><span lang="en">Compliance aggregation</span><span lang="it">Aggregazione di conformità</span></h4>
+        <div class="figrow">
+          <figure>
+            <img src="img/findings-owasp.webp" alt="OWASP Top 10 bars" loading="lazy" />
+            <figcaption><span lang="en"><b>OWASP TOP 10 (OPEN FINDINGS)</b> — open findings aggregated by A01–A10 category.</span><span lang="it"><b>OWASP TOP 10 (OPEN FINDINGS)</b> — finding aperti aggregati per categoria A01–A10.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/findings-nis2.webp" alt="NIS2 measures bars" loading="lazy" />
+            <figcaption><span lang="en"><b>NIS2 · ART. 21(2) MEASURES</b> — the same aggregation against the EU directive's minimum measures.</span><span lang="it"><b>NIS2 · ART. 21(2) MEASURES</b> — la stessa aggregazione rispetto alle misure minime della direttiva europea.</span></figcaption>
+          </figure>
+        </div>
+        <p lang="en">
+          Compliance references are computed <strong>at runtime</strong>, not stored as a manual tag: the CWE identifiers
+          come from the report metadata, the OWASP Top 10 2021 category is derived from the CWE map or from source
+          heuristics, and the NIS2 mapping targets the minimum measures of article 21(2) of EU directive 2022/2555.
+          Because it is computed live, the bars always describe the findings that are open <em>now</em> — which is
+          exactly what an auditor asks for.
+        </p>
+        <p lang="it">
+          I riferimenti di conformità sono calcolati <strong>a runtime</strong>, non memorizzati come etichetta manuale:
+          gli identificativi CWE provengono dai metadati del report, la categoria OWASP Top 10 2021 è derivata dalla
+          mappa CWE o da euristiche sulla sorgente, e la mappatura NIS2 punta alle misure minime dell'articolo 21(2)
+          della direttiva UE 2022/2555. Essendo calcolate in tempo reale, le barre descrivono sempre i finding aperti
+          <em>adesso</em> — che è esattamente ciò che chiede un auditor.
+        </p>
+
+        <h4><span class="n">5</span><span lang="en">Filter row</span><span lang="it">Riga dei filtri</span></h4>
+        <figure>
+          <img src="img/findings-filters.webp" alt="Findings filter row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Filters</b> — status, severity, source and NIS2 measure, plus free-text search.</span>
+            <span lang="it"><b>Filtri</b> — stato, severità, sorgente e misura NIS2, più ricerca in testo libero.</span>
+          </figcaption>
+        </figure>
+        <ul class="tight">
+          <li><span lang="en"><strong>ALL STATUSES</strong> · <strong>ALL SEVERITIES</strong> · <strong>ALL SOURCES</strong> · <strong>ALL NIS2 MEASURES</strong> — four dropdowns that combine.</span><span lang="it"><strong>ALL STATUSES</strong> · <strong>ALL SEVERITIES</strong> · <strong>ALL SOURCES</strong> · <strong>ALL NIS2 MEASURES</strong> — quattro menu che si combinano.</span></li>
+          <li><span lang="en"><strong>Search</strong> — <em>“Search package, CVE, asset…”</em>, applied instantly.</span><span lang="it"><strong>Ricerca</strong> — <em>«Search package, CVE, asset…»</em>, applicata istantaneamente.</span></li>
+          <li><span lang="en"><strong>Active chips</strong> — every applied filter becomes a removable chip labelled <em>Status</em>, <em>Severity</em>, <em>Source</em> or <em>Search</em>, with <span class="badge b-acc">CLEAR ALL</span> to reset everything. A live row count sits beside them, so you always know how much you are looking at.</span><span lang="it"><strong>Chip attivi</strong> — ogni filtro applicato diventa un chip rimovibile etichettato <em>Status</em>, <em>Severity</em>, <em>Source</em> o <em>Search</em>, con <span class="badge b-acc">CLEAR ALL</span> per azzerare tutto. Accanto c'è un conteggio righe live, così sai sempre quanto stai guardando.</span></li>
+        </ul>
+      </section>
+
+      <!-- ======================================= TABLE -->
+      <section class="block" id="table">
+        <h2><span lang="en">The findings table</span><span lang="it">La tabella dei findings</span></h2>
+
+        <figure>
+          <img src="img/findings-table.webp" alt="Findings table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The work queue</b> — severity, finding, asset, source, observation window, SLA, inline status and
+              the ticket column.</span>
+            <span lang="it"><b>La coda di lavoro</b> — severità, finding, asset, sorgente, finestra di osservazione, SLA, stato in
+              linea e colonna ticket.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Column</span><span lang="it">Colonna</span></th><th><span lang="en">Content and behaviour</span><span lang="it">Contenuto e comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>SEV</strong></td><td><span lang="en">Severity badge, colour-coded.</span><span lang="it">Badge di severità, codificato a colori.</span></td></tr>
+              <tr><td><strong>FINDING</strong></td><td><span lang="en">Title, package or rule, CVE identifiers, CWE and the derived compliance tags.</span><span lang="it">Titolo, pacchetto o regola, identificativi CVE, CWE e le etichette di conformità derivate.</span></td></tr>
+              <tr><td><strong>ASSET</strong></td><td><span lang="en">The attributed inventory host, or blank for an unattributed import.</span><span lang="it">L'host di inventario attribuito, o vuoto per un import senza attribuzione.</span></td></tr>
+              <tr><td><strong>SOURCE</strong></td><td><span lang="en">The originating tool or tools — <code>posture</code>, <code>trivy</code>, <code>trivy+grype</code>, <code>semgrep</code>… A combined source is the visible proof that deduplication worked.</span><span lang="it">Lo strumento o gli strumenti di origine — <code>posture</code>, <code>trivy</code>, <code>trivy+grype</code>, <code>semgrep</code>… Una sorgente combinata è la prova visibile che la deduplica ha funzionato.</span></td></tr>
+              <tr><td><strong>FIRST / LAST SEEN</strong></td><td><span lang="en">The observation window, with the badges <span class="badge">seen ×n</span> and <span class="badge b-warn">reopened ×n</span>.</span><span lang="it">La finestra di osservazione, con i badge <span class="badge">seen ×n</span> e <span class="badge b-warn">reopened ×n</span>.</span></td></tr>
+              <tr><td><strong>SLA</strong></td><td><span lang="en"><em>“{d}d left”</em> while there is time, or <span class="badge b-err">BREACHED {d}d</span> once the deadline has passed.</span><span lang="it"><em>«{d}d left»</em> finché c'è tempo, oppure <span class="badge b-err">BREACHED {d}d</span> quando la scadenza è passata.</span></td></tr>
+              <tr><td><strong>STATUS</strong></td><td><span lang="en">An inline dropdown. Changing it fires <code>PATCH /api/findings/{id}/status</code> immediately — no save button, no modal.</span><span lang="it">Un menu a tendina in linea. Cambiandolo parte subito <code>PATCH /api/findings/{id}/status</code> — nessun pulsante di salvataggio, nessuna finestra modale.</span></td></tr>
+              <tr>
+                <td><strong>TICKET</strong></td>
+                <td>
+                  <span lang="en"><span class="badge b-acc">CREATE</span> opens a remediation ticket through <code>POST /api/findings/{id}/ticket</code>; afterwards the cell becomes a link to the issue. Title, severity, asset, CVE, SLA and fingerprint all go into the ticket body, so the receiving team has the context without opening this application. Requires a provider configured in <a href="11-settings.html#ticketing">Settings → TICKETING</a>. Messages: <em>“Ticket created: {ref}”</em>, <em>“Ticket already linked to this finding”</em>, <em>“Ticket not created: {msg}”</em>.</span>
+                  <span lang="it"><span class="badge b-acc">CREATE</span> apre un ticket di remediation tramite <code>POST /api/findings/{id}/ticket</code>; dopo, la cella diventa un link all'issue. Titolo, severità, asset, CVE, SLA e fingerprint finiscono nel corpo del ticket, così il team ricevente ha il contesto senza aprire questa applicazione. Richiede un provider configurato in <a href="11-settings.html#ticketing">Impostazioni → TICKETING</a>. Messaggi: <em>«Ticket created: {ref}»</em>, <em>«Ticket already linked to this finding»</em>, <em>«Ticket not created: {msg}»</em>.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="mid">
+          <img src="img/findings-row.webp" alt="A single finding row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>A single finding</b> — everything needed to decide, in one line.</span>
+            <span lang="it"><b>Un singolo finding</b> — tutto il necessario per decidere, in una riga.</span>
+          </figcaption>
+        </figure>
+
+        <p lang="en">Empty state: <em>“No findings. Run a posture scan or import a scanner report.”</em></p>
+        <p lang="it">Stato vuoto: <em>«No findings. Run a posture scan or import a scanner report.»</em></p>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — the triage cycle</span><span lang="it">Come funziona — il ciclo di triage</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open <strong>Findings</strong> and click the <span class="badge b-err">SLA BREACHED</span> KPI first — overdue work outranks everything else.</span><span lang="it">Apri <strong>Findings</strong> e clicca per primo il KPI <span class="badge b-err">SLA BREACHED</span> — il lavoro in ritardo ha priorità su tutto.</span></li>
+          <li><span lang="en">Then filter by <em>CRITICAL</em> severity and <em>OPEN</em> status to get today's queue.</span><span lang="it">Poi filtra per severità <em>CRITICAL</em> e stato <em>OPEN</em> per ottenere la coda di oggi.</span></li>
+          <li><span lang="en">Open a finding and read its CVEs, package and compliance tags.</span><span lang="it">Apri un finding e leggi CVE, pacchetto ed etichette di conformità.</span></li>
+          <li><span lang="en">Decide: fixing it now → <span class="badge b-warn">TRIAGED</span>; not fixing it → <span class="badge">ACCEPTED</span> (it leaves the breach count); already fixed → <span class="badge b-ok">FIXED</span>.</span><span lang="it">Decidi: lo correggo ora → <span class="badge b-warn">TRIAGED</span>; non lo correggo → <span class="badge">ACCEPTED</span> (esce dal conteggio delle violazioni); già corretto → <span class="badge b-ok">FIXED</span>.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CREATE</span> in the TICKET column to hand the work to the owning team; the finding keeps the ticket reference.</span><span lang="it">Premi <span class="badge b-acc">CREATE</span> nella colonna TICKET per passare il lavoro al team responsabile; il finding conserva il riferimento al ticket.</span></li>
+          <li><span lang="en">Re-run the posture scan after the patch window. Genuinely fixed posture findings auto-close; anything that reappears is reopened with a visible counter.</span><span lang="it">Riesegui la scansione di postura dopo la finestra di patch. I finding di postura davvero risolti si chiudono da soli; ciò che ricompare viene riaperto con un contatore visibile.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — import a CI scanner report</span><span lang="it">Come funziona — importare un report da CI</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Generate the report, for example <code>trivy image -f json -o report.json nginx:1.25</code>.</span><span lang="it">Genera il report, per esempio <code>trivy image -f json -o report.json nginx:1.25</code>.</span></li>
+          <li><span lang="en">In <strong>IMPORT SCANNER REPORT</strong> choose the file and leave <strong>TOOL</strong> on <code>auto</code>.</span><span lang="it">In <strong>IMPORT SCANNER REPORT</strong> scegli il file e lascia <strong>TOOL</strong> su <code>auto</code>.</span></li>
+          <li><span lang="en">Enter the <strong>Asset IP</strong> if the findings belong to a known host.</span><span lang="it">Inserisci l'<strong>Asset IP</strong> se i finding appartengono a un host noto.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">IMPORT</span> and read the counts in the result line.</span><span lang="it">Premi <span class="badge b-acc">IMPORT</span> e leggi i conteggi nella riga di risultato.</span></li>
+          <li><span lang="en">As an <em>editor</em> importing a batch that contains out-of-scope hosts, those rows are silently skipped and reported as <code>skipped_out_of_scope</code> — CI pipelines keep working instead of erroring.</span><span lang="it">Come <em>editor</em>, importando un lotto che contiene host fuori dal tuo cono, quelle righe vengono saltate in silenzio e riportate come <code>skipped_out_of_scope</code> — le pipeline CI continuano a funzionare invece di fallire.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en">A single deduplicated queue in which every row carries a status, a deadline and — when you want it — a
+            link to real work in a real tracker. Importing the same report twice changes nothing except the
+            <span class="badge">seen ×n</span> counter. The OWASP and NIS2 bars give you a compliance narrative straight
+            from live data, and the KPI strip is the number you report weekly.</p>
+          <p lang="it">Un'unica coda deduplicata in cui ogni riga porta uno stato, una scadenza e — quando lo vuoi — un link a
+            lavoro reale in un tracker reale. Importare due volte lo stesso report non cambia nulla se non il contatore
+            <span class="badge">seen ×n</span>. Le barre OWASP e NIS2 offrono una narrazione di conformità che nasce dai
+            dati vivi, e la striscia KPI è il numero che riporti ogni settimana.</p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="06-risk.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          06 · <span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span>
+        </a>
+        <a class="nxt" href="08-sbom.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          08 · SBOM
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

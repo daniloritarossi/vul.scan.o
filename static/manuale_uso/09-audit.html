@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="09 · Audit Ledger" data-title-it="09 · Registro audit">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>09 · Audit Ledger — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html" aria-current="page"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#integrity"><span lang="en">Integrity</span><span lang="it">Integrità</span></a></li>
+              <li><a href="#kpi">KPI</a></li>
+              <li><a href="#filters"><span lang="en">Filters &amp; search</span><span lang="it">Filtri e ricerca</span></a></li>
+              <li><a href="#entries"><span lang="en">Scan entries</span><span lang="it">Voci di scansione</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">09 · <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span> <span class="route">/audit</span></div>
+        <h1><span lang="en">Audit Ledger</span><span lang="it">Registro di audit</span></h1>
+        <p lang="en">
+          The history of every scan the application has run, most recent first, protected by a tamper-evident hash
+          chain. This is the page you open when someone asks you to <em>prove</em> what was scanned, when, and by whom.
+        </p>
+        <p lang="it">
+          Lo storico di ogni scansione eseguita dall'applicazione, dalla più recente, protetto da una catena di hash a
+          prova di manomissione. È la pagina che apri quando qualcuno ti chiede di <em>dimostrare</em> cosa è stato
+          scansionato, quando e da chi.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles">admin · manager (<span lang="en">all</span><span lang="it">tutto</span>) · editor (<span lang="en">own scope</span><span lang="it">proprio ambito</span>) · <span lang="en">viewer denied</span><span lang="it">viewer negato</span></span></h2>
+
+        <p lang="en">
+          The subtitle names the storage explicitly: <em>“Scan results history stored on Supabase · most recent
+            first.”</em> Each entry records one scan session — the product searched, the timestamp, the actor, the
+          resolved dependencies — and expands to the per-asset results underneath.
+        </p>
+        <p lang="it">
+          Il sottotitolo nomina esplicitamente lo storage: <em>«Scan results history stored on Supabase · most recent
+            first.»</em> Ogni voce registra una sessione di scansione — il prodotto cercato, il timestamp, l'attore, le
+          dipendenze risolte — ed espande sotto i risultati per asset.
+        </p>
+        <p lang="en">
+          Access is deliberately asymmetric: administrators and managers see the entire ledger, an <em>editor</em> sees
+          only results inside their own visibility cone, and a <em>viewer</em> cannot open the page at all. Audit history
+          is the one place where partial visibility would be actively misleading, so viewers are excluded rather than
+          shown a filtered version.
+        </p>
+        <p lang="it">
+          L'accesso è volutamente asimmetrico: amministratori e manager vedono l'intero registro, un <em>editor</em> vede
+          solo i risultati del proprio cono di visibilità e un <em>viewer</em> non può aprire la pagina. Lo storico di
+          audit è l'unico posto in cui una visibilità parziale sarebbe attivamente fuorviante, quindi i viewer vengono
+          esclusi invece che ricevere una versione filtrata.
+        </p>
+
+        <figure>
+          <img src="img/audit-page.webp" alt="Audit ledger page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The audit page</b> — integrity badge and search at the top, the KPI strip, the filter row and the
+              chronological entry list.</span>
+            <span lang="it"><b>La pagina audit</b> — badge di integrità e ricerca in alto, striscia KPI, riga dei filtri ed elenco
+              cronologico delle voci.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= INTEGRITY -->
+      <section class="block" id="integrity">
+        <h2><span lang="en">Tamper-evident integrity</span><span lang="it">Integrità a prova di manomissione</span></h2>
+
+        <figure class="narrow">
+          <img src="img/audit-integrity.webp" alt="Ledger integrity badge" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The integrity badge</b> — the first thing to read on this page, verified through
+              <code>GET /api/audit/verify</code>.</span>
+            <span lang="it"><b>Il badge di integrità</b> — la prima cosa da leggere in questa pagina, verificato tramite
+              <code>GET /api/audit/verify</code>.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <p lang="en">
+          Each ledger entry hashes its own content <strong>together with the previous entry's hash</strong>. That chains
+          the history: altering or deleting a row anywhere invalidates every entry after it, and the mismatch is
+          detectable without needing a separate copy of the data. Verification runs on page load and reports across the
+          whole chain, plus per-entry.
+        </p>
+        <p lang="it">
+          Ogni voce del registro calcola l'hash del proprio contenuto <strong>insieme all'hash della voce
+            precedente</strong>. Questo concatena lo storico: alterare o eliminare una riga in qualsiasi punto invalida
+          tutte le voci successive, e la discrepanza è rilevabile senza bisogno di una copia separata dei dati. La
+          verifica parte al caricamento della pagina e riporta sia il risultato complessivo sia quello per voce.
+        </p>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Indicator</span><span lang="it">Indicatore</span></th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge">CHECKING…</span></td><td><span lang="en">Verification in progress.</span><span lang="it">Verifica in corso.</span></td></tr>
+              <tr><td><span class="badge b-ok">LEDGER VERIFIED · n</span></td><td><span lang="en">The whole chain re-hashes correctly across <em>n</em> entries. This is the state you want.</span><span lang="it">L'intera catena si ricalcola correttamente su <em>n</em> voci. È lo stato desiderato.</span></td></tr>
+              <tr><td><span class="badge b-err">TAMPERED · n</span></td><td><span lang="en">A hash mismatch was found — an entry, or the chain before it, was altered.</span><span lang="it">È stata trovata una discrepanza di hash — una voce, o la catena che la precede, è stata alterata.</span></td></tr>
+              <tr><td><span class="badge b-warn">LEGACY (UNSIGNED)</span></td><td><span lang="en">Entries recorded before the tamper-evident ledger existed. They cannot be verified, only trusted.</span><span lang="it">Voci registrate prima dell'esistenza del registro a prova di manomissione. Non possono essere verificate, solo accettate per fiducia.</span></td></tr>
+              <tr><td><span class="badge">EMPTY LEDGER</span> / <span class="badge">INTEGRITY N/A</span></td><td><span lang="en">Nothing to verify yet, or verification unavailable.</span><span lang="it">Nulla da verificare, oppure verifica non disponibile.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Per-entry badge</span><span lang="it">Badge per voce</span></th><th>Tooltip</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span class="badge b-ok">VERIFIED</span></td><td><em>“Hash chain intact: this entry has not been altered.”</em></td></tr>
+              <tr><td><span class="badge b-err">TAMPERED</span></td><td><em>“Hash mismatch: this entry or the chain before it was altered.”</em></td></tr>
+              <tr><td><span class="badge b-warn">UNSIGNED</span></td><td><em>“Legacy entry recorded before the tamper-evident ledger.”</em></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4><span class="n">1</span><span lang="en">Actor attribution</span><span lang="it">Attribuzione dell'attore</span></h4>
+        <p lang="en">
+          Every entry records <strong>who ran the scan</strong> and displays it as <em>“Run by …”</em>. When no actor was
+          recorded — typically for scheduled or pre-authentication runs — the entry shows <span class="badge">SYSTEM</span>
+          with the tooltip <em>“No actor recorded for this scan.”</em> Actor is also a filter facet, which is what makes
+          the page usable during an investigation.
+        </p>
+        <p lang="it">
+          Ogni voce registra <strong>chi ha eseguito la scansione</strong> e lo mostra come <em>«Run by …»</em>. Quando
+          non è stato registrato alcun attore — tipicamente per run pianificate o precedenti all'autenticazione — la voce
+          mostra <span class="badge">SYSTEM</span> con il tooltip <em>«No actor recorded for this scan.»</em> L'attore è
+          anche una faccetta di filtro, ed è ciò che rende la pagina utilizzabile durante un'indagine.
+        </p>
+
+        <div class="warn">
+          <span lang="en"><strong><span class="badge b-err">TAMPERED</span> is a security event, not a display glitch.</strong> It
+            means rows were modified or deleted directly in the database, bypassing the application. Preserve the
+            database, review who holds direct Postgres access, and treat the affected period's history as
+            untrustworthy.</span>
+          <span lang="it"><strong><span class="badge b-err">TAMPERED</span> è un evento di sicurezza, non un difetto di
+            visualizzazione.</strong> Significa che delle righe sono state modificate o eliminate direttamente nel
+            database, bypassando l'applicazione. Conserva il database, verifica chi ha accesso diretto a Postgres e
+            considera inaffidabile lo storico del periodo interessato.</span>
+        </div>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">KPI strip</span><span lang="it">Striscia KPI</span></h2>
+
+        <figure>
+          <img src="img/audit-kpis.webp" alt="Audit KPI cards" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Five KPIs</b> — all of them recomputed against the <em>current filter</em>, not the whole
+              ledger.</span>
+            <span lang="it"><b>Cinque KPI</b> — tutti ricalcolati sul <em>filtro corrente</em>, non sull'intero registro.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th>KPI</th><th><span lang="en">Definition</span><span lang="it">Definizione</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>TOTAL SCANS</strong></td><td><span lang="en">Distinct scan sessions matching the current filter.</span><span lang="it">Sessioni di scansione distinte che corrispondono al filtro corrente.</span></td></tr>
+              <tr><td><strong>ASSET RESULTS</strong></td><td><span lang="en">One entry per asset per scan — vulnerable and clean outcomes alike.</span><span lang="it">Una voce per asset per scansione — esiti vulnerabili e puliti allo stesso modo.</span></td></tr>
+              <tr><td><strong>VULNERABLE OUTCOMES</strong></td><td><span lang="en">Results that came back vulnerable, accompanied by a sparkline of the trend.</span><span lang="it">Risultati tornati vulnerabili, accompagnati da uno sparkline della tendenza.</span></td></tr>
+              <tr><td><strong>UNIQUE ASSETS</strong></td><td><span lang="en">Distinct IP addresses seen across the filtered scans.</span><span lang="it">Indirizzi IP distinti visti nelle scansioni filtrate.</span></td></tr>
+              <tr><td><strong>LAST SCAN</strong></td><td><span lang="en">Relative time of the most recent entry — <em>just now</em>, <em>{n}m ago</em>, <em>{n}h ago</em>, <em>{n}d ago</em> — with the exact timestamp in the tooltip.</span><span lang="it">Tempo relativo della voce più recente — <em>just now</em>, <em>{n}m ago</em>, <em>{n}h ago</em>, <em>{n}d ago</em> — con il timestamp esatto nel tooltip.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= FILTERS -->
+      <section class="block" id="filters">
+        <h2><span lang="en">Filters, search and export</span><span lang="it">Filtri, ricerca ed export</span></h2>
+
+        <figure>
+          <img src="img/audit-filters.webp" alt="Audit filter row" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Faceted filters</b> — outcome, source, OS, actor and a date range, with CLEAR to reset.</span>
+            <span lang="it"><b>Filtri a faccette</b> — esito, sorgente, OS, attore e intervallo di date, con CLEAR per
+              azzerare.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>OUTCOME</strong></td><td><span lang="en">Vulnerable, not vulnerable, or uncertain.</span><span lang="it">Vulnerabile, non vulnerabile o incerto.</span></td></tr>
+              <tr><td><strong>SOURCE</strong></td><td><span lang="en">The detection method — banner grab, authenticated, simulated, deep probe.</span><span lang="it">Il metodo di rilevamento — banner grab, autenticato, simulato, deep probe.</span></td></tr>
+              <tr><td><strong>OS</strong></td><td><span lang="en">Operating system of the scanned asset.</span><span lang="it">Sistema operativo dell'asset scansionato.</span></td></tr>
+              <tr><td><strong>ACTOR</strong></td><td><span lang="en">Who ran the scan — a faceted list built from the ledger itself, so it only ever offers actors that actually appear.</span><span lang="it">Chi ha eseguito la scansione — un elenco a faccette costruito dal registro stesso, quindi propone solo attori realmente presenti.</span></td></tr>
+              <tr><td><strong>FROM / TO</strong></td><td><span lang="en">Date pickers bounding the period.</span><span lang="it">Selettori di data che delimitano il periodo.</span></td></tr>
+              <tr><td><span class="badge b-acc">CLEAR</span></td><td><span lang="en">Resets every filter at once.</span><span lang="it">Azzera tutti i filtri in una volta.</span></td></tr>
+              <tr><td><span lang="en"><strong>Status line</strong></span><span lang="it"><strong>Riga di stato</strong></span></td><td><span lang="en"><em>“{n} scans”</em>, with the word <em>filtered</em> appended whenever filters are active — so a small number never looks like a small ledger.</span><span lang="it"><em>«{n} scans»</em>, con la parola <em>filtered</em> aggiunta quando ci sono filtri attivi — così un numero piccolo non sembra mai un registro piccolo.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/audit-search.webp" alt="Audit search and reload" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>Search and reload</b> — <em>“Search CVE, IP, version…”</em>; the magnifier expands the field, the ✕
+                clears it, RELOAD re-fetches.</span>
+              <span lang="it"><b>Ricerca e ricarica</b> — <em>«Search CVE, IP, version…»</em>; la lente espande il campo, la ✕ lo
+                svuota, RELOAD ricarica.</span>
+            </figcaption>
+          </figure>
+          <figure>
+            <img src="img/audit-export.webp" alt="Audit export buttons" loading="lazy" />
+            <figcaption>
+              <span lang="en"><b>CSV / XLS export</b> — the ledger exactly as filtered, ready to hand to an auditor.</span>
+              <span lang="it"><b>Export CSV / XLS</b> — il registro esattamente come filtrato, pronto da consegnare a un
+                auditor.</span>
+            </figcaption>
+          </figure>
+        </div>
+        <p lang="en">
+          Pagination and faceting are performed <strong>server-side</strong> by <code>GET /api/audit</code>, so a ledger
+          with tens of thousands of entries stays responsive and the facets always reflect the whole dataset rather than
+          the page you happen to be on.
+        </p>
+        <p lang="it">
+          Paginazione e faccette sono gestite <strong>lato server</strong> da <code>GET /api/audit</code>, così un
+          registro con decine di migliaia di voci resta reattivo e le faccette riflettono sempre l'intero dataset invece
+          della pagina che stai guardando.
+        </p>
+      </section>
+
+      <!-- ======================================= ENTRIES -->
+      <section class="block" id="entries">
+        <h2><span lang="en">Scan entries</span><span lang="it">Voci di scansione</span></h2>
+
+        <figure>
+          <img src="img/audit-entry.webp" alt="A scan entry expanded" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>One scan session</b> — header with product, timestamp, asset count, integrity badge and actor;
+              per-asset results underneath.</span>
+            <span lang="it"><b>Una sessione di scansione</b> — intestazione con prodotto, timestamp, numero di asset, badge di
+              integrità e attore; sotto, i risultati per asset.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Element</span><span lang="it">Elemento</span></th><th><span lang="en">Content and behaviour</span><span lang="it">Contenuto e comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Entry header</strong></span><span lang="it"><strong>Intestazione voce</strong></span></td>
+                <td><span lang="en">Product and version searched, timestamp, asset count, integrity badge and actor. Click it — or the chevron — to expand and collapse; the control carries <code>aria-expanded</code> and the label <em>“Toggle scan details”</em>.</span><span lang="it">Prodotto e versione cercati, timestamp, numero di asset, badge di integrità e attore. Cliccala — o clicca il chevron — per espandere e comprimere; il controllo ha <code>aria-expanded</code> ed etichetta <em>«Toggle scan details»</em>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Copy link</strong></span><span lang="it"><strong>Copia link</strong></span></td>
+                <td><span lang="en">Copies a direct link to that specific scan — paste it into a ticket, an email or an incident report so the reader lands exactly here.</span><span lang="it">Copia un link diretto a quella specifica scansione — incollalo in un ticket, in una email o in un report di incidente perché il lettore arrivi esattamente qui.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Result columns</strong></span><span lang="it"><strong>Colonne dei risultati</strong></span></td>
+                <td>METHOD · OUTCOME · FOUND · VERSION · EVIDENCE</td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>CVE list</strong></span><span lang="it"><strong>Elenco CVE</strong></span></td>
+                <td><span lang="en">Lazy-loaded per entry (<em>loading…</em> → the identifiers, or <em>failed to load</em>), truncated with <em>“+{n} more”</em> and <em>“show less”</em> so a scan with 400 CVEs does not bury the page.</span><span lang="it">Caricato in modo lazy per ogni voce (<em>loading…</em> → gli identificativi, oppure <em>failed to load</em>), troncato con <em>«+{n} more»</em> e <em>«show less»</em> perché una scansione con 400 CVE non sommerga la pagina.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">DEPS</span></td>
+                <td><span lang="en">The runtime dependencies resolved during that scan — the same measurement that feeds the Dashboard product graph.</span><span lang="it">Le dipendenze runtime risolte durante quella scansione — la stessa misurazione che alimenta il grafo prodotti della Dashboard.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">AI advisory</span></td>
+                <td><span lang="en">Marks a verdict derived from an AI-extracted affected version, used when no CVE was available. Tooltip: <em>“Verdict from the AI-extracted affected version (no CVE).”</em> It always carries the AI-GENERATED disclaimer — treat it as a lead, not as evidence.</span><span lang="it">Segnala un verdetto derivato da una versione affetta estratta dall'AI, usato quando nessun CVE era disponibile. Tooltip: <em>«Verdict from the AI-extracted affected version (no CVE).»</em> Porta sempre il disclaimer AI-GENERATED — trattalo come una pista, non come una prova.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">State</span><span lang="it">Stato</span></th><th><span lang="en">Message</span><span lang="it">Messaggio</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en">Empty ledger</span><span lang="it">Registro vuoto</span></td><td><em>“No scan saved yet. Run one from the Dashboard.”</em></td></tr>
+              <tr><td><span lang="en">Database down</span><span lang="it">Database non attivo</span></td><td><em>“Supabase unreachable.”</em> <span lang="en">plus the command to start it.</span><span lang="it">più il comando per avviarlo.</span></td></tr>
+              <tr><td><span lang="en">Network failure</span><span lang="it">Errore di rete</span></td><td><em>“Network error reaching the server.”</em></td></tr>
+              <tr><td><span lang="en">Search with no hits</span><span lang="it">Ricerca senza risultati</span></td><td><em>“No results matching the search.”</em></td></tr>
+              <tr><td><span lang="en">Scan without an identified product</span><span lang="it">Scansione senza prodotto identificato</span></td><td><em>“product not identified”</em></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — an evidence request</span><span lang="it">Come funziona — una richiesta di evidenze</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open <strong>Audit</strong> and read the integrity badge first. It must say <span class="badge b-ok">LEDGER VERIFIED</span> — evidence from a broken chain is not evidence.</span><span lang="it">Apri <strong>Audit</strong> e leggi per prima cosa il badge di integrità. Deve indicare <span class="badge b-ok">LEDGER VERIFIED</span> — le evidenze di una catena rotta non sono evidenze.</span></li>
+          <li><span lang="en">Bound the period with <strong>FROM</strong> and <strong>TO</strong>.</span><span lang="it">Delimita il periodo con <strong>FROM</strong> e <strong>TO</strong>.</span></li>
+          <li><span lang="en">If you are investigating a person or a service account, add the <strong>ACTOR</strong> filter.</span><span lang="it">Se stai indagando su una persona o un account di servizio, aggiungi il filtro <strong>ACTOR</strong>.</span></li>
+          <li><span lang="en">Set <strong>OUTCOME</strong> to <em>vulnerable</em> to keep only positive detections.</span><span lang="it">Imposta <strong>OUTCOME</strong> su <em>vulnerable</em> per tenere solo i rilevamenti positivi.</span></li>
+          <li><span lang="en">Type a CVE identifier or an IP address into the search box to trace one specific exposure through history.</span><span lang="it">Digita un identificativo CVE o un indirizzo IP nella casella di ricerca per seguire una specifica esposizione lungo lo storico.</span></li>
+          <li><span lang="en">Expand the relevant entries to read per-asset evidence, and use <em>copy link</em> to cite an individual scan.</span><span lang="it">Espandi le voci rilevanti per leggere le evidenze per asset e usa <em>copia link</em> per citare una singola scansione.</span></li>
+          <li><span lang="en">Export <span class="badge b-acc">CSV</span> or <span class="badge b-acc">XLS</span> to hand the material over.</span><span lang="it">Esporta in <span class="badge b-acc">CSV</span> o <span class="badge b-acc">XLS</span> per consegnare il materiale.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">A chronological, filterable and cryptographically verifiable record: <em>who</em> scanned <em>what</em>,
+            <em>when</em>, with <em>which method</em>, and <em>what was found</em> — exportable as evidence. Editors see
+            only results inside their own cone; viewers cannot open the page at all.</span>
+          <span lang="it">Un registro cronologico, filtrabile e verificabile crittograficamente: <em>chi</em> ha scansionato
+            <em>cosa</em>, <em>quando</em>, con <em>quale metodo</em> e <em>cosa è stato trovato</em> — esportabile come
+            evidenza. Gli editor vedono solo i risultati del proprio cono; i viewer non possono aprire la pagina.</span>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="08-sbom.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          08 · SBOM
+        </a>
+        <a class="nxt" href="10-admin.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          10 · <span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

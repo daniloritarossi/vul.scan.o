@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="03 · Dashboard" data-title-it="03 · Dashboard">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>03 · Dashboard — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html" aria-current="page"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#header"><span lang="en">Header &amp; onboarding</span><span lang="it">Intestazione e onboarding</span></a></li>
+              <li><a href="#kpi">KPI</a></li>
+              <li><a href="#query"><span lang="en">Scan query &amp; console</span><span lang="it">Query e console</span></a></li>
+              <li><a href="#graph"><span lang="en">Product network</span><span lang="it">Rete prodotti</span></a></li>
+              <li><a href="#panels"><span lang="en">Insight panels</span><span lang="it">Pannelli di analisi</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">03 · Dashboard <span class="route">/</span></div>
+        <h1><span lang="en">Dashboard — the Intelligence Center</span><span lang="it">Dashboard — l'Intelligence Center</span></h1>
+        <p lang="en">
+          The operational home screen. It answers three questions at a glance — how much of my fleet has been scanned,
+          how bad is it right now, and what changed since the last run — and it launches both kinds of scan.
+        </p>
+        <p lang="it">
+          La schermata operativa principale. Risponde a colpo d'occhio a tre domande — quanta parte del parco è stata
+          scansionata, quanto è grave adesso e cosa è cambiato dall'ultima run — e avvia entrambi i tipi di scansione.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">all roles · scanning denied to viewer</span><span lang="it">tutti i ruoli · scansione negata al viewer</span></span></h2>
+
+        <p lang="en">
+          The Dashboard is the only page that hosts <em>both</em> scan engines. The <strong>threat intelligence
+            query</strong> is targeted: you describe a vulnerability in free text (or paste a CVE ID), the application
+          identifies the product behind that description and then checks every asset for it, streaming results into a
+          console one host at a time. The <strong>posture scan</strong> is broad: it inventories every installed package
+          on every enabled asset and matches the lot against OSV.dev.
+        </p>
+        <p lang="it">
+          La Dashboard è l'unica pagina che ospita <em>entrambi</em> i motori di scansione. La <strong>threat
+            intelligence query</strong> è mirata: descrivi una vulnerabilità in testo libero (o incolli un CVE),
+          l'applicazione identifica il prodotto dietro quella descrizione e poi verifica ogni asset, riversando i
+          risultati in una console un host alla volta. La <strong>scansione di postura</strong> è ampia: inventaria ogni
+          pacchetto installato su ogni asset abilitato e confronta il tutto con OSV.dev.
+        </p>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th>Endpoint</th>
+                <th><span lang="en">Feeds</span><span lang="it">Alimenta</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>GET /api/dashboard</code></td><td><span lang="en">KPI cards, critical findings, recent activity, top exploitable.</span><span lang="it">Card KPI, finding critici, attività recente, top exploitable.</span></td></tr>
+              <tr><td><code>GET /api/asset/health</code></td><td><span lang="en">The ASSET AUTHENTICATION bars and the inventory list badges.</span><span lang="it">Le barre ASSET AUTHENTICATION e i badge della lista inventario.</span></td></tr>
+              <tr><td><code>GET /api/scan?q=…&amp;deep=…</code></td><td><span lang="en">Server-Sent Events stream for the targeted scan.</span><span lang="it">Stream Server-Sent Events per la scansione mirata.</span></td></tr>
+              <tr><td><code>GET /api/posture/scan</code></td><td><span lang="en">Server-Sent Events stream for the posture scan.</span><span lang="it">Stream Server-Sent Events per la scansione di postura.</span></td></tr>
+              <tr><td><code>GET /api/risk/trend</code></td><td><span lang="en">The two sparklines and their deltas.</span><span lang="it">I due sparkline e i relativi delta.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Everything on this page is recomputed inside your visibility cone: an editor's KPIs describe only their own assets.</p>
+        <p lang="it">Tutto in questa pagina è ricalcolato dentro il tuo cono di visibilità: i KPI di un editor descrivono solo i suoi asset.</p>
+
+        <figure>
+          <img src="img/dash-page.webp" alt="Dashboard, top of the page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The Dashboard above the fold</b> — greeting, the three KPI cards, the query panel and the live
+              console.</span>
+            <span lang="it"><b>La Dashboard nella prima schermata</b> — saluto, le tre card KPI, il pannello query e la console
+              live.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= HEADER -->
+      <section class="block" id="header">
+        <h2><span lang="en">Header and onboarding</span><span lang="it">Intestazione e onboarding</span></h2>
+
+        <figure>
+          <img src="img/dash-greeting.webp" alt="Dashboard greeting header" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Intelligence Center</b> — the greeting line, and on the right the SLA-overdue pill when there is
+              overdue remediation work.</span>
+            <span lang="it"><b>Intelligence Center</b> — la riga di saluto e, a destra, la pillola SLA scaduta quando ci sono
+              interventi di remediation in ritardo.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Element</span><span lang="it">Elemento</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Intelligence Center</strong> heading + subtitle</span><span lang="it">Titolo <strong>Intelligence Center</strong> + sottotitolo</span></td>
+                <td>
+                  <span lang="en">Greets the signed-in user. For an <em>editor</em> the subtitle appends <em>“in scope”</em>, making the visibility cone explicit — a small but important honesty signal, because their numbers are not fleet-wide numbers.</span>
+                  <span lang="it">Saluta l'utente connesso. Per un <em>editor</em> il sottotitolo aggiunge <em>«in scope»</em>, rendendo esplicito il cono di visibilità — un piccolo ma importante segnale di onestà, perché i suoi numeri non sono quelli dell'intero parco.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">SLA OVERDUE</span></td>
+                <td>
+                  <span lang="en">Appears only when at least one finding has passed its remediation deadline without being fixed or accepted. Shows the count and links straight to <a href="07-findings.html">/findings</a>. If this pill is visible, it is the first thing to deal with today.</span>
+                  <span lang="it">Compare solo quando almeno un finding ha superato la scadenza di remediation senza essere risolto o accettato. Mostra il conteggio e porta direttamente a <a href="07-findings.html">/findings</a>. Se questa pillola è visibile, è la prima cosa da affrontare oggi.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>GET STARTED</strong></td>
+                <td>
+                  <span lang="en">A two-step onboarding panel, rendered only while the installation is still empty. Step 1 <span class="badge b-acc">ADD ASSETS</span> jumps to /assets; step 2 <span class="badge b-acc">RUN SCAN</span> starts a posture scan. It disappears for good once assets exist and a run has completed.</span>
+                  <span lang="it">Un pannello di onboarding in due passi, mostrato solo finché l'installazione è vuota. Il passo 1 <span class="badge b-acc">ADD ASSETS</span> porta a /assets; il passo 2 <span class="badge b-acc">RUN SCAN</span> avvia una scansione di postura. Sparisce definitivamente quando esistono asset e una run è stata completata.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">The three KPI cards</span><span lang="it">Le tre card KPI</span></h2>
+
+        <h4><span class="n">1</span>SECURITY POSTURE SCORE</h4>
+        <figure class="mid">
+          <img src="img/dash-kpi-posture.webp" alt="Security posture score card" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Posture score</b> — the 0–100 average, its progress bar, the trend sparkline with the delta
+              against the previous run, and the inline scan launcher.</span>
+            <span lang="it"><b>Score di postura</b> — la media 0–100, la barra di avanzamento, lo sparkline di tendenza con il
+              delta rispetto alla run precedente e il pulsante di avvio scansione integrato.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Element</span><span lang="it">Elemento</span></th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr></thead>
+            <tbody>
+              <tr><td><span lang="en"><strong>The number</strong></span><span lang="it"><strong>Il numero</strong></span></td><td><span lang="en">Average posture score across the assets included in the latest run. <strong>100 means no known vulnerable package was found</strong>; the score falls as more of the installed base carries CVEs, weighted by severity. The exact formula is in <a href="12-reference.html#formulas">Appendix C</a>.</span><span lang="it">Score medio di postura sugli asset inclusi nell'ultima run. <strong>100 significa che non è stato trovato alcun pacchetto vulnerabile noto</strong>; lo score scende man mano che una quota maggiore dei pacchetti installati presenta CVE, pesati per severità. La formula esatta è in <a href="12-reference.html#formulas">Appendice C</a>.</span></td></tr>
+              <tr><td><span lang="en"><strong>Progress bar</strong></span><span lang="it"><strong>Barra</strong></span></td><td><span lang="en">Colour-coded rendering of the same value.</span><span lang="it">Rappresentazione colorata dello stesso valore.</span></td></tr>
+              <tr><td><strong>SCORE TREND</strong></td><td><span lang="en">A sparkline of the score across recent runs, with a signed delta versus the previous one. This is the number to quote in a weekly report: the absolute score depends on your fleet, the trend depends on your work.</span><span lang="it">Uno sparkline dello score sulle run recenti, con delta segnato rispetto alla precedente. È il numero da citare in un report settimanale: lo score assoluto dipende dal tuo parco macchine, la tendenza dipende dal tuo lavoro.</span></td></tr>
+              <tr><td><span lang="en"><strong>Note line</strong></span><span lang="it"><strong>Riga di nota</strong></span></td><td><span lang="en"><em>“product not detected on {n} asset(s)”</em> — a caveat telling you the score does not cover everything you hoped.</span><span lang="it"><em>«product not detected on {n} asset(s)»</em> — un avvertimento: lo score non copre tutto ciò che speravi.</span></td></tr>
+              <tr><td><span class="badge b-acc">RUN POSTURE SCAN</span></td><td><span lang="en">Starts the SCA run without leaving the page. The label cycles through <em>SCANNING…</em> and <em>SCANNING {done}/{total}</em>, ending at <em>SCAN COMPLETE</em>, with a progress bar and counter above it. It carries <code>aria-live="polite"</code>, so screen readers hear the progress.</span><span lang="it">Avvia la run SCA senza lasciare la pagina. L'etichetta passa per <em>SCANNING…</em> e <em>SCANNING {done}/{total}</em>, terminando con <em>SCAN COMPLETE</em>, con barra e contatore sopra. Ha <code>aria-live="polite"</code>, quindi gli screen reader annunciano l'avanzamento.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <figure class="narrow">
+          <img src="img/dash-runscan.webp" alt="Run posture scan button" loading="lazy" />
+          <figcaption><span lang="en"><b>RUN POSTURE SCAN</b> — identical to /intel's launcher, minus the asset picker.</span><span lang="it"><b>RUN POSTURE SCAN</b> — identico al lanciatore di /intel, senza il selettore di asset.</span></figcaption>
+        </figure>
+
+        <h4><span class="n">2</span>ASSETS SCANNED</h4>
+        <figure class="mid">
+          <img src="img/dash-kpi-assets.webp" alt="Assets scanned card" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Scan coverage</b> — how many assets the last run actually reached, out of all enabled assets.</span>
+            <span lang="it"><b>Copertura della scansione</b> — quanti asset ha effettivamente raggiunto l'ultima run, sul totale
+              degli asset abilitati.</span>
+          </figcaption>
+        </figure>
+        <ul class="tight">
+          <li><span lang="en"><strong><code>n / m</code></strong> — assets included in the last posture run out of all <em>enabled</em> inventory assets. A widening gap means hosts are unreachable or failing authentication.</span><span lang="it"><strong><code>n / m</code></strong> — asset inclusi nell'ultima run di postura sul totale degli asset <em>abilitati</em> in inventario. Un divario crescente indica host irraggiungibili o con autenticazione fallita.</span></li>
+          <li><span lang="en"><strong>Coverage bar</strong> — the same ratio, visually.</span><span lang="it"><strong>Barra di copertura</strong> — lo stesso rapporto, in forma visiva.</span></li>
+          <li><span lang="en"><strong>Delta</strong> — <em>“{d} vs previous run”</em>, or the states <em>awaiting scan</em> / <em>scanning…</em> before the first result.</span><span lang="it"><strong>Delta</strong> — <em>«{d} vs previous run»</em>, oppure gli stati <em>awaiting scan</em> / <em>scanning…</em> prima del primo risultato.</span></li>
+          <li><span lang="en"><strong>Excluded line</strong> — <em>“{n} excluded from scans”</em> counts assets you deliberately switched off with the SCAN toggle in <a href="04-assets.html">/assets</a>. Keeping an eye on this prevents the classic “why is that host never scanned?” surprise.</span><span lang="it"><strong>Riga esclusi</strong> — <em>«{n} excluded from scans»</em> conta gli asset che hai volutamente disattivato con il toggle SCAN in <a href="04-assets.html">/assets</a>. Tenerla d'occhio evita la classica sorpresa «perché quell'host non viene mai scansionato?».</span></li>
+        </ul>
+
+        <h4><span class="n">3</span>ACTIVE VULNERABILITIES</h4>
+        <figure class="mid">
+          <img src="img/dash-kpi-vulns.webp" alt="Active vulnerabilities card" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Active vulnerabilities</b> — total CVEs needing triage, the CVE trend sparkline, the severity
+              chips and a plain-language verdict.</span>
+            <span lang="it"><b>Vulnerabilità attive</b> — CVE totali da triage, sparkline di tendenza CVE, chip di severità e un
+              verdetto in linguaggio naturale.</span>
+          </figcaption>
+        </figure>
+        <ul class="tight">
+          <li><span lang="en"><strong>Status dot and count</strong> — the number of CVEs requiring triage, with <em>“of {n} total CVEs”</em> underneath for context.</span><span lang="it"><strong>Punto di stato e conteggio</strong> — il numero di CVE da sottoporre a triage, con <em>«of {n} total CVEs»</em> sotto per contesto.</span></li>
+          <li><span lang="en"><strong>CVE TREND</strong> — sparkline plus signed delta versus the previous run.</span><span lang="it"><strong>CVE TREND</strong> — sparkline più delta segnato rispetto alla run precedente.</span></li>
+          <li><span lang="en"><strong>Severity chips</strong> — critical, high, medium and low counts, colour-coded, so you can tell a scary total from a scary distribution.</span><span lang="it"><strong>Chip di severità</strong> — conteggi critical, high, medium e low, colorati, per distinguere un totale allarmante da una distribuzione allarmante.</span></li>
+          <li><span lang="en"><strong>Verdict line</strong> — one of <em>“High findings to review”</em>, <em>“No critical or high findings”</em>, <em>“No action required”</em>.</span><span lang="it"><strong>Riga di verdetto</strong> — una fra <em>«High findings to review»</em>, <em>«No critical or high findings»</em>, <em>«No action required»</em>.</span></li>
+        </ul>
+      </section>
+
+      <!-- ======================================= QUERY -->
+      <section class="block" id="query">
+        <h2><span lang="en">Threat intelligence query and scan console</span><span lang="it">Threat intelligence query e console di scansione</span></h2>
+
+        <figure>
+          <img src="img/dash-query.webp" alt="Threat intelligence query panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>THREAT INTELLIGENCE QUERY</b> — the free-text field, the AI ANALYSIS button, the suggestion chips
+              and the deep-probe switch.</span>
+            <span lang="it"><b>THREAT INTELLIGENCE QUERY</b> — il campo in testo libero, il pulsante AI ANALYSIS, i chip di
+              suggerimento e l'interruttore della sonda approfondita.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Control</span><span lang="it">Controllo</span></th>
+                <th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Query field</strong></span><span lang="it"><strong>Campo query</strong></span><br /><em>“Describe Vulnerability or input CVE…”</em></td>
+                <td>
+                  <span lang="en">Accepts three shapes of input: a plain-language description (<code>Buffer overflow affecting OpenSSH 8.4</code>), a product with a version (<code>nginx 1.21</code>), or a bare CVE identifier. Identification runs locally first (regex plus a known-products dictionary, no network), then falls back to the configured web search engine. Press <span class="kbd">Enter</span> to start.</span>
+                  <span lang="it">Accetta tre forme di input: una descrizione in linguaggio naturale (<code>Buffer overflow affecting OpenSSH 8.4</code>), un prodotto con versione (<code>nginx 1.21</code>) o un identificativo CVE puro. L'identificazione parte in locale (regex più un dizionario di prodotti noti, senza rete), poi ripiega sul motore di ricerca web configurato. Premi <span class="kbd">Invio</span> per avviare.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">AI ANALYSIS</span></td>
+                <td><span lang="en">Opens the SSE stream <code>GET /api/scan?q=…</code>. Results arrive one asset at a time rather than in one final block, so a slow host never blocks the rest.</span><span lang="it">Apre lo stream SSE <code>GET /api/scan?q=…</code>. I risultati arrivano un asset alla volta invece che in un unico blocco finale, così un host lento non blocca gli altri.</span></td>
+              </tr>
+              <tr>
+                <td><strong>TRY:</strong></td>
+                <td><span lang="en">Prefilled example queries — click one to populate the field instantly. Useful for demonstrating the identification pipeline without inventing a query.</span><span lang="it">Query di esempio precompilate — cliccane una per riempire il campo all'istante. Utile per dimostrare la pipeline di identificazione senza inventare una query.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">EXPORT XLS</span></td>
+                <td><span lang="en">Disabled until a scan completes; then downloads the per-asset results as a spreadsheet.</span><span lang="it">Disabilitato finché una scansione non è completata; poi scarica i risultati per asset come foglio di calcolo.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4><span class="n">4</span>DEEP VERSION PROBE</h4>
+        <figure class="narrow">
+          <img src="img/dash-deepprobe.webp" alt="Deep version probe switch" loading="lazy" />
+          <figcaption><span lang="en"><b>Deep version probe</b> — off by default, and deliberately so.</span><span lang="it"><b>Sonda di versione approfondita</b> — disattivata di default, e non per caso.</span></figcaption>
+        </figure>
+        <p lang="en">
+          Adds <code>&amp;deep=true</code> to the scan request. It applies <strong>only on the unauthenticated path</strong>
+          and <strong>only for the <code>python</code> product</strong>, when the passive banner does not reveal a
+          version. In that narrow case it sends full HTTP GET requests — including one to a deliberately non-existent
+          path — to read the <code>Python/X.Y</code> token from the <code>Server</code> header (Werkzeug, mod_wsgi) and
+          from framework tracebacks or error pages. Results obtained this way are tagged <code>method: "deep-probe"</code>.
+        </p>
+        <p lang="it">
+          Aggiunge <code>&amp;deep=true</code> alla richiesta di scansione. Si applica <strong>solo sul percorso non
+            autenticato</strong> e <strong>solo per il prodotto <code>python</code></strong>, quando il banner passivo non
+          rivela la versione. In quel caso specifico invia richieste HTTP GET complete — inclusa una verso un percorso
+          volutamente inesistente — per leggere il token <code>Python/X.Y</code> dall'header <code>Server</code>
+          (Werkzeug, mod_wsgi) e dai traceback o dalle pagine di errore dei framework. I risultati così ottenuti sono
+          marcati <code>method: "deep-probe"</code>.
+        </p>
+        <div class="warn">
+          <span lang="en">It is slower and generates <strong>extra HTTP traffic on the target</strong>. Enable it only on systems
+            you are authorized to test. Note that authenticated assets always run <code>python3 --version</code>
+            regardless of this switch, so you rarely need it on a properly credentialed fleet.</span>
+          <span lang="it">È più lenta e genera <strong>traffico HTTP aggiuntivo sul target</strong>. Attivala solo su sistemi che
+            sei autorizzato a testare. Nota che gli asset autenticati eseguono comunque <code>python3 --version</code>
+            indipendentemente da questo interruttore, quindi su un parco con credenziali corrette serve di rado.</span>
+        </div>
+
+        <h4><span class="n">5</span>IDENTIFICATION PIPELINE</h4>
+        <figure class="mid">
+          <img src="img/dash-pipeline.webp" alt="Identification pipeline steps" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Three steps driven by real events</b> — not a decorative animation: each step is bound to an actual
+              SSE message from the scanner.</span>
+            <span lang="it"><b>Tre passi guidati da eventi reali</b> — non un'animazione decorativa: ogni passo è legato a un
+              messaggio SSE effettivo dello scanner.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Step</span><span lang="it">Passo</span></th>
+                <th><span lang="en">Activates on</span><span lang="it">Si attiva con</span></th>
+                <th><span lang="en">Completes on</span><span lang="it">Si completa con</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Parsing Input</td><td><span lang="en">scan start</span><span lang="it">avvio scansione</span></td><td><code>target</code></td></tr>
+              <tr><td>OSINT Correlation</td><td><code>target</code></td><td><span lang="en">first</span><span lang="it">primo</span> <code>result</code></td></tr>
+              <tr><td>Active Detection</td><td><span lang="en">first</span><span lang="it">primo</span> <code>result</code></td><td><code>done</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Visual states: <span class="badge">idle</span> grey → <span class="badge b-acc">running</span> pulsing cyan → <span class="badge b-ok">done</span> green tick → <span class="badge b-err">error</span> red. A step that never leaves <em>OSINT Correlation</em> tells you the product could not be identified — the console will say so explicitly.</p>
+        <p lang="it">Stati visivi: <span class="badge">idle</span> grigio → <span class="badge b-acc">running</span> ciano pulsante → <span class="badge b-ok">done</span> spunta verde → <span class="badge b-err">error</span> rosso. Un passo che non supera mai <em>OSINT Correlation</em> indica che il prodotto non è stato identificato — la console lo dirà esplicitamente.</p>
+
+        <h4><span class="n">6</span>SCAN_ENGINE_TTY1</h4>
+        <figure>
+          <img src="img/dash-console.webp" alt="Scan console" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The live console</b> — a full transcript of the scan, from the query to the final per-asset
+              verdicts.</span>
+            <span lang="it"><b>La console live</b> — la trascrizione completa della scansione, dalla query ai verdetti finali per
+              asset.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">The console is the honest record of what actually happened. It contains, in order:</p>
+        <p lang="it">La console è il resoconto onesto di ciò che è realmente accaduto. Contiene, in ordine:</p>
+        <ul class="tight">
+          <li><span lang="en">the query you submitted;</span><span lang="it">la query inviata;</span></li>
+          <li><span lang="en">the identified product with its <em>source</em> (local dictionary or web search), or <em>“No product identified from query.”</em>;</span><span lang="it">il prodotto identificato con la sua <em>fonte</em> (dizionario locale o ricerca web), oppure <em>«No product identified from query.»</em>;</span></li>
+          <li><span lang="en">one line per asset with the detection method, the host, and <em>detected</em> or <em>product not found</em>;</span><span lang="it">una riga per asset con il metodo di rilevamento, l'host e <em>detected</em> o <em>product not found</em>;</span></li>
+          <li><span lang="en">CVE counts from OSV (<em>“{n} CVE (OSV)”</em>, or <em>“no known CVE on OSV”</em>, or <em>“OSV unreachable: {err}”</em>);</span><span lang="it">i conteggi CVE da OSV (<em>«{n} CVE (OSV)»</em>, oppure <em>«no known CVE on OSV»</em>, oppure <em>«OSV unreachable: {err}»</em>);</span></li>
+          <li><span lang="en">the AI risk summary, always carrying the <span class="badge b-acc">AI-GENERATED</span> badge — or <em>“(local LLM summary unavailable — Ollama offline)”</em> when the model is not reachable;</span><span lang="it">il riepilogo AI del rischio, sempre con il badge <span class="badge b-acc">AI-GENERATED</span> — oppure <em>«(local LLM summary unavailable — Ollama offline)»</em> quando il modello non è raggiungibile;</span></li>
+          <li><span lang="en"><code>[AI]</code>-tagged lines naming the provider and model actually invoked, so you always know which brain answered;</span><span lang="it">righe marcate <code>[AI]</code> che nominano provider e modello effettivamente invocati, così sai sempre quale cervello ha risposto;</span></li>
+          <li><span lang="en">the resolved runtime dependencies (<em>“Real dependencies resolved: {n} package(s) across {a} asset(s)”</em>);</span><span lang="it">le dipendenze runtime risolte (<em>«Real dependencies resolved: {n} package(s) across {a} asset(s)»</em>);</span></li>
+          <li><span lang="en">the closing line <em>“Scan complete · {n} asset(s)”</em>.</span><span lang="it">la riga finale <em>«Scan complete · {n} asset(s)»</em>.</span></li>
+        </ul>
+      </section>
+
+      <!-- ======================================= GRAPH -->
+      <section class="block" id="graph">
+        <h2>DETECTED PRODUCTS NETWORK</h2>
+
+        <figure>
+          <img src="img/dash-network.webp" alt="Detected products network graph" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The product dependency graph</b> — here in its idle <em>LIVE DEMO</em> state, cycling through
+              sample products every three seconds while no scan has run.</span>
+            <span lang="it"><b>Il grafo delle dipendenze di prodotto</b> — qui nello stato inattivo <em>LIVE DEMO</em>, che ruota
+              fra prodotti di esempio ogni tre secondi finché non è stata eseguita alcuna scansione.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          This panel is more interesting than it first looks, because <strong>it does not draw assumptions from a
+            table</strong> — it draws dependencies actually measured on your hosts. Understanding how it is built tells
+          you exactly when to trust it.
+        </p>
+        <p lang="it">
+          Questo pannello è più interessante di quanto sembri, perché <strong>non disegna ipotesi prese da una
+            tabella</strong>: disegna dipendenze effettivamente misurate sui tuoi host. Capire come viene costruito ti
+          dice esattamente quando fidarti.
+        </p>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en"><strong>Identification</strong> — the searched text resolves to a canonical product (alias match, or OSINT fallback). That becomes the central cyan node.</span><span lang="it"><strong>Identificazione</strong> — il testo cercato viene risolto in un prodotto canonico (corrispondenza per alias o fallback OSINT). Diventa il nodo centrale ciano.</span></li>
+          <li><span lang="en"><strong>Dependencies</strong> — on each authenticated Linux asset where the product is found, the scanner runs <code>ldd</code> over the product binary to list the shared libraries it really links, then maps every library to its owning package with <code>dpkg -S</code> (Debian/Ubuntu) or <code>rpm -qf</code> (RHEL/Fedora). The graph shows the union of those packages across all assets.</span><span lang="it"><strong>Dipendenze</strong> — su ogni asset Linux autenticato dove il prodotto è presente, lo scanner esegue <code>ldd</code> sul binario del prodotto per elencare le librerie condivise realmente collegate, poi associa ogni libreria al pacchetto che la fornisce con <code>dpkg -S</code> (Debian/Ubuntu) o <code>rpm -qf</code> (RHEL/Fedora). Il grafo mostra l'unione di quei pacchetti su tutti gli asset.</span></li>
+          <li><span lang="en"><strong>Inter-dependency links</strong> — for each dependency library, its direct <code>DT_NEEDED</code> entries are read with <code>objdump -p</code> (fallback <code>readelf -d</code>) and resolved back to packages. A dashed edge A→B is drawn <em>only</em> when A really links B.</span><span lang="it"><strong>Collegamenti fra dipendenze</strong> — per ogni libreria di dipendenza vengono lette le voci dirette <code>DT_NEEDED</code> con <code>objdump -p</code> (fallback <code>readelf -d</code>) e risolte nuovamente in pacchetti. Un arco tratteggiato A→B viene disegnato <em>solo</em> quando A collega davvero B.</span></li>
+          <li><span lang="en"><strong>Noise filtering</strong> — ubiquitous base libraries (libc, the loader, libgcc/libstdc++) are removed, because they connect to everything and inform nothing.</span><span lang="it"><strong>Filtro del rumore</strong> — le librerie di base onnipresenti (libc, il loader, libgcc/libstdc++) vengono rimosse, perché collegano tutto e non informano di nulla.</span></li>
+          <li><span lang="en"><strong>Provenance</strong> — the legend reports how many packages were resolved and across how many assets.</span><span lang="it"><strong>Provenienza</strong> — la legenda riporta quanti pacchetti sono stati risolti e su quanti asset.</span></li>
+        </ol>
+
+        <h3><span lang="en">Features Breakdown — states</span><span lang="it">Dettaglio funzionalità — stati</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">State</span><span lang="it">Stato</span></th><th><span lang="en">What you see</span><span lang="it">Cosa vedi</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en"><strong>Idle</strong> (no scan yet)</span><span lang="it"><strong>Inattivo</strong> (nessuna scansione)</span></td><td><span lang="en">A rotating demonstration: the graph switches product every three seconds, marked with a <span class="badge b-acc">LIVE DEMO</span> badge and a <em>sample</em> tag in the legend. Nothing here reflects your fleet.</span><span lang="it">Una dimostrazione a rotazione: il grafo cambia prodotto ogni tre secondi, contrassegnato dal badge <span class="badge b-acc">LIVE DEMO</span> e dall'etichetta <em>sample</em> in legenda. Nulla qui riflette il tuo parco macchine.</span></td></tr>
+              <tr><td><span lang="en"><strong>Scanning</strong></span><span lang="it"><strong>In scansione</strong></span></td><td><span lang="en">A graph-shaped loader: central node with a spinner, rotating rings, pulsing placeholder nodes and a shimmering skeleton legend.</span><span lang="it">Un loader a forma di grafo: nodo centrale con spinner, anelli rotanti, nodi segnaposto pulsanti e legenda scheletro con effetto shimmer.</span></td></tr>
+              <tr><td><span lang="en"><strong>Complete</strong></span><span lang="it"><strong>Completato</strong></span></td><td><span lang="en">The real graph of the detected product, with the dependency legend and the inter-dependency link count.</span><span lang="it">Il grafo reale del prodotto rilevato, con la legenda delle dipendenze e il conteggio dei collegamenti fra dipendenze.</span></td></tr>
+              <tr><td><span lang="en"><strong>No dependencies</strong></span><span lang="it"><strong>Nessuna dipendenza</strong></span></td><td><span lang="en">Only the central node, plus the explanation: <em>“No runtime dependencies resolved. Real dependencies are read from authenticated Linux assets…”</em>. Banner-only, simulated, Windows or unreachable assets cannot resolve dependencies — this is a limitation, not a bug.</span><span lang="it">Solo il nodo centrale, più la spiegazione: <em>«No runtime dependencies resolved. Real dependencies are read from authenticated Linux assets…»</em>. Asset con solo banner, simulati, Windows o irraggiungibili non possono risolvere dipendenze — è un limite, non un difetto.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= PANELS -->
+      <section class="block" id="panels">
+        <h2><span lang="en">Insight panels</span><span lang="it">Pannelli di analisi</span></h2>
+
+        <h4><span class="n">7</span>ASSET AUTHENTICATION</h4>
+        <figure class="mid">
+          <img src="img/dash-authn.webp" alt="Asset authentication bars" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Four live bars</b> — how much of your fleet the scanner can actually get inside.</span>
+            <span lang="it"><b>Quattro barre live</b> — quanta parte del parco macchine lo scanner riesce davvero a
+              raggiungere.</span>
+          </figcaption>
+        </figure>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Bar</span><span lang="it">Barra</span></th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge b-err">NOT AVAILABLE</span></td><td><span lang="en">Host did not answer on TCP at all.</span><span lang="it">L'host non ha risposto affatto su TCP.</span></td></tr>
+              <tr><td><span class="badge b-ok">AVAILABLE</span></td><td><span lang="en">Reachable, but no credentials are stored — banner grabbing only.</span><span lang="it">Raggiungibile, ma non sono salvate credenziali — solo banner grabbing.</span></td></tr>
+              <tr><td><span class="badge b-acc">SSH OK</span></td><td><span lang="en">Reachable and the SSH login succeeded with the decrypted password. These are the assets that produce a full package inventory.</span><span lang="it">Raggiungibile e login SSH riuscito con la password decifrata. Sono gli asset che producono un inventario pacchetti completo.</span></td></tr>
+              <tr><td><span class="badge b-warn">SSH FAIL</span></td><td><span lang="en">Reachable but the login failed — wrong credentials, or a password that is not encrypted.</span><span lang="it">Raggiungibile ma login fallito — credenziali errate o password non cifrata.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">A <em>“Checking…”</em> spinner runs while the probe is in flight and the counters increment asset by asset. The total number of inventory assets is printed underneath.</p>
+        <p lang="it">Uno spinner <em>«Checking…»</em> gira durante la sonda e i contatori si incrementano asset per asset. Il numero totale di asset in inventario è stampato sotto.</p>
+
+        <h4><span class="n">8</span>CRITICAL FINDINGS</h4>
+        <figure class="mid">
+          <img src="img/dash-critical.webp" alt="Critical findings panel" loading="lazy" />
+          <figcaption><span lang="en"><b>Critical findings</b> — critical and high items from the latest posture run, with an SLA pill when something is overdue.</span><span lang="it"><b>Finding critici</b> — elementi critical e high dell'ultima run di postura, con pillola SLA quando qualcosa è in ritardo.</span></figcaption>
+        </figure>
+        <p lang="en">Empty states are explicit and distinguish the two very different situations: <em>“No critical or high findings in the last posture scan.”</em> (good news) versus <em>“No posture scan yet — run one to see real findings here.”</em> (no data at all).</p>
+        <p lang="it">Gli stati vuoti sono espliciti e distinguono due situazioni molto diverse: <em>«No critical or high findings in the last posture scan.»</em> (buona notizia) e <em>«No posture scan yet — run one to see real findings here.»</em> (nessun dato).</p>
+
+        <h4><span class="n">9</span>ASSET INVENTORY (LOCAL)</h4>
+        <figure class="mid">
+          <img src="img/dash-inventory.webp" alt="Local asset inventory panel" loading="lazy" />
+          <figcaption><span lang="en"><b>Inventory at a glance</b> — hosts with their live health badge; <span class="badge b-acc">VIEW ALL</span> opens /assets.</span><span lang="it"><b>Inventario a colpo d'occhio</b> — host con il badge di salute live; <span class="badge b-acc">VIEW ALL</span> apre /assets.</span></figcaption>
+        </figure>
+        <p lang="en">States: <em>Loading inventory…</em>, <em>No assets.</em>, <em>Inventory load failed.</em></p>
+        <p lang="it">Stati: <em>Loading inventory…</em>, <em>No assets.</em>, <em>Inventory load failed.</em></p>
+
+        <h4><span class="n">10</span>TOP EXPLOITABLE</h4>
+        <figure class="mid">
+          <img src="img/dash-exploit.webp" alt="Top exploitable panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Top exploitable</b> — findings ranked by real-world exploitability rather than raw severity.</span>
+            <span lang="it"><b>Top exploitable</b> — finding ordinati per exploitability reale invece che per severità grezza.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">
+          The ranking rule, stated in the panel's own tooltip: <strong>CISA KEV entries first</strong> (confirmed
+          exploited in the wild), then EPSS probability, then network exposure. Each row also states whether an exposed
+          port actually matched — <em>“Exposed port detected”</em> or <em>“No exposed port matched”</em>. This is a
+          compact preview of the <a href="06-risk.html">/risk</a> page; when the two disagree, /risk is the fuller
+          answer because it also weighs business context.
+        </p>
+        <p lang="it">
+          La regola di ordinamento, dichiarata nel tooltip del pannello: <strong>prima le voci CISA KEV</strong>
+          (sfruttamento confermato in the wild), poi la probabilità EPSS, poi l'esposizione di rete. Ogni riga indica
+          anche se una porta esposta ha effettivamente corrisposto — <em>«Exposed port detected»</em> o <em>«No exposed
+            port matched»</em>. È un'anteprima compatta della pagina <a href="06-risk.html">/risk</a>; quando le due
+          divergono, /risk è la risposta più completa perché pesa anche il contesto di business.
+        </p>
+        <p lang="en">States: <em>Assessing exploitability…</em>, <em>No exploitable findings in the latest run.</em>, <em>Exploitability data unavailable — run a posture scan.</em></p>
+        <p lang="it">Stati: <em>Assessing exploitability…</em>, <em>No exploitable findings in the latest run.</em>, <em>Exploitability data unavailable — run a posture scan.</em></p>
+
+        <h4><span class="n">11</span>RECENT ACTIVITY</h4>
+        <figure class="mid">
+          <img src="img/dash-activity.webp" alt="Recent activity panel" loading="lazy" />
+          <figcaption><span lang="en"><b>Recent activity</b> — the latest ledger entries with relative timestamps.</span><span lang="it"><b>Attività recente</b> — le ultime voci del registro con timestamp relativi.</span></figcaption>
+        </figure>
+        <p lang="en">Times are relative — <em>just now</em>, <em>{n}m ago</em>, <em>{n}h ago</em>, <em>{n}d ago</em> — with the asset count per scan. Empty state: <em>“No scans recorded yet.”</em> For the full, verifiable history see <a href="09-audit.html">/audit</a>.</p>
+        <p lang="it">I tempi sono relativi — <em>just now</em>, <em>{n}m ago</em>, <em>{n}h ago</em>, <em>{n}d ago</em> — con il numero di asset per scansione. Stato vuoto: <em>«No scans recorded yet.»</em> Per lo storico completo e verificabile vedi <a href="09-audit.html">/audit</a>.</p>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works — targeted vulnerability scan</span><span lang="it">Come funziona — scansione mirata di vulnerabilità</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Type a description or a CVE ID in <strong>THREAT INTELLIGENCE QUERY</strong>, or click a <strong>TRY:</strong> chip.</span><span lang="it">Digita una descrizione o un CVE in <strong>THREAT INTELLIGENCE QUERY</strong>, oppure clicca un chip <strong>TRY:</strong>.</span></li>
+          <li><span lang="en">Leave <strong>DEEP VERSION PROBE</strong> off unless you specifically need the Python version and are authorized to send extra HTTP traffic to the target.</span><span lang="it">Lascia <strong>DEEP VERSION PROBE</strong> disattivata a meno che tu non abbia specificamente bisogno della versione Python e sia autorizzato a inviare traffico HTTP aggiuntivo al target.</span></li>
+          <li><span lang="en">Press <span class="kbd">Enter</span> or <span class="badge b-acc">AI ANALYSIS</span>.</span><span lang="it">Premi <span class="kbd">Invio</span> o <span class="badge b-acc">AI ANALYSIS</span>.</span></li>
+          <li><span lang="en">Watch the pipeline: <em>Parsing Input</em> lights up, then <em>OSINT Correlation</em> once the product resolves, then <em>Active Detection</em> as assets stream back.</span><span lang="it">Osserva la pipeline: si accende <em>Parsing Input</em>, poi <em>OSINT Correlation</em> quando il prodotto viene risolto, poi <em>Active Detection</em> mentre gli asset rispondono.</span></li>
+          <li><span lang="en">Read the console: each asset produces a line with method (banner, authenticated, simulated, deep-probe), verdict and CVE count.</span><span lang="it">Leggi la console: ogni asset produce una riga con metodo (banner, autenticato, simulato, deep-probe), verdetto e conteggio CVE.</span></li>
+          <li><span lang="en">When the run finishes, press <span class="badge b-acc">EXPORT XLS</span> if you need the results outside the application.</span><span lang="it">A fine run, premi <span class="badge b-acc">EXPORT XLS</span> se ti servono i risultati fuori dall'applicazione.</span></li>
+        </ol>
+
+        <h3><span lang="en">How It Works — full posture scan</span><span lang="it">Come funziona — scansione di postura completa</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Press <span class="badge b-acc">RUN POSTURE SCAN</span> inside the SECURITY POSTURE SCORE card. To restrict the run to specific hosts, use <a href="05-posture.html">/intel</a> instead — it has an asset picker.</span><span lang="it">Premi <span class="badge b-acc">RUN POSTURE SCAN</span> nella card SECURITY POSTURE SCORE. Per limitare la run ad host specifici usa invece <a href="05-posture.html">/intel</a> — ha un selettore di asset.</span></li>
+          <li><span lang="en">The button switches to <em>SCANNING…</em>, then to <em>SCANNING {done}/{total}</em> as each asset is inventoried and matched against OSV.</span><span lang="it">Il pulsante passa a <em>SCANNING…</em>, poi a <em>SCANNING {done}/{total}</em> man mano che ogni asset viene inventariato e confrontato con OSV.</span></li>
+          <li><span lang="en">You may navigate away — the run continues server-side; you just stop seeing the progress.</span><span lang="it">Puoi cambiare pagina — la run prosegue lato server; smetti solo di vedere l'avanzamento.</span></li>
+          <li><span lang="en">On <em>SCAN COMPLETE</em> the KPIs, trends and panels refresh, and so do /intel, /sbom, /risk and /findings.</span><span lang="it">Con <em>SCAN COMPLETE</em> si aggiornano KPI, tendenze e pannelli, e con loro /intel, /sbom, /risk e /findings.</span></li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en"><strong>After a targeted scan:</strong> the console holds a full transcript ending in <em>“Scan complete ·
+              n asset(s)”</em>, the product graph shows the identified product with its measured dependencies, the pipeline
+            shows three green ticks, EXPORT XLS becomes available, and a new entry appears in
+            <a href="09-audit.html">/audit</a>.</p>
+          <p lang="en"><strong>After a posture scan:</strong> all three KPI cards update with fresh trend arrows, CRITICAL
+            FINDINGS and TOP EXPLOITABLE populate, and a new run appears in the /intel run selector.</p>
+          <p lang="en"><strong>As a viewer:</strong> both scan buttons are unavailable — viewers can read everything but trigger
+            nothing (the server answers <code>403</code> regardless of what the UI shows).</p>
+          <p lang="it"><strong>Dopo una scansione mirata:</strong> la console contiene la trascrizione completa che termina con
+            <em>«Scan complete · n asset(s)»</em>, il grafo prodotti mostra il prodotto identificato con le dipendenze
+            misurate, la pipeline mostra tre spunte verdi, EXPORT XLS diventa disponibile e una nuova voce compare in
+            <a href="09-audit.html">/audit</a>.</p>
+          <p lang="it"><strong>Dopo una scansione di postura:</strong> tutte e tre le card KPI si aggiornano con nuove frecce di
+            tendenza, CRITICAL FINDINGS e TOP EXPLOITABLE si popolano e una nuova run compare nel selettore di /intel.</p>
+          <p lang="it"><strong>Come viewer:</strong> entrambi i pulsanti di scansione non sono disponibili — i viewer leggono
+            tutto ma non avviano nulla (il server risponde <code>403</code> a prescindere da ciò che mostra
+            l'interfaccia).</p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="02-auth.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          02 · <span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span>
+        </a>
+        <a class="nxt" href="04-assets.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          04 · <span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

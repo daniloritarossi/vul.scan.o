@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="12 · Reference" data-title-it="12 · Riferimento">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>12 · Reference — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html" aria-current="page"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#matrix">A · <span lang="en">Permission matrix</span><span lang="it">Matrice permessi</span></a></li>
+              <li><a href="#api">B · <span lang="en">REST API</span><span lang="it">API REST</span></a></li>
+              <li><a href="#formulas">C · <span lang="en">Score formulas</span><span lang="it">Formule degli score</span></a></li>
+              <li><a href="#workflows">D · <span lang="en">Workflows</span><span lang="it">Flussi di lavoro</span></a></li>
+              <li><a href="#trouble">E · <span lang="en">Troubleshooting</span><span lang="it">Risoluzione problemi</span></a></li>
+              <li><a href="#glossary">F · <span lang="en">Glossary</span><span lang="it">Glossario</span></a></li>
+              <li><a href="#ai">G · <span lang="en">AI transparency</span><span lang="it">Trasparenza AI</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">12 · <span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+        <h1><span lang="en">Reference appendices</span><span lang="it">Appendici di riferimento</span></h1>
+        <p lang="en">
+          Permission matrix, complete REST API, the arithmetic behind both scores, end-to-end workflows, a
+          troubleshooting table and the glossary.
+        </p>
+        <p lang="it">
+          Matrice dei permessi, API REST completa, l'aritmetica dietro entrambi gli score, flussi di lavoro end-to-end,
+          una tabella di risoluzione problemi e il glossario.
+        </p>
+      </header>
+
+      <!-- ======================================= MATRIX -->
+      <section class="block" id="matrix">
+        <h2>A · <span lang="en">Role permission matrix</span><span lang="it">Matrice dei permessi per ruolo</span></h2>
+        <p lang="en">Enforced server-side on every endpoint. The interface only hides what your role cannot use.</p>
+        <p lang="it">Applicata lato server su ogni endpoint. L'interfaccia si limita a nascondere ciò che il tuo ruolo non può usare.</p>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Capability / endpoint</span><span lang="it">Capacità / endpoint</span></th>
+                <th>admin</th><th>manager</th><th>editor</th><th>viewer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><code>GET /api/assets</code>, <code>/api/assets/all</code></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">assigned only</span><span lang="it">solo assegnati</span></td><td><span lang="en">all, username redacted</span><span lang="it">tutti, username oscurato</span></td></tr>
+              <tr><td><code>POST /api/assets</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ auto-assigned to self/own group</span><span lang="it">✅ auto-assegnato a sé/proprio gruppo</span></td><td>403</td></tr>
+              <tr><td><code>PUT /api/assets/{id}/assignments</code></td><td><span lang="en">✅ any user/group</span><span lang="it">✅ qualsiasi utente/gruppo</span></td><td><span lang="en">✅ any user/group</span><span lang="it">✅ qualsiasi utente/gruppo</span></td><td><span lang="en">403 (self-escalation)</span><span lang="it">403 (auto-escalation)</span></td><td>403</td></tr>
+              <tr><td><code>PUT/PATCH/DELETE /api/assets/{id}</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ in scope only</span><span lang="it">✅ solo nel cono</span></td><td>403</td></tr>
+              <tr><td><code>GET/POST/PUT/DELETE /api/users</code></td><td>✅</td><td><span lang="en">GET only</span><span lang="it">solo GET</span></td><td>403</td><td>403</td></tr>
+              <tr><td><code>GET /api/groups</code></td><td><span lang="en">✅ all</span><span lang="it">✅ tutti</span></td><td><span lang="en">✅ all</span><span lang="it">✅ tutti</span></td><td><span lang="en">own groups only</span><span lang="it">solo i propri gruppi</span></td><td>403</td></tr>
+              <tr><td><code>POST/DELETE /api/groups</code>, <code>PUT …/members</code></td><td>✅</td><td>403</td><td>403</td><td>403</td></tr>
+              <tr><td><code>GET /api/findings</code></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">assigned assets</span><span lang="it">asset assegnati</span></td><td><span lang="en">all, read-only</span><span lang="it">tutti, sola lettura</span></td></tr>
+              <tr><td><code>POST /api/findings/import</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ out-of-scope rows skipped</span><span lang="it">✅ righe fuori cono saltate</span></td><td>403</td></tr>
+              <tr><td><code>PATCH /api/findings/{id}/status</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ in scope</span><span lang="it">✅ nel cono</span></td><td>403</td></tr>
+              <tr><td><code>POST /api/findings/{id}/ticket</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ in scope</span><span lang="it">✅ nel cono</span></td><td>403</td></tr>
+              <tr><td><code>POST /api/findings/scan-local</code></td><td>✅</td><td>✅</td><td><span lang="en">✅ <code>asset_ip</code> required, in scope</span><span lang="it">✅ <code>asset_ip</code> obbligatorio, nel cono</span></td><td>403</td></tr>
+              <tr><td><code>GET /api/scan</code>, <code>/api/posture/scan</code></td><td>✅</td><td>✅</td><td><span lang="en">assigned assets</span><span lang="it">asset assegnati</span></td><td>403</td></tr>
+              <tr><td><code>GET /api/settings</code></td><td>✅</td><td><span lang="en">✅ read</span><span lang="it">✅ lettura</span></td><td>403</td><td>403</td></tr>
+              <tr><td><code>POST /api/settings</code></td><td><span lang="en">✅ <strong>admin only</strong></span><span lang="it">✅ <strong>solo admin</strong></span></td><td>403</td><td>403</td><td>403</td></tr>
+              <tr><td><code>GET /api/risk</code>, <code>/api/risk/trend</code></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">all</span><span lang="it">tutti</span></td><td><span lang="en">recomputed on cone</span><span lang="it">ricalcolato sul cono</span></td><td><span lang="en">all</span><span lang="it">tutti</span></td></tr>
+              <tr><td><code>GET /api/sbom</code></td><td><span lang="en">full</span><span lang="it">completo</span></td><td><span lang="en">full</span><span lang="it">completo</span></td><td><span lang="en">cone only</span><span lang="it">solo cono</span></td><td><span lang="en">full</span><span lang="it">completo</span></td></tr>
+              <tr><td><code>GET /api/sbom/export</code></td><td><span lang="en">full</span><span lang="it">completo</span></td><td><span lang="en">full</span><span lang="it">completo</span></td><td><span lang="en">cone only</span><span lang="it">solo cono</span></td><td>403</td></tr>
+              <tr><td><code>GET /api/audit</code></td><td><span lang="en"><strong>all</strong></span><span lang="it"><strong>tutti</strong></span></td><td><span lang="en"><strong>all</strong></span><span lang="it"><strong>tutti</strong></span></td><td><span lang="en">own-scope results</span><span lang="it">risultati del proprio ambito</span></td><td>403</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Why these particular lines</span><span lang="it">Perché proprio queste scelte</span></h3>
+        <ul class="tight">
+          <li><span lang="en"><strong>Settings write is admin-only</strong> — the configuration holds secrets and controls where LLM and ticketing traffic goes.</span><span lang="it"><strong>La scrittura delle impostazioni è solo per admin</strong> — la configurazione contiene segreti e controlla dove va il traffico verso LLM e ticketing.</span></li>
+          <li><span lang="en"><strong><code>GET /api/scan</code> is an action, not a read</strong> — the HTTP verb is misleading; the scanner touches assets with credentials, so viewers are denied.</span><span lang="it"><strong><code>GET /api/scan</code> è un'azione, non una lettura</strong> — il verbo HTTP è fuorviante; lo scanner tocca asset con credenziali, quindi i viewer sono esclusi.</span></li>
+          <li><span lang="en"><strong>Editors cannot change assignments</strong> — otherwise an editor could widen their own cone.</span><span lang="it"><strong>Gli editor non possono modificare le assegnazioni</strong> — altrimenti un editor potrebbe allargare il proprio cono.</span></li>
+          <li><span lang="en"><strong>Mixed-host batch imports</strong> — an editor importing a report containing out-of-scope hosts gets those rows silently skipped with a <code>skipped_out_of_scope</code> count, so CI pipelines do not break.</span><span lang="it"><strong>Import in blocco con host misti</strong> — un editor che importa un report contenente host fuori dal cono vede quelle righe saltate in silenzio con un conteggio <code>skipped_out_of_scope</code>, così le pipeline CI non si rompono.</span></li>
+        </ul>
+      </section>
+
+      <!-- ======================================= API -->
+      <section class="block" id="api">
+        <h2>B · <span lang="en">REST API reference</span><span lang="it">Riferimento API REST</span></h2>
+        <p lang="en">Every endpoint requires the session cookie except <code>/login</code>, <code>/activate</code> and <code>/api/forgot</code>. Scoping follows Appendix A.</p>
+        <p lang="it">Ogni endpoint richiede il cookie di sessione tranne <code>/login</code>, <code>/activate</code> e <code>/api/forgot</code>. L'ambito segue l'Appendice A.</p>
+
+        <h3><span lang="en">Authentication &amp; session</span><span lang="it">Autenticazione e sessione</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Method &amp; path</span><span lang="it">Metodo e percorso</span></th><th><span lang="en">Purpose</span><span lang="it">Scopo</span></th></tr></thead>
+            <tbody>
+              <tr><td><code>POST /api/login</code></td><td><span lang="en">Sign in; sets the signed HttpOnly session cookie.</span><span lang="it">Accesso; imposta il cookie di sessione firmato HttpOnly.</span></td></tr>
+              <tr><td><code>GET /logout</code></td><td><span lang="en">End the session.</span><span lang="it">Termina la sessione.</span></td></tr>
+              <tr><td><code>GET /api/me</code></td><td><span lang="en">Current identity — username and role.</span><span lang="it">Identità corrente — username e ruolo.</span></td></tr>
+              <tr><td><code>POST /api/activate</code></td><td><span lang="en">Consume a one-time token and set a password.</span><span lang="it">Consuma un token monouso e imposta una password.</span></td></tr>
+              <tr><td><code>POST /api/change-password</code></td><td><span lang="en">Change your own password; invalidates all older sessions.</span><span lang="it">Cambia la propria password; invalida tutte le sessioni precedenti.</span></td></tr>
+              <tr><td><code>POST /api/forgot</code></td><td><span lang="en">Self-service reset request; the response never reveals whether the email exists.</span><span lang="it">Richiesta di reset self-service; la risposta non rivela mai se l'email esiste.</span></td></tr>
+              <tr><td><code>GET /api/version/check</code></td><td><span lang="en">Compare the running tag with the latest GitHub release (6-hour cache).</span><span lang="it">Confronta il tag in esecuzione con l'ultima release GitHub (cache 6 ore).</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Assets</h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Method &amp; path</span><span lang="it">Metodo e percorso</span></th><th><span lang="en">Purpose</span><span lang="it">Scopo</span></th></tr></thead>
+            <tbody>
+              <tr><td><code>GET /api/assets</code></td><td><span lang="en">Inventory used for scanning, cone-scoped.</span><span lang="it">Inventario usato per la scansione, limitato al cono.</span></td></tr>
+              <tr><td><code>GET /api/assets/all</code></td><td><span lang="en">Full inventory for the interface. Never returns passwords — only <code>has_password</code> and <code>password_encrypted</code>.</span><span lang="it">Inventario completo per l'interfaccia. Non restituisce mai password — solo <code>has_password</code> e <code>password_encrypted</code>.</span></td></tr>
+              <tr><td><code>POST /api/assets</code></td><td><span lang="en">Create; the password is encrypted before storage.</span><span lang="it">Crea; la password viene cifrata prima della memorizzazione.</span></td></tr>
+              <tr><td><code>PUT /api/assets/{index}</code></td><td><span lang="en">Update.</span><span lang="it">Aggiorna.</span></td></tr>
+              <tr><td><code>PATCH /api/assets/{index}/enabled</code></td><td><span lang="en">Include or exclude from scans.</span><span lang="it">Includi o escludi dalle scansioni.</span></td></tr>
+              <tr><td><code>PATCH /api/assets/{index}/context</code></td><td><span lang="en">Business context: <code>environment</code>, <code>internet_facing</code>, <code>criticality</code>.</span><span lang="it">Contesto di business: <code>environment</code>, <code>internet_facing</code>, <code>criticality</code>.</span></td></tr>
+              <tr><td><code>PUT /api/assets/{index}/assignments</code></td><td><span lang="en">Visibility-cone assignment (admin and manager).</span><span lang="it">Assegnazione del cono di visibilità (admin e manager).</span></td></tr>
+              <tr><td><code>DELETE /api/assets/{index}</code></td><td><span lang="en">Remove from the inventory.</span><span lang="it">Rimuovi dall'inventario.</span></td></tr>
+              <tr><td><code>GET /api/asset/health</code></td><td><span lang="en">Reachability and SSH health for every asset.</span><span lang="it">Raggiungibilità e stato SSH per ogni asset.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Scanning &amp; intelligence</span><span lang="it">Scansione e intelligence</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Method &amp; path</span><span lang="it">Metodo e percorso</span></th><th><span lang="en">Purpose</span><span lang="it">Scopo</span></th></tr></thead>
+            <tbody>
+              <tr><td><code>POST /api/identify</code></td><td><span lang="en">Identify product and version from free text (OSINT).</span><span lang="it">Identifica prodotto e versione da testo libero (OSINT).</span></td></tr>
+              <tr><td><code>GET /api/scan?q=…&amp;deep=…</code></td><td><span lang="en">Targeted vulnerability scan — Server-Sent Events, one asset at a time.</span><span lang="it">Scansione mirata di vulnerabilità — Server-Sent Events, un asset alla volta.</span></td></tr>
+              <tr><td><code>GET /api/posture/scan</code></td><td><span lang="en">Full SCA posture scan — Server-Sent Events.</span><span lang="it">Scansione di postura SCA completa — Server-Sent Events.</span></td></tr>
+              <tr><td><code>GET /api/posture</code></td><td><span lang="en">The latest (or a selected) posture run.</span><span lang="it">L'ultima run di postura (o una selezionata).</span></td></tr>
+              <tr><td><code>GET /api/posture/runs</code></td><td><span lang="en">List of stored runs for the run selector.</span><span lang="it">Elenco delle run salvate per il selettore.</span></td></tr>
+              <tr><td><code>GET /api/posture/cve</code></td><td><span lang="en">CVE detail for a posture finding.</span><span lang="it">Dettaglio CVE per un finding di postura.</span></td></tr>
+              <tr><td><code>GET /api/posture/fixplan?package=…</code></td><td><span lang="en">Minimum version resolving all CVEs on a package, plus the unfixed count.</span><span lang="it">Versione minima che risolve tutti i CVE di un pacchetto, più il numero di quelli senza fix.</span></td></tr>
+              <tr><td><code>GET /api/cve</code></td><td><span lang="en">CVE lookup with AI summary and remediation hints.</span><span lang="it">Ricerca CVE con riepilogo AI e suggerimenti di remediation.</span></td></tr>
+              <tr><td><code>GET /api/dashboard</code></td><td><span lang="en">Aggregated KPIs, critical findings, recent activity.</span><span lang="it">KPI aggregati, finding critici, attività recente.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Risk, findings, SBOM, audit</span><span lang="it">Rischio, findings, SBOM, audit</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Method &amp; path</span><span lang="it">Metodo e percorso</span></th><th><span lang="en">Purpose</span><span lang="it">Scopo</span></th></tr></thead>
+            <tbody>
+              <tr><td><code>GET /api/risk?run_id=&amp;probe=</code></td><td><span lang="en">Contextual risk for a run; <code>probe=false</code> skips the TCP reachability probe.</span><span lang="it">Rischio contestuale per una run; <code>probe=false</code> salta la sonda TCP di raggiungibilità.</span></td></tr>
+              <tr><td><code>GET /api/risk/trend</code></td><td><span lang="en">Score and CVE history plus the new-versus-resolved delta between the two latest runs.</span><span lang="it">Storico di score e CVE più il delta nuovi/risolti fra le due run più recenti.</span></td></tr>
+              <tr><td><code>GET /api/findings</code></td><td><span lang="en">Unified findings, filterable.</span><span lang="it">Findings unificati, filtrabili.</span></td></tr>
+              <tr><td><code>POST /api/findings/import</code></td><td><span lang="en">Ingest a Trivy, Grype, Nuclei, Semgrep, Gitleaks or Trufflehog report (<code>tool=auto</code> by default).</span><span lang="it">Acquisisce un report Trivy, Grype, Nuclei, Semgrep, Gitleaks o Trufflehog (<code>tool=auto</code> di default).</span></td></tr>
+              <tr><td><code>POST /api/findings/scan-local</code></td><td><span lang="en">Run gitleaks or Trivy on the server and ingest the result.</span><span lang="it">Esegue gitleaks o Trivy sul server e acquisisce il risultato.</span></td></tr>
+              <tr><td><code>PATCH /api/findings/{id}/status</code></td><td><span lang="en">Workflow transition.</span><span lang="it">Transizione di workflow.</span></td></tr>
+              <tr><td><code>POST /api/findings/{id}/ticket</code></td><td><span lang="en">Create a GitHub or Jira remediation ticket.</span><span lang="it">Crea un ticket di remediation su GitHub o Jira.</span></td></tr>
+              <tr><td><code>GET /api/sbom</code></td><td><span lang="en">Component rows from the latest posture run.</span><span lang="it">Righe dei componenti dall'ultima run di postura.</span></td></tr>
+              <tr><td><code>GET /api/sbom/export?format=cyclonedx|spdx</code></td><td><span lang="en">CycloneDX 1.5 or SPDX 2.3 JSON download.</span><span lang="it">Download JSON CycloneDX 1.5 o SPDX 2.3.</span></td></tr>
+              <tr><td><code>GET /api/audit</code></td><td><span lang="en">Paginated, faceted scan history.</span><span lang="it">Storico delle scansioni paginato e a faccette.</span></td></tr>
+              <tr><td><code>GET /api/audit/verify</code></td><td><span lang="en">Verify the tamper-evident hash chain.</span><span lang="it">Verifica la catena di hash a prova di manomissione.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Administration</span><span lang="it">Amministrazione</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Method &amp; path</span><span lang="it">Metodo e percorso</span></th><th><span lang="en">Purpose</span><span lang="it">Scopo</span></th></tr></thead>
+            <tbody>
+              <tr><td><code>GET/POST/PUT/DELETE /api/users</code></td><td><span lang="en">User CRUD.</span><span lang="it">CRUD utenti.</span></td></tr>
+              <tr><td><code>POST /api/users/{id}/invite</code></td><td><span lang="en">Issue an activation link.</span><span lang="it">Emette un link di attivazione.</span></td></tr>
+              <tr><td><code>POST /api/users/{id}/reset</code></td><td><span lang="en">Issue a password-reset link.</span><span lang="it">Emette un link di reset password.</span></td></tr>
+              <tr><td><code>GET/POST/DELETE /api/groups</code></td><td><span lang="en">Group CRUD.</span><span lang="it">CRUD gruppi.</span></td></tr>
+              <tr><td><code>PUT /api/groups/{id}/members</code></td><td><span lang="en">Membership.</span><span lang="it">Appartenenza.</span></td></tr>
+              <tr><td><code>GET /api/settings</code> · <code>POST /api/settings</code></td><td><span lang="en">Read (admin, manager) and write (admin) the configuration; secrets are masked on read.</span><span lang="it">Legge (admin, manager) e scrive (admin) la configurazione; i segreti sono mascherati in lettura.</span></td></tr>
+              <tr><td><code>GET /api/ollama/models</code></td><td><span lang="en">Models available on the configured Ollama instance.</span><span lang="it">Modelli disponibili sull'istanza Ollama configurata.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= FORMULAS -->
+      <section class="block" id="formulas">
+        <h2>C · <span lang="en">Score formulas</span><span lang="it">Formule degli score</span></h2>
+        <p lang="en">Both scores are documented deliberately: you should be able to explain any number the application shows you.</p>
+        <p lang="it">Entrambi gli score sono documentati di proposito: devi poter spiegare qualunque numero l'applicazione ti mostri.</p>
+
+        <h3><span lang="en">Posture score (0–100, higher is better)</span><span lang="it">Score di postura (0–100, più alto è meglio)</span></h3>
+        <pre><code>SEV_WEIGHT = { CRITICAL: 1.0, HIGH: 0.7, MEDIUM: 0.4, LOW: 0.2, UNKNOWN: 0.5 }
+
+score = 100                                                          <span lang="en">if total_packages == 0</span><span lang="it">se total_packages == 0</span>
+score = max(0, round(100 * (1 - min(1.0, weighted / total * 1.3))))   <span lang="en">otherwise</span><span lang="it">altrimenti</span></code></pre>
+        <p lang="en"><strong>100</strong> means nothing vulnerable was found. The score falls as a larger share of the installed base carries CVEs, weighted by how severe they are.</p>
+        <p lang="it"><strong>100</strong> significa che non è stato trovato nulla di vulnerabile. Lo score scende man mano che una quota maggiore dei pacchetti installati presenta CVE, pesati per gravità.</p>
+
+        <h3><span lang="en">Contextual risk index (0–100, higher is worse)</span><span lang="it">Indice di rischio contestuale (0–100, più alto è peggio)</span></h3>
+        <pre><code><span lang="en">per finding:</span><span lang="it">per ogni finding:</span>
+  base      = SEV_WEIGHT[severity]
+  exploit   = 1.0 + (1.5 <span lang="en">if CVE in CISA_KEV</span><span lang="it">se il CVE è in CISA_KEV</span>) + max(EPSS)     # EPSS ∈ 0..1
+  exposure  = 1.4 <span lang="en">if a matching service port answered</span><span lang="it">se una porta di servizio ha risposto</span> else 1.0
+  finding_risk = base * exploit * exposure
+
+<span lang="en">per asset:</span><span lang="it">per ogni asset:</span>
+  raw        = sum(finding_risk)
+  asset_raw  = raw * ctx_mult              # environment + internet-facing + criticality
+  risk_index = round(100 * (1 - exp(-asset_raw / 8.0)))     # <span lang="en">saturating</span><span lang="it">con saturazione</span>
+
+<span lang="en">buckets:</span><span lang="it">fasce:</span>  &gt;= 75  CRITICAL RISK      45..74  HIGH RISK      &lt; 45  <span lang="en">lower</span><span lang="it">inferiore</span></code></pre>
+
+        <h4><span lang="en">Three consequences worth internalising</span><span lang="it">Tre conseguenze da interiorizzare</span></h4>
+        <ul class="tight">
+          <li><span lang="en"><strong>KEV dominates.</strong> A single known-exploited CVE multiplies its finding by 2.5 before context is applied. That is intentional: it is being exploited right now.</span><span lang="it"><strong>Il KEV domina.</strong> Un solo CVE noto come sfruttato moltiplica il proprio finding per 2,5 prima ancora del contesto. È voluto: è sfruttato adesso.</span></li>
+          <li><span lang="en"><strong>The curve saturates.</strong> The exponential means an asset with 40 findings does not score four times an asset with 10. Past a point an asset is simply “very bad”, and quantity stops discriminating.</span><span lang="it"><strong>La curva satura.</strong> L'esponenziale fa sì che un asset con 40 finding non valga quattro volte uno con 10. Oltre una certa soglia un asset è semplicemente «molto grave» e la quantità smette di discriminare.</span></li>
+          <li><span lang="en"><strong>Context is a multiplier, not an addition.</strong> Marking an asset production, internet-facing and criticality 5 amplifies everything it carries — which is why filling those three fields is the highest-value five minutes on the /risk page.</span><span lang="it"><strong>Il contesto è un moltiplicatore, non un'addizione.</strong> Marcare un asset come produzione, esposto a internet e criticità 5 amplifica tutto ciò che porta — ed è per questo che compilare quei tre campi sono i cinque minuti più redditizi della pagina /risk.</span></li>
+        </ul>
+
+        <h3><span lang="en">Degradation behaviour</span><span lang="it">Comportamento in degrado</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Feed unavailable</span><span lang="it">Feed non disponibile</span></th><th><span lang="en">Effect</span><span lang="it">Effetto</span></th></tr></thead>
+            <tbody>
+              <tr><td>EPSS (FIRST.org)</td><td><span lang="en">Contributes 0 to <code>exploit</code>; the page shows <span class="badge b-warn">EPSS offline</span>.</span><span lang="it">Contribuisce 0 a <code>exploit</code>; la pagina mostra <span class="badge b-warn">EPSS offline</span>.</span></td></tr>
+              <tr><td>CISA KEV</td><td><span lang="en">The cached set (6-hour TTL) is reused; if it was never fetched, the KEV boost is simply absent.</span><span lang="it">Viene riusato l'insieme in cache (TTL 6 ore); se non è mai stato scaricato, la spinta KEV è semplicemente assente.</span></td></tr>
+              <tr><td><span lang="en">Reachability probe off or blocked</span><span lang="it">Sonda di raggiungibilità disattiva o bloccata</span></td><td><span lang="en"><code>exposure = 1.0</code> everywhere; the indicator shows the probe as off.</span><span lang="it"><code>exposure = 1.0</code> ovunque; l'indicatore mostra la sonda come disattivata.</span></td></tr>
+              <tr><td><span lang="en">LLM provider</span><span lang="it">Provider LLM</span></td><td><span lang="en">Summaries come back empty; scanning, CVE matching and scoring are untouched.</span><span lang="it">I riepiloghi tornano vuoti; scansione, matching CVE e calcolo degli score restano intatti.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          The philosophy throughout is <strong>best-effort</strong>: a missing feed degrades a score's precision, it never
+          blocks a scan and it never silently reports zero risk.
+        </p>
+        <p lang="it">
+          La filosofia complessiva è <strong>best-effort</strong>: un feed mancante riduce la precisione di uno score, non
+          blocca mai una scansione e non riporta mai in silenzio rischio zero.
+        </p>
+      </section>
+
+      <!-- ======================================= WORKFLOWS -->
+      <section class="block" id="workflows">
+        <h2>D · <span lang="en">End-to-end workflows</span><span lang="it">Flussi di lavoro end-to-end</span></h2>
+
+        <h3><span lang="en">Weekly vulnerability review (about 30 minutes)</span><span lang="it">Revisione settimanale delle vulnerabilità (circa 30 minuti)</span></h3>
+        <ol class="steps">
+          <li><a href="05-posture.html">/intel</a> → <span class="badge b-acc">ASSETS</span> = ALL → <span class="badge b-acc">RUN FULL POSTURE SCAN</span></li>
+          <li><a href="06-risk.html">/risk</a> → <span lang="en">confirm <span class="badge b-ok">EPSS live</span> → read the top five rows → check <strong>CHANGE vs PREVIOUS RUN</strong>.</span><span lang="it">verifica <span class="badge b-ok">EPSS live</span> → leggi le prime cinque righe → controlla <strong>CHANGE vs PREVIOUS RUN</strong>.</span></li>
+          <li><a href="07-findings.html">/findings</a> → <span lang="en">click <span class="badge b-err">SLA BREACHED</span> → triage each row, create tickets.</span><span lang="it">clicca <span class="badge b-err">SLA BREACHED</span> → esamina ogni riga, crea i ticket.</span></li>
+          <li><a href="05-posture.html">/intel</a> → <span class="badge b-acc">RESOLVE</span> <span lang="en">on the top vulnerable components → record the target versions in the tickets.</span><span lang="it">sui componenti più vulnerabili → annota le versioni obiettivo nei ticket.</span></li>
+          <li><a href="09-audit.html">/audit</a> → <span lang="en">export CSV for the weekly report.</span><span lang="it">esporta il CSV per il report settimanale.</span></li>
+        </ol>
+
+        <h3><span lang="en">Onboard a new team with a scoped cone</span><span lang="it">Inserire un nuovo team con un cono dedicato</span></h3>
+        <ol class="steps">
+          <li><a href="10-admin.html">/admin</a> → <span lang="en">create the group (for example <code>team-payments</code>).</span><span lang="it">crea il gruppo (per esempio <code>team-payments</code>).</span></li>
+          <li><a href="10-admin.html">/admin</a> → <span class="badge b-acc">INVITE USER</span> <span lang="en">for each member with role <strong>editor</strong> → add them to the group.</span><span lang="it">per ogni membro con ruolo <strong>editor</strong> → aggiungilo al gruppo.</span></li>
+          <li><a href="04-assets.html">/assets</a> → <span lang="en">for each of their assets, <strong>ASSIGNED</strong> → tick the group → <span class="badge b-acc">SAVE</span>.</span><span lang="it">per ciascuno dei loro asset, <strong>ASSIGNED</strong> → spunta il gruppo → <span class="badge b-acc">SAVE</span>.</span></li>
+          <li><span lang="en">Have one member sign in and confirm they see exactly their assets and nothing else.</span><span lang="it">Fai accedere un membro e verifica che veda esattamente i suoi asset e nulla di più.</span></li>
+        </ol>
+
+        <h3><span lang="en">Wire CI scanner output into the lifecycle</span><span lang="it">Collegare l'output di uno scanner CI al ciclo di vita</span></h3>
+        <ol class="steps">
+          <li><span lang="en">In CI produce the report, for example <code>trivy image -f json -o trivy.json $IMAGE</code>.</span><span lang="it">In CI genera il report, per esempio <code>trivy image -f json -o trivy.json $IMAGE</code>.</span></li>
+          <li><span lang="en">Upload it in <a href="07-findings.html">/findings</a> → <strong>IMPORT SCANNER REPORT</strong>, or call <code>POST /api/findings/import</code> from the pipeline with the session cookie.</span><span lang="it">Caricalo in <a href="07-findings.html">/findings</a> → <strong>IMPORT SCANNER REPORT</strong>, oppure chiama <code>POST /api/findings/import</code> dalla pipeline con il cookie di sessione.</span></li>
+          <li><span lang="en">Set <code>asset_ip</code> so the findings attach to the right host and flow into /risk.</span><span lang="it">Imposta <code>asset_ip</code> perché i finding si aggancino all'host giusto e confluiscano in /risk.</span></li>
+          <li><span lang="en">Duplicates across tools collapse into one finding by fingerprint — it is safe to run Trivy and Grype together.</span><span lang="it">I duplicati fra strumenti collassano in un unico finding per fingerprint — puoi tranquillamente usare insieme Trivy e Grype.</span></li>
+          <li><span lang="en">Enable <a href="11-settings.html#ticketing">ticketing</a> so triage produces real issues in the team's tracker.</span><span lang="it">Attiva il <a href="11-settings.html#ticketing">ticketing</a> perché il triage produca issue reali nel tracker del team.</span></li>
+        </ol>
+
+        <h3><span lang="en">Answer a supply-chain question</span><span lang="it">Rispondere a una domanda di supply chain</span></h3>
+        <ol class="steps">
+          <li><a href="08-sbom.html">/sbom</a> → <strong>Search purl, CPE, licence…</strong> → <span lang="en">type the component name.</span><span lang="it">digita il nome del componente.</span></li>
+          <li><span lang="en">Enable <span class="badge b-acc">GROUP BY COMPONENT</span> to see one row per version with the affected asset count.</span><span lang="it">Attiva <span class="badge b-acc">GROUP BY COMPONENT</span> per vedere una riga per versione con il numero di asset coinvolti.</span></li>
+          <li><span lang="en">Switch the vulnerability filter to <em>Vulnerable only</em>.</span><span lang="it">Imposta il filtro vulnerabilità su <em>Vulnerable only</em>.</span></li>
+          <li><span lang="en">Export <span class="badge b-acc">CYCLONEDX</span> and attach it to the answer.</span><span lang="it">Esporta <span class="badge b-acc">CYCLONEDX</span> e allegalo alla risposta.</span></li>
+        </ol>
+
+        <h3><span lang="en">Prove compliance posture (NIS2 / OWASP)</span><span lang="it">Dimostrare la postura di conformità (NIS2 / OWASP)</span></h3>
+        <ol class="steps">
+          <li><a href="07-findings.html">/findings</a> → <span lang="en">read the <strong>NIS2 · ART. 21(2) MEASURES</strong> and <strong>OWASP TOP 10</strong> bars — both computed at runtime from live findings.</span><span lang="it">leggi le barre <strong>NIS2 · ART. 21(2) MEASURES</strong> e <strong>OWASP TOP 10</strong> — entrambe calcolate a runtime dai finding vivi.</span></li>
+          <li><span lang="en">Filter by a specific NIS2 measure to list exactly which findings sit behind that bar.</span><span lang="it">Filtra per una misura NIS2 specifica per elencare esattamente quali finding stanno dietro quella barra.</span></li>
+          <li><a href="09-audit.html">/audit</a> → <span lang="en">confirm <span class="badge b-ok">LEDGER VERIFIED</span> → export the period.</span><span lang="it">verifica <span class="badge b-ok">LEDGER VERIFIED</span> → esporta il periodo.</span></li>
+          <li><a href="08-sbom.html">/sbom</a> → <span lang="en">export the standard SBOM for the same period's run.</span><span lang="it">esporta la SBOM standard della run dello stesso periodo.</span></li>
+        </ol>
+      </section>
+
+      <!-- ======================================= TROUBLE -->
+      <section class="block" id="trouble">
+        <h2>E · <span lang="en">Troubleshooting</span><span lang="it">Risoluzione problemi</span></h2>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Symptom</span><span lang="it">Sintomo</span></th>
+                <th><span lang="en">Likely cause</span><span lang="it">Causa probabile</span></th>
+                <th><span lang="en">Fix</span><span lang="it">Soluzione</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><em>“Supabase unreachable”</em> <span lang="en">on /findings, /audit or /sbom</span><span lang="it">su /findings, /audit o /sbom</span></td>
+                <td><span lang="en">The local Supabase Docker stack is not running.</span><span lang="it">Lo stack Docker Supabase locale non è in esecuzione.</span></td>
+                <td><span lang="en">Start it as shown in the banner (<code>./start.sh</code>). Scanning still works; persistence and history do not.</span><span lang="it">Avvialo come indicato nel banner (<code>./start.sh</code>). Le scansioni funzionano ancora; persistenza e storico no.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Asset stuck on</span><span lang="it">Asset fermo su</span> <span class="badge b-warn">SSH FAIL</span></td>
+                <td><span lang="en">Wrong credentials, a plaintext password, an unknown host key, or simulation still enabled.</span><span lang="it">Credenziali errate, password in chiaro, chiave host sconosciuta o simulazione ancora attiva.</span></td>
+                <td><span lang="en">Re-save the asset so the password is re-encrypted; clear the <span class="badge b-warn">NOT ENCRYPTED</span> badge; turn off <em>Simulate Authenticated Scans</em>. Remember the SSH policy is <code>RejectPolicy</code>.</span><span lang="it">Risalva l'asset perché la password venga ricifrata; elimina il badge <span class="badge b-warn">NOT ENCRYPTED</span>; disattiva <em>Simulate Authenticated Scans</em>. Ricorda che la policy SSH è <code>RejectPolicy</code>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Posture scan returns almost no packages</span><span lang="it">La scansione di postura restituisce quasi nessun pacchetto</span></td>
+                <td><span lang="en">The assets are unauthenticated, so only banner data is available.</span><span lang="it">Gli asset non sono autenticati, quindi sono disponibili solo dati di banner.</span></td>
+                <td><span lang="en">Add SSH credentials in /assets and disable simulation in Settings.</span><span lang="it">Aggiungi credenziali SSH in /assets e disattiva la simulazione nelle Impostazioni.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">AI summary empty —</span><span lang="it">Riepilogo AI vuoto —</span> <em>“local LLM summary unavailable — Ollama offline”</em></td>
+                <td><span lang="en">Ollama is not running, or the configured model was never pulled.</span><span lang="it">Ollama non è in esecuzione, o il modello configurato non è mai stato scaricato.</span></td>
+                <td><span lang="en">Start Ollama, pull the model, then press the reload button next to <strong>Ollama Model</strong> in Settings and confirm it appears.</span><span lang="it">Avvia Ollama, scarica il modello, poi premi il pulsante di ricarica accanto a <strong>Ollama Model</strong> nelle Impostazioni e verifica che compaia.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">EPSS offline</span> <span lang="en">on /risk</span><span lang="it">su /risk</span></td>
+                <td><span lang="en">No outbound access to FIRST.org.</span><span lang="it">Nessun accesso in uscita verso FIRST.org.</span></td>
+                <td><span lang="en">Allow the egress, or accept a KEV-and-severity-only ranking — the page states which factors contributed.</span><span lang="it">Consenti il traffico in uscita, oppure accetta una classifica basata solo su KEV e severità — la pagina dichiara quali fattori hanno contribuito.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">The 3D CVE graph stays blank</span><span lang="it">Il grafo CVE 3D resta vuoto</span></td>
+                <td><span lang="en">The panel never entered the viewport (the library is lazy-loaded), or WebGL is unavailable.</span><span lang="it">Il pannello non è mai entrato nella viewport (la libreria è caricata in lazy), oppure WebGL non è disponibile.</span></td>
+                <td><span lang="en">Scroll it fully into view and wait a few seconds; then enable WebGL or hardware acceleration. The bubble pack works without WebGL.</span><span lang="it">Portalo completamente in vista e attendi qualche secondo; poi abilita WebGL o l'accelerazione hardware. Il bubble pack funziona senza WebGL.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Invitation email never arrives</span><span lang="it">L'email di invito non arriva mai</span></td>
+                <td><span lang="en">SMTP host empty, or the wrong <strong>Base URL</strong>.</span><span lang="it">Host SMTP vuoto, oppure <strong>Base URL</strong> errata.</span></td>
+                <td><span lang="en">Configure SMTP in Settings; meanwhile use the manual link shown in /admin. The base URL must be an address users can actually reach.</span><span lang="it">Configura SMTP nelle Impostazioni; nel frattempo usa il link manuale mostrato in /admin. La base URL deve essere un indirizzo davvero raggiungibile dagli utenti.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">An editor cannot see an asset they own</span><span lang="it">Un editor non vede un asset di sua competenza</span></td>
+                <td><span lang="en">The asset is unassigned, or assigned to a group they do not belong to.</span><span lang="it">L'asset non è assegnato, o è assegnato a un gruppo di cui non fa parte.</span></td>
+                <td><span lang="en">Assign it in /assets → ASSIGNED, or add the user to the group in /admin.</span><span lang="it">Assegnalo in /assets → ASSIGNED, oppure aggiungi l'utente al gruppo in /admin.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Ticket creation fails</span><span lang="it">La creazione del ticket fallisce</span></td>
+                <td><span lang="en">Provider off, bad token, or wrong repository/project key.</span><span lang="it">Provider disattivato, token errato o repository/project key sbagliati.</span></td>
+                <td><span lang="en">Recheck Settings → TICKETING. Masked <code>••••</code> values are preserved on save; retype the token only if you want to change it.</span><span lang="it">Ricontrolla Impostazioni → TICKETING. I valori mascherati <code>••••</code> vengono conservati al salvataggio; ridigita il token solo se vuoi cambiarlo.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Repeatedly redirected to /change-password</span><span lang="it">Reindirizzato ripetutamente a /change-password</span></td>
+                <td><span lang="en"><code>must_change_password</code> is set, or rotation expired the password.</span><span lang="it"><code>must_change_password</code> è attivo, o la rotazione ha fatto scadere la password.</span></td>
+                <td><span lang="en">Complete the change. If rotation is unwanted, set <code>auth.rotation_days</code> to <code>0</code>.</span><span lang="it">Completa il cambio. Se la rotazione non è voluta, imposta <code>auth.rotation_days</code> a <code>0</code>.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Signed out unexpectedly everywhere</span><span lang="it">Disconnesso all'improvviso ovunque</span></td>
+                <td><span lang="en">The password was changed or reset — every session issued before it is rejected.</span><span lang="it">La password è stata cambiata o reimpostata — ogni sessione emessa prima viene rifiutata.</span></td>
+                <td><span lang="en">Sign in again. If you did not change it, treat it as a possible compromise and check /audit.</span><span lang="it">Riaccedi. Se non l'hai cambiata tu, trattalo come possibile compromissione e controlla /audit.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">TAMPERED</span> <span lang="en">in /audit</span><span lang="it">in /audit</span></td>
+                <td><span lang="en">Ledger rows were modified or deleted directly in the database.</span><span lang="it">Righe del registro modificate o eliminate direttamente nel database.</span></td>
+                <td><span lang="en">Preserve the database, review who holds direct Postgres access, treat that period's history as untrustworthy.</span><span lang="it">Conserva il database, verifica chi ha accesso diretto a Postgres, considera inaffidabile lo storico di quel periodo.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">A scan silently skips an asset</span><span lang="it">Una scansione salta silenziosamente un asset</span></td>
+                <td><span lang="en">The asset is <span class="badge">DISABLED</span> in the SCAN column.</span><span lang="it">L'asset è <span class="badge">DISABLED</span> nella colonna SCAN.</span></td>
+                <td><span lang="en">Re-enable it in /assets; the Dashboard's <em>“excluded from scans”</em> line counts these.</span><span lang="it">Riabilitalo in /assets; la riga <em>«excluded from scans»</em> della Dashboard li conta.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Local scan returns 400</span><span lang="it">La scansione locale restituisce 400</span></td>
+                <td><span lang="en"><code>gitleaks</code> or <code>trivy</code> is not installed on the server.</span><span lang="it"><code>gitleaks</code> o <code>trivy</code> non è installato sul server.</span></td>
+                <td><span lang="en">Install the binary — the error body contains the instructions. Neither is a hard dependency; you can import a report generated elsewhere instead.</span><span lang="it">Installa il binario — il corpo dell'errore contiene le istruzioni. Nessuno dei due è una dipendenza obbligatoria; in alternativa importa un report generato altrove.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= GLOSSARY -->
+      <section class="block" id="glossary">
+        <h2>F · <span lang="en">Glossary</span><span lang="it">Glossario</span></h2>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Term</span><span lang="it">Termine</span></th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr></thead>
+            <tbody>
+              <tr><td><strong>ASPM</strong></td><td><span lang="en">Application Security Posture Management — unifying findings from many tools into one lifecycle with ownership, states and SLAs. What /findings implements.</span><span lang="it">Application Security Posture Management — unificare i finding di più strumenti in un unico ciclo di vita con responsabilità, stati e SLA. È ciò che implementa /findings.</span></td></tr>
+              <tr><td><span lang="en"><strong>Banner grabbing</strong></span><span lang="it"><strong>Banner grabbing</strong></span></td><td><span lang="en">Reading the identification string a service returns on connection. Unauthenticated, fast and shallow.</span><span lang="it">Leggere la stringa di identificazione che un servizio restituisce alla connessione. Non autenticato, rapido e superficiale.</span></td></tr>
+              <tr><td><strong>CPE</strong></td><td><span lang="en">Common Platform Enumeration — a standard identifier for a product and version, included in SBOM exports.</span><span lang="it">Common Platform Enumeration — un identificativo standard per prodotto e versione, incluso negli export SBOM.</span></td></tr>
+              <tr><td><strong>CVE</strong></td><td><span lang="en">Common Vulnerabilities and Exposures — the public identifier of a specific vulnerability.</span><span lang="it">Common Vulnerabilities and Exposures — l'identificativo pubblico di una specifica vulnerabilità.</span></td></tr>
+              <tr><td><strong>CWE</strong></td><td><span lang="en">Common Weakness Enumeration — the <em>class</em> of defect (for example CWE-79, cross-site scripting), used to map findings to OWASP and NIS2.</span><span lang="it">Common Weakness Enumeration — la <em>classe</em> di difetto (per esempio CWE-79, cross-site scripting), usata per mappare i finding su OWASP e NIS2.</span></td></tr>
+              <tr><td><strong>CycloneDX / SPDX</strong></td><td><span lang="en">The two standard SBOM formats, exported here as 1.5 and 2.3 JSON respectively.</span><span lang="it">I due formati SBOM standard, esportati qui rispettivamente come JSON 1.5 e 2.3.</span></td></tr>
+              <tr><td><strong>encdec</strong></td><td><span lang="en">The Go binary that encrypts asset passwords with AES-GCM under a secret prefix compiled into the binary. Values are stored as <code>ENC:&lt;hex&gt;</code>.</span><span lang="it">Il binario Go che cifra le password degli asset con AES-GCM usando un prefisso segreto compilato nel binario. I valori sono salvati come <code>ENC:&lt;hex&gt;</code>.</span></td></tr>
+              <tr><td><strong>EPSS</strong></td><td><span lang="en">Exploit Prediction Scoring System (FIRST.org) — the probability, 0 to 1, that a CVE is exploited within 30 days.</span><span lang="it">Exploit Prediction Scoring System (FIRST.org) — la probabilità, da 0 a 1, che un CVE venga sfruttato entro 30 giorni.</span></td></tr>
+              <tr><td><span lang="en"><strong>Fingerprint</strong></span><span lang="it"><strong>Fingerprint</strong></span></td><td><span lang="en">The stable identity of a finding — (asset, package, primary CVE) or location. Source is excluded, so multiple tools reporting the same defect collapse into one row.</span><span lang="it">L'identità stabile di un finding — (asset, pacchetto, CVE principale) o posizione. La sorgente è esclusa, così più strumenti che segnalano lo stesso difetto collassano in una sola riga.</span></td></tr>
+              <tr><td><strong>KEV</strong></td><td><span lang="en">CISA's Known Exploited Vulnerabilities catalogue — CVEs confirmed to be exploited in the wild. The strongest single signal on /risk.</span><span lang="it">Il catalogo Known Exploited Vulnerabilities della CISA — CVE con sfruttamento confermato in the wild. Il segnale singolo più forte in /risk.</span></td></tr>
+              <tr><td><strong>NIS2</strong></td><td><span lang="en">EU directive 2022/2555; article 21(2) lists minimum security measures, aggregated on the findings page.</span><span lang="it">Direttiva UE 2022/2555; l'articolo 21(2) elenca le misure minime di sicurezza, aggregate nella pagina findings.</span></td></tr>
+              <tr><td><strong>OSV.dev</strong></td><td><span lang="en">Open Source Vulnerabilities — the keyless database this application queries to match packages to CVEs.</span><span lang="it">Open Source Vulnerabilities — il database senza chiave che questa applicazione interroga per associare pacchetti e CVE.</span></td></tr>
+              <tr><td><strong>OSINT</strong></td><td><span lang="en">Open-source intelligence — here, web search used to resolve a product and version from free text.</span><span lang="it">Open-source intelligence — qui, la ricerca web usata per risalire a prodotto e versione da testo libero.</span></td></tr>
+              <tr><td><strong>purl</strong></td><td><span lang="en">Package URL — a standard package identifier such as <code>pkg:deb/debian/bash@4.3</code>, present in SBOM exports.</span><span lang="it">Package URL — un identificativo standard di pacchetto come <code>pkg:deb/debian/bash@4.3</code>, presente negli export SBOM.</span></td></tr>
+              <tr><td><strong>RAG</strong></td><td><span lang="en">Retrieve-Augment-Generate. CVE identifiers fetched live from OSV are injected into the LLM prompt with an anti-hallucination constraint (“do not invent identifiers not listed”). Architectural and API-based — no embeddings or vector store.</span><span lang="it">Retrieve-Augment-Generate. Gli identificativi CVE recuperati in tempo reale da OSV vengono iniettati nel prompt dell'LLM con un vincolo anti-allucinazione («non inventare identificativi non elencati»). Architetturale e basato su API — niente embedding né vector store.</span></td></tr>
+              <tr><td><strong>SBOM</strong></td><td><span lang="en">Software Bill of Materials — the complete list of components in a system.</span><span lang="it">Software Bill of Materials — l'elenco completo dei componenti di un sistema.</span></td></tr>
+              <tr><td><strong>SCA</strong></td><td><span lang="en">Software Composition Analysis — inventorying installed packages and matching them against vulnerability databases. What a posture scan does.</span><span lang="it">Software Composition Analysis — inventariare i pacchetti installati e confrontarli con i database di vulnerabilità. È ciò che fa una scansione di postura.</span></td></tr>
+              <tr><td><strong>SLA</strong></td><td><span lang="en">The remediation deadline derived from a finding's severity at first observation.</span><span lang="it">La scadenza di remediation derivata dalla severità del finding alla prima osservazione.</span></td></tr>
+              <tr><td><strong>SSE</strong></td><td><span lang="en">Server-Sent Events — the one-way stream that delivers scan results to the browser asset by asset instead of in one final block.</span><span lang="it">Server-Sent Events — lo stream unidirezionale che consegna i risultati al browser asset per asset invece che in un unico blocco finale.</span></td></tr>
+              <tr><td><span lang="en"><strong>Visibility cone</strong></span><span lang="it"><strong>Cono di visibilità</strong></span></td><td><span lang="en">The set of assets a user may see, defined by direct and group assignments. Aggregates are recomputed inside it rather than masked.</span><span lang="it">L'insieme di asset che un utente può vedere, definito dalle assegnazioni dirette e di gruppo. Gli aggregati vengono ricalcolati al suo interno invece che mascherati.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= AI -->
+      <section class="block" id="ai">
+        <h2>G · <span lang="en">AI transparency (EU AI Act, Regulation 2024/1689)</span><span lang="it">Trasparenza AI (AI Act UE, Regolamento 2024/1689)</span></h2>
+
+        <p lang="en">
+          The application uses general-purpose AI models for four advisory tasks: CVE risk summaries, affected-version
+          extraction from advisory text, product identification when regex heuristics fail, and triage hints. It
+          implements no prohibited practice under Article 5 and falls in no Annex III high-risk category — it supports
+          patch prioritization on IT assets and takes no decision affecting natural persons. The resulting tier is
+          <strong>minimal/limited risk</strong>, so the applicable measures are transparency and AI literacy.
+        </p>
+        <p lang="it">
+          L'applicazione usa modelli di AI general-purpose per quattro compiti di supporto: riepiloghi del rischio CVE,
+          estrazione della versione affetta dal testo degli advisory, identificazione del prodotto quando le euristiche
+          regex falliscono e suggerimenti di triage. Non implementa alcuna pratica vietata dall'articolo 5 e non ricade in
+          alcuna categoria ad alto rischio dell'Allegato III — supporta la prioritizzazione delle patch su asset IT e non
+          prende decisioni che riguardano persone fisiche. La fascia risultante è <strong>rischio minimo/limitato</strong>,
+          quindi le misure applicabili sono trasparenza e alfabetizzazione all'AI.
+        </p>
+
+        <ul class="tight">
+          <li><span lang="en">Every AI-generated text carries an <span class="badge b-acc">AI-GENERATED</span> badge with a disclaimer tooltip.</span><span lang="it">Ogni testo generato dall'AI porta un badge <span class="badge b-acc">AI-GENERATED</span> con tooltip di avvertenza.</span></li>
+          <li><span lang="en">LLM-derived advisory extractions are tagged <code>[AI]</code> in the live scan log, including the provider and model name.</span><span lang="it">Le estrazioni di advisory derivate dall'LLM sono marcate <code>[AI]</code> nel log di scansione live, con nome del provider e del modello.</span></li>
+          <li><span lang="en">With <strong>Ollama</strong> inference is fully local. With <strong>Claude</strong>, prompts contain only product names, version strings and public CVE identifiers — never asset IP addresses, hostnames, credentials or personal data.</span><span lang="it">Con <strong>Ollama</strong> l'inferenza è interamente locale. Con <strong>Claude</strong> i prompt contengono solo nomi di prodotto, stringhe di versione e identificativi CVE pubblici — mai indirizzi IP degli asset, hostname, credenziali o dati personali.</span></li>
+          <li><span lang="en">EPSS is a third-party machine-learning model; only CVE identifiers are sent to FIRST.org, nothing about your assets.</span><span lang="it">EPSS è un modello di machine learning di terze parti; a FIRST.org vengono inviati solo identificativi CVE, nulla dei tuoi asset.</span></li>
+          <li><span lang="en">All AI output is advisory: scan verdicts, CVE matching and SLA tracking never depend solely on a model answer. Verify version constraints against the linked CVE and OSV records before acting.</span><span lang="it">Tutto l'output AI è indicativo: verdetti di scansione, matching CVE e tracciamento SLA non dipendono mai unicamente dalla risposta di un modello. Verifica i vincoli di versione sui record CVE e OSV collegati prima di agire.</span></li>
+          <li><span lang="en">A model failure degrades gracefully: the application returns empty summaries rather than blocking scans.</span><span lang="it">Un guasto del modello degrada in modo controllato: l'applicazione restituisce riepiloghi vuoti invece di bloccare le scansioni.</span></li>
+        </ul>
+
+        <p class="badge">
+          <span lang="en">This manual documents the application; it is not legal advice.</span>
+          <span lang="it">Questo manuale documenta l'applicazione; non costituisce consulenza legale.</span>
+        </p>
+      </section>
+
+      <div class="pager">
+        <a href="11-settings.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          11 · <span lang="en">Settings</span><span lang="it">Impostazioni</span>
+        </a>
+        <a class="nxt" href="index.html">
+          <span class="lbl"><span lang="en">Back to</span><span lang="it">Torna a</span></span>
+          00 · <span lang="en">Overview</span><span lang="it">Panoramica</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="06 · Contextual Risk" data-title-it="06 · Rischio contestuale">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>06 · Contextual Risk — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html" aria-current="page"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
+              <li><a href="#factors"><span lang="en">The four factors</span><span lang="it">I quattro fattori</span></a></li>
+              <li><a href="#controls"><span lang="en">Controls</span><span lang="it">Controlli</span></a></li>
+              <li><a href="#kpi">KPI</a></li>
+              <li><a href="#trend"><span lang="en">Trend &amp; delta</span><span lang="it">Tendenza e delta</span></a></li>
+              <li><a href="#table"><span lang="en">Risk ranking</span><span lang="it">Classifica di rischio</span></a></li>
+              <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">06 · <span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span> <span class="route">/risk</span></div>
+        <h1><span lang="en">Contextual Risk Prioritization</span><span lang="it">Prioritizzazione contestuale del rischio</span></h1>
+        <p lang="en">
+          Severity alone is a poor patch order. A <em>critical</em> on an isolated development box matters less than a
+          <em>high</em> that is being actively exploited in the wild on an internet-facing production host. This page
+          re-scores the latest posture run with four extra dimensions and ranks your assets accordingly.
+        </p>
+        <p lang="it">
+          La sola severità è un pessimo criterio di priorità. Un <em>critical</em> su una macchina di sviluppo isolata
+          conta meno di un <em>high</em> sfruttato attivamente in the wild su un host di produzione esposto a internet.
+          Questa pagina ricalcola l'ultima run di postura con quattro dimensioni aggiuntive e ordina gli asset di
+          conseguenza.
+        </p>
+      </header>
+
+      <!-- ======================================= OVERVIEW -->
+      <section class="block" id="overview">
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all · context edit: admin, manager, editor</span><span lang="it">lettura: tutti · modifica contesto: admin, manager, editor</span></span></h2>
+
+        <p lang="en">
+          The page subtitle summarises it: <em>“Posture findings re-scored with EPSS &amp; CISA KEV exploitability, live
+            reachability and asset business context.”</em> Data comes from <code>GET /api/risk</code> (the scoring) and
+          <code>GET /api/risk/trend</code> (the history and the run-to-run delta).
+        </p>
+        <p lang="it">
+          Il sottotitolo della pagina lo riassume: <em>«Posture findings re-scored with EPSS &amp; CISA KEV
+            exploitability, live reachability and asset business context.»</em> I dati arrivano da
+          <code>GET /api/risk</code> (il calcolo) e <code>GET /api/risk/trend</code> (lo storico e il delta fra run).
+        </p>
+        <p lang="en">
+          For an <em>editor</em> the whole computation is <strong>recomputed on the visibility cone</strong>, not
+          filtered afterwards: their score describes their assets and reveals nothing about the rest of the fleet. In the
+          trend series the per-run global counters are omitted for the same reason.
+        </p>
+        <p lang="it">
+          Per un <em>editor</em> l'intero calcolo è <strong>rifatto sul cono di visibilità</strong>, non filtrato a
+          posteriori: il suo score descrive i suoi asset e non rivela nulla del resto del parco. Nella serie storica i
+          contatori globali per run vengono omessi per lo stesso motivo.
+        </p>
+
+        <figure>
+          <img src="img/risk-page.webp" alt="Contextual risk page" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The risk page</b> — controls and source indicators at the top, the KPI strip, the trend panels and
+              the ranking table.</span>
+            <span lang="it"><b>La pagina rischio</b> — controlli e indicatori delle fonti in alto, la striscia KPI, i pannelli di
+              tendenza e la tabella della classifica.</span>
+          </figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= FACTORS -->
+      <section class="block" id="factors">
+        <h2><span lang="en">The four factors</span><span lang="it">I quattro fattori</span></h2>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Dimension</span><span lang="it">Dimensione</span></th>
+                <th><span lang="en">Source</span><span lang="it">Fonte</span></th>
+                <th><span lang="en">Effect on the score</span><span lang="it">Effetto sullo score</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Exploitation in the wild</strong></span><span lang="it"><strong>Sfruttamento in the wild</strong></span></td>
+                <td><span lang="en">CISA KEV catalogue, cached about six hours.</span><span lang="it">Catalogo CISA KEV, in cache circa sei ore.</span></td>
+                <td><span lang="en">A strong multiplier (+1.5 on the exploit factor). A CVE in KEV is confirmed to be exploited <em>right now</em> — this is the single most important signal on the page.</span><span lang="it">Un moltiplicatore forte (+1,5 sul fattore exploit). Un CVE nel KEV è confermato come sfruttato <em>adesso</em> — è il segnale più importante della pagina.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Exploitation probability</strong></span><span lang="it"><strong>Probabilità di sfruttamento</strong></span></td>
+                <td><span lang="en">EPSS from FIRST.org — a probability between 0 and 1 that the CVE is exploited within 30 days.</span><span lang="it">EPSS da FIRST.org — una probabilità fra 0 e 1 che il CVE venga sfruttato entro 30 giorni.</span></td>
+                <td><span lang="en">Added proportionally. <strong>Only CVE identifiers are sent to FIRST</strong> — nothing about your assets leaves your infrastructure.</span><span lang="it">Aggiunta proporzionalmente. <strong>A FIRST vengono inviati solo identificativi CVE</strong> — nulla dei tuoi asset lascia la tua infrastruttura.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Reachability</strong></span><span lang="it"><strong>Raggiungibilità</strong></span></td>
+                <td><span lang="en">A live TCP probe of the service ports associated with the vulnerable package.</span><span lang="it">Una sonda TCP live sulle porte di servizio associate al pacchetto vulnerabile.</span></td>
+                <td><span lang="en">×1.4 when a matching port actually answers — a vulnerability nobody can reach is a different problem from one exposed on the network.</span><span lang="it">×1,4 quando una porta corrispondente risponde davvero — una vulnerabilità irraggiungibile è un problema diverso da una esposta in rete.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Business context</strong></span><span lang="it"><strong>Contesto di business</strong></span></td>
+                <td><span lang="en">Your own inventory metadata: environment, internet-facing flag, criticality 1–5.</span><span lang="it">I metadati del tuo inventario: ambiente, flag di esposizione a internet, criticità 1–5.</span></td>
+                <td><span lang="en">Scales the whole asset score as a multiplier. This is the part only you can supply — and the part that makes the ranking yours rather than generic.</span><span lang="it">Scala l'intero score dell'asset come moltiplicatore. È la parte che solo tu puoi fornire — e quella che rende la classifica tua e non generica.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">The exact arithmetic, including the saturation curve, is documented in <a href="12-reference.html#formulas">Appendix C</a>.</p>
+        <p lang="it">L'aritmetica esatta, inclusa la curva di saturazione, è documentata in <a href="12-reference.html#formulas">Appendice C</a>.</p>
+      </section>
+
+      <!-- ======================================= CONTROLS -->
+      <section class="block" id="controls">
+        <h2><span lang="en">Controls and source indicators</span><span lang="it">Controlli e indicatori delle fonti</span></h2>
+
+        <figure class="mid">
+          <img src="img/risk-controls.webp" alt="Risk page controls" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>REACHABILITY PROBE and RECOMPUTE</b> — the two controls that decide how the score is built and when
+              it is rebuilt.</span>
+            <span lang="it"><b>REACHABILITY PROBE e RECOMPUTE</b> — i due controlli che decidono come viene costruito lo score e
+              quando viene ricostruito.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Control</span><span lang="it">Controllo</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>REACHABILITY PROBE</strong></td>
+                <td>
+                  <span lang="en">On by default. When enabled, the server opens short TCP connections to the service ports associated with each vulnerable package (<code>probe=true</code>). Switch it off for a faster, entirely passive computation — the reachability multiplier is then dropped rather than guessed.</span>
+                  <span lang="it">Attiva di default. Quando è abilitata, il server apre brevi connessioni TCP verso le porte di servizio associate a ciascun pacchetto vulnerabile (<code>probe=true</code>). Disattivala per un calcolo più rapido e del tutto passivo — il moltiplicatore di raggiungibilità viene allora escluso, non ipotizzato.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">RECOMPUTE</span></td>
+                <td>
+                  <span lang="en">Re-runs <code>GET /api/risk</code> with the current probe setting and freshly fetched EPSS and KEV data. Press it after editing business context — the table does not silently re-rank behind your back.</span>
+                  <span lang="it">Riesegue <code>GET /api/risk</code> con l'impostazione corrente della sonda e con dati EPSS e KEV appena scaricati. Premilo dopo aver modificato il contesto di business — la tabella non si riordina silenziosamente alle tue spalle.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Run selector</strong></span><span lang="it"><strong>Selettore di run</strong></span></td>
+                <td>
+                  <span lang="en">Choose which stored posture run to score: <code>Run #id · timestamp · n CVE</code>. Scoring an older run is how you reconstruct “what did we know last month?”.</span>
+                  <span lang="it">Scegli quale run di postura salvata valutare: <code>Run #id · timestamp · n CVE</code>. Valutare una run precedente è il modo per ricostruire «cosa sapevamo il mese scorso?».</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Source indicators</strong></span><span lang="it"><strong>Indicatori delle fonti</strong></span></td>
+                <td>
+                  <span lang="en"><span class="badge b-ok">EPSS live</span> / <span class="badge b-warn">EPSS offline</span> and <span class="badge b-ok">Reachability probe on</span> / <span class="badge">Reachability probe off</span>. They tell you which factors actually contributed, so a degraded score is never silent — this is the honesty feature of the page.</span>
+                  <span lang="it"><span class="badge b-ok">EPSS live</span> / <span class="badge b-warn">EPSS offline</span> e <span class="badge b-ok">Reachability probe on</span> / <span class="badge">Reachability probe off</span>. Indicano quali fattori hanno effettivamente contribuito, così uno score degradato non è mai silenzioso — è la funzione di onestà della pagina.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Loading state</strong></span><span lang="it"><strong>Stato di caricamento</strong></span></td>
+                <td><span lang="en"><em>“Computing risk — EPSS / KEV / reachability lookup…”</em> while the external feeds are fetched.</span><span lang="it"><em>«Computing risk — EPSS / KEV / reachability lookup…»</em> durante il recupero dei feed esterni.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure class="narrow">
+          <img src="img/risk-runselect.webp" alt="Run selector" loading="lazy" />
+          <figcaption><span lang="en"><b>Run selector</b> — every stored run, newest first, with its CVE count.</span><span lang="it"><b>Selettore di run</b> — tutte le run salvate, dalla più recente, con il relativo conteggio CVE.</span></figcaption>
+        </figure>
+      </section>
+
+      <!-- ======================================= KPI -->
+      <section class="block" id="kpi">
+        <h2><span lang="en">KPI strip</span><span lang="it">Striscia KPI</span></h2>
+
+        <figure>
+          <img src="img/risk-kpis.webp" alt="Risk KPI strip" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Five risk KPIs</b> — assets scored, the two risk buckets, KEV hits and reachable findings.</span>
+            <span lang="it"><b>Cinque KPI di rischio</b> — asset valutati, i due bucket di rischio, riscontri KEV e finding
+              raggiungibili.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th>KPI</th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>ASSETS</strong></td><td><span lang="en">Assets scored in this run, inside your cone.</span><span lang="it">Asset valutati in questa run, dentro il tuo cono.</span></td></tr>
+              <tr><td><strong>CRITICAL RISK</strong></td><td><span lang="en">Assets with a risk index of 75 or above.</span><span lang="it">Asset con indice di rischio pari o superiore a 75.</span></td></tr>
+              <tr><td><strong>HIGH RISK</strong></td><td><span lang="en">Assets with a risk index between 45 and 74.</span><span lang="it">Asset con indice di rischio fra 45 e 74.</span></td></tr>
+              <tr><td><strong>KEV (EXPLOITED)</strong></td><td><span lang="en">Findings whose CVE appears in the CISA KEV catalogue. <strong>Treat this as your emergency queue</strong> — it is the only KPI here that describes confirmed real-world attacks rather than potential.</span><span lang="it">Finding il cui CVE compare nel catalogo CISA KEV. <strong>Consideralo la tua coda di emergenza</strong> — è l'unico KPI qui che descrive attacchi reali confermati e non potenziali.</span></td></tr>
+              <tr><td><strong>REACHABLE</strong></td><td><span lang="en">Findings whose service port answered the probe.</span><span lang="it">Finding la cui porta di servizio ha risposto alla sonda.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= TREND -->
+      <section class="block" id="trend">
+        <h2><span lang="en">Trend and run-to-run delta</span><span lang="it">Tendenza e delta fra run</span></h2>
+
+        <figure>
+          <img src="img/risk-trend.webp" alt="Posture trend chart" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>POSTURE TREND</b> — score and CVE count per run, so you can see the direction of travel rather than
+              a single snapshot.</span>
+            <span lang="it"><b>POSTURE TREND</b> — score e numero di CVE per run, per vedere la direzione di marcia invece di una
+              singola istantanea.</span>
+          </figcaption>
+        </figure>
+
+        <figure>
+          <img src="img/risk-delta.webp" alt="Change versus previous run" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>CHANGE vs PREVIOUS RUN</b> — new findings, resolved findings and how many carried over. This is the
+              panel that proves a patch window worked.</span>
+            <span lang="it"><b>CHANGE vs PREVIOUS RUN</b> — finding nuovi, risolti e quanti sono rimasti. È il pannello che dimostra
+              che una finestra di patch ha funzionato.</span>
+          </figcaption>
+        </figure>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">Element</span><span lang="it">Elemento</span></th><th><span lang="en">Behaviour</span><span lang="it">Comportamento</span></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>POSTURE TREND</strong></td>
+                <td><span lang="en">A dual-series history — score and CVE count — across stored runs, from <code>GET /api/risk/trend</code>. For editors the per-run global counters are omitted; only the run identifiers and dates remain, with the cone's own series.</span><span lang="it">Uno storico a doppia serie — score e numero di CVE — sulle run salvate, da <code>GET /api/risk/trend</code>. Per gli editor i contatori globali per run vengono omessi; restano solo identificativi e date delle run, con la serie del proprio cono.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">NEW FINDINGS</span></td>
+                <td><span lang="en">Findings present in the latest run and absent from the previous one — what got worse.</span><span lang="it">Finding presenti nell'ultima run e assenti nella precedente — cosa è peggiorato.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-ok">RESOLVED</span></td>
+                <td><span lang="en">Findings that disappeared — what your remediation actually achieved.</span><span lang="it">Finding scomparsi — ciò che la tua remediation ha effettivamente ottenuto.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Carried over</strong></span><span lang="it"><strong>Riportati</strong></span></td>
+                <td><span lang="en">Findings present in both runs — the backlog.</span><span lang="it">Finding presenti in entrambe le run — l'arretrato.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>First run</strong></span><span lang="it"><strong>Prima run</strong></span></td>
+                <td><span lang="en"><em>“First run — no previous baseline.”</em></span><span lang="it"><em>«First run — no previous baseline.»</em></span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= TABLE -->
+      <section class="block" id="table">
+        <h2>ASSET RISK RANKING</h2>
+
+        <figure>
+          <img src="img/risk-table.webp" alt="Asset risk ranking table" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The ranking</b> — highest risk first, with the raw posture score alongside for comparison and the
+              three business-context controls editable inline.</span>
+            <span lang="it"><b>La classifica</b> — dal rischio più alto, con accanto lo score di postura grezzo per confronto e i
+              tre controlli di contesto di business modificabili in linea.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Column</span><span lang="it">Colonna</span></th>
+                <th><span lang="en">Content</span><span lang="it">Contenuto</span></th>
+                <th><span lang="en">Interaction</span><span lang="it">Interazione</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>#</strong></td>
+                <td><span lang="en">Rank, highest risk first.</span><span lang="it">Posizione, dal rischio più alto.</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><strong>ASSET</strong></td>
+                <td><span lang="en">IP or hostname with the detected operating system underneath.</span><span lang="it">IP o hostname con sotto il sistema operativo rilevato.</span></td>
+                <td><span lang="en">Click the row (or the chevron) to expand its exploitable findings.</span><span lang="it">Clicca la riga (o il chevron) per espandere i finding sfruttabili.</span></td>
+              </tr>
+              <tr>
+                <td><strong>RISK INDEX</strong></td>
+                <td><span lang="en">A 0–100 contextual score with a coloured bar and a bucket badge — <span class="badge b-err">CRITICAL</span> at 75+, <span class="badge b-warn">HIGH</span> at 45–74.</span><span lang="it">Uno score contestuale 0–100 con barra colorata e badge di fascia — <span class="badge b-err">CRITICAL</span> da 75, <span class="badge b-warn">HIGH</span> fra 45 e 74.</span></td>
+                <td><span lang="en">Hover for the full factor breakdown: <em>“Risk 87/100 · posture 20 · KEV 1 · reachable 0 · internal · criticality 3”</em>. This tooltip is what lets you justify a position to an auditor.</span><span lang="it">Passa il mouse per la scomposizione completa dei fattori: <em>«Risk 87/100 · posture 20 · KEV 1 · reachable 0 · internal · criticality 3»</em>. È questo tooltip a permetterti di giustificare una posizione davanti a un auditor.</span></td>
+              </tr>
+              <tr>
+                <td><strong>POSTURE</strong></td>
+                <td><span lang="en">The raw SCA score for the same asset.</span><span lang="it">Lo score SCA grezzo dello stesso asset.</span></td>
+                <td><span lang="en"><strong>The gap between RISK INDEX and POSTURE is exactly what context and exploitability add.</strong> A host at posture 20 and risk 87 is being pushed up by KEV, exposure or criticality.</span><span lang="it"><strong>Il divario fra RISK INDEX e POSTURE è esattamente ciò che aggiungono contesto ed exploitability.</strong> Un host con postura 20 e rischio 87 è spinto in alto da KEV, esposizione o criticità.</span></td>
+              </tr>
+              <tr>
+                <td><strong>ENVIRONMENT</strong></td>
+                <td><span lang="en">Dropdown: <em>Unknown</em> · <em>Production</em> · <em>Staging</em> · <em>Dev</em>.</span><span lang="it">Menu a tendina: <em>Unknown</em> · <em>Production</em> · <em>Staging</em> · <em>Dev</em>.</span></td>
+                <td><span lang="en">Inline edit → <code>PATCH /api/assets/{id}/context</code>, saved immediately. Disabled for viewers and for rows with no matching inventory asset.</span><span lang="it">Modifica in linea → <code>PATCH /api/assets/{id}/context</code>, salvata subito. Disabilitata per i viewer e per le righe senza un asset corrispondente in inventario.</span></td>
+              </tr>
+              <tr>
+                <td><strong>INTERNET</strong></td>
+                <td><span lang="en">A toggle marking the asset as internet-facing.</span><span lang="it">Un interruttore che marca l'asset come esposto a internet.</span></td>
+                <td><span lang="en">Inline; strongly amplifies the score, because exposure changes who can reach the vulnerability.</span><span lang="it">In linea; amplifica sensibilmente lo score, perché l'esposizione cambia chi può raggiungere la vulnerabilità.</span></td>
+              </tr>
+              <tr>
+                <td><strong>CRITICALITY</strong></td>
+                <td><span lang="en">Business criticality from 1 to 5.</span><span lang="it">Criticità di business da 1 a 5.</span></td>
+                <td><span lang="en">Inline dropdown. 5 means the asset the business genuinely cannot lose; keep that meaning strict or the scale stops discriminating.</span><span lang="it">Menu in linea. 5 significa l'asset che l'azienda davvero non può perdere; mantieni rigoroso quel significato o la scala smette di discriminare.</span></td>
+              </tr>
+              <tr>
+                <td><strong>KEV</strong></td>
+                <td><span lang="en">Count of findings on this asset whose CVE is in the KEV catalogue, as a red badge.</span><span lang="it">Numero di finding su questo asset il cui CVE è nel catalogo KEV, come badge rosso.</span></td>
+                <td><span lang="en">Any non-zero value outranks a higher index elsewhere.</span><span lang="it">Qualsiasi valore diverso da zero ha priorità su un indice più alto altrove.</span></td>
+              </tr>
+              <tr>
+                <td><strong>REACHABLE</strong></td>
+                <td><span lang="en">Count of findings whose port answered the probe, as an amber badge.</span><span lang="it">Numero di finding la cui porta ha risposto alla sonda, come badge ambra.</span></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p lang="en">
+          Every column header is sortable — by click, or with <span class="kbd">Enter</span>/<span class="kbd">Space</span>
+          when focused, since the headers are exposed as buttons with <code>tabindex</code>. The panel header states the
+          two interactions plainly: <em>“Click a row to expand exploitable findings · edit context inline.”</em>
+        </p>
+        <p lang="it">
+          Ogni intestazione di colonna è ordinabile — con un clic, o con <span class="kbd">Invio</span>/<span class="kbd">Spazio</span>
+          quando ha il focus, poiché le intestazioni sono esposte come pulsanti con <code>tabindex</code>. L'intestazione
+          del pannello dichiara chiaramente le due interazioni: <em>«Click a row to expand exploitable findings · edit
+            context inline.»</em>
+        </p>
+
+        <div class="figrow">
+          <figure>
+            <img src="img/risk-row.webp" alt="A single risk row" loading="lazy" />
+            <figcaption><span lang="en"><b>One asset row</b> — rank, host, risk bar and bucket, posture, the three context controls, KEV and reachable badges.</span><span lang="it"><b>Una riga asset</b> — posizione, host, barra e fascia di rischio, postura, i tre controlli di contesto, badge KEV e raggiungibilità.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/risk-expanded.webp" alt="Expanded risk row with findings" loading="lazy" />
+            <figcaption><span lang="en"><b>Expanded row</b> — the asset's findings, ordered by individual finding risk.</span><span lang="it"><b>Riga espansa</b> — i finding dell'asset, ordinati per rischio del singolo finding.</span></figcaption>
+          </figure>
+        </div>
+
+        <p lang="en">
+          Expanding a row lists its findings ordered by individual risk, each showing the package and version, the
+          severity, the CVE identifiers, the <span class="badge b-err">KEV</span> flag, the EPSS value and the matched
+          open ports. That is the drill-down that turns a ranking into a work list.
+        </p>
+        <p lang="it">
+          Espandendo una riga si ottiene l'elenco dei suoi finding ordinati per rischio individuale, ciascuno con
+          pacchetto e versione, severità, identificativi CVE, flag <span class="badge b-err">KEV</span>, valore EPSS e le
+          porte aperte corrispondenti. È il drill-down che trasforma una classifica in una lista di lavoro.
+        </p>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr><th><span lang="en">State</span><span lang="it">Stato</span></th><th><span lang="en">Message</span><span lang="it">Messaggio</span></th></tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en">No posture data</span><span lang="it">Nessun dato di postura</span></td><td><em>“No posture data yet. Run a posture scan first.”</em></td></tr>
+              <tr><td><span lang="en">Asset with no vulnerable findings</span><span lang="it">Asset senza finding vulnerabili</span></td><td><em>“No vulnerable findings.”</em></td></tr>
+              <tr><td><span lang="en">Database unreachable</span><span lang="it">Database irraggiungibile</span></td><td><span lang="en">The endpoint answers <code>503</code> and the page reports Supabase as unreachable.</span><span lang="it">L'endpoint risponde <code>503</code> e la pagina segnala Supabase come irraggiungibile.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================= HOWTO -->
+      <section class="block" id="howto">
+        <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Run a posture scan first — this page has nothing to score without one.</span><span lang="it">Esegui prima una scansione di postura — senza, questa pagina non ha nulla da valutare.</span></li>
+          <li><span lang="en">Open <strong>Risk</strong> and wait for the external feeds; the loading line tells you what it is fetching.</span><span lang="it">Apri <strong>Risk</strong> e attendi i feed esterni; la riga di caricamento indica cosa sta scaricando.</span></li>
+          <li><span lang="en">Check the source indicators. If they read <span class="badge b-warn">EPSS offline</span>, the ranking is still valid but less precise.</span><span lang="it">Controlla gli indicatori delle fonti. Se riportano <span class="badge b-warn">EPSS offline</span>, la classifica resta valida ma meno precisa.</span></li>
+          <li><span lang="en">Read the ranking top-down. <strong>Anything with KEV &gt; 0 jumps the queue</strong> regardless of its index.</span><span lang="it">Leggi la classifica dall'alto. <strong>Tutto ciò che ha KEV &gt; 0 salta la fila</strong> a prescindere dall'indice.</span></li>
+          <li><span lang="en">Set the business context for your top assets: <strong>ENVIRONMENT</strong>, <strong>INTERNET</strong>, <strong>CRITICALITY</strong>. Each edit saves immediately.</span><span lang="it">Imposta il contesto di business per gli asset in cima: <strong>ENVIRONMENT</strong>, <strong>INTERNET</strong>, <strong>CRITICALITY</strong>. Ogni modifica viene salvata subito.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">RECOMPUTE</span> — the ranking reorders around your real-world context.</span><span lang="it">Premi <span class="badge b-acc">RECOMPUTE</span> — la classifica si riordina attorno al tuo contesto reale.</span></li>
+          <li><span lang="en">Expand the top rows and note the packages driving the score; resolve their fix versions in <a href="05-posture.html">/intel</a>.</span><span lang="it">Espandi le righe in cima e annota i pacchetti che spingono lo score; risolvi le versioni di fix in <a href="05-posture.html">/intel</a>.</span></li>
+          <li><span lang="en">After patching, re-run posture and check <strong>CHANGE vs PREVIOUS RUN</strong> for the <span class="badge b-ok">RESOLVED</span> count.</span><span lang="it">Dopo le patch, riesegui la postura e controlla <strong>CHANGE vs PREVIOUS RUN</strong> per il numero di <span class="badge b-ok">RESOLVED</span>.</span></li>
+        </ol>
+
+        <div class="tip">
+          <span lang="en">Setting context is a one-time cost per asset that keeps paying off: every future run is prioritized
+            correctly with no additional work. It is the highest-value five minutes on this page.</span>
+          <span lang="it">Impostare il contesto è un costo una tantum per asset che continua a rendere: ogni run futura viene
+            prioritizzata correttamente senza lavoro aggiuntivo. Sono i cinque minuti più redditizi di questa pagina.</span>
+        </div>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <p lang="en">A ranked, defensible patch order. Assets combining KEV entries, open ports and production or
+            internet-facing context rise to the top even when their raw posture score is mid-range; isolated development
+            boxes sink even with alarming severities.</p>
+          <p lang="en"><strong>Degraded mode:</strong> if EPSS or KEV cannot be reached the page still renders — the indicators
+            flip to <span class="badge b-warn">EPSS offline</span> and the missing factor is treated as neutral, never as
+            zero risk.</p>
+          <p lang="it">Un ordine di patch classificato e difendibile. Gli asset che combinano voci KEV, porte aperte e contesto di
+            produzione o esposizione a internet salgono in cima anche con uno score di postura medio; le macchine di
+            sviluppo isolate scendono anche con severità allarmanti.</p>
+          <p lang="it"><strong>Modalità degradata:</strong> se EPSS o KEV non sono raggiungibili la pagina si mostra comunque — gli
+            indicatori passano a <span class="badge b-warn">EPSS offline</span> e il fattore mancante è trattato come
+            neutro, mai come rischio zero.</p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="05-posture.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          05 · <span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span>
+        </a>
+        <a class="nxt" href="07-findings.html">
+          <span class="lbl"><span lang="en">Next</span><span lang="it">Avanti</span></span>
+          07 · <span lang="en">Unified Findings</span><span lang="it">Findings unificati</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js"></script>
+</body>
+
+</html>
