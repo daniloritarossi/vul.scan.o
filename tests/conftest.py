@@ -146,3 +146,9 @@ def findings_fixture(cone_fixture):
     client = db._get_client()
     if client is not None:
         client.table("findings").delete().in_("id", list(ids.values())).execute()
+        # I test di scope cambiano stato ai finding, e ogni transizione finisce
+        # nel registro append-only: va ripulito, altrimenti la catena hash
+        # dell'installazione si riempie di eventi fittizi. Il registro nega la
+        # DELETE diretta (trigger + REVOKE), quindi si passa dalla funzione
+        # dedicata, che puo' toccare SOLO le righe marcate '_ftest_'.
+        client.rpc("purge_test_ledger").execute()

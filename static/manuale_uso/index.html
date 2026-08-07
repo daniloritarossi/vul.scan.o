@@ -53,6 +53,7 @@
           <li><a href="#howto"><span lang="en">How to read this manual</span><span lang="it">Come leggere il manuale</span></a></li>
           <li><a href="#concepts"><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></a></li>
           <li><a href="#pipeline"><span lang="en">Data pipeline</span><span lang="it">Flusso dei dati</span></a></li>
+          <li><a href="#evidence"><span lang="en">Audit evidence</span><span lang="it">Evidenza per audit</span></a></li>
           <li><a href="#quickstart"><span lang="en">Quick start</span><span lang="it">Avvio rapido</span></a></li>
           <li><a href="#map"><span lang="en">Page map</span><span lang="it">Mappa delle pagine</span></a></li>
         </ol>
@@ -213,8 +214,8 @@
         <h2><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></h2>
 
         <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
-        <p lang="en">Six ideas explain almost every screen in the product. Read this once and the rest of the manual becomes obvious.</p>
-        <p lang="it">Sei concetti spiegano quasi ogni schermata del prodotto. Leggili una volta e il resto del manuale diventa evidente.</p>
+        <p lang="en">Seven ideas explain almost every screen in the product. Read this once and the rest of the manual becomes obvious.</p>
+        <p lang="it">Sette concetti spiegano quasi ogni schermata del prodotto. Leggili una volta e il resto del manuale diventa evidente.</p>
 
         <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio</span></h3>
         <div class="scroll-x">
@@ -275,6 +276,14 @@
                 </td>
                 <td><a href="10-admin.html">/admin</a>, <a href="04-assets.html">/assets</a></td>
               </tr>
+              <tr>
+                <td><span lang="en"><strong>Point-in-time evidence</strong></span><span lang="it"><strong>Evidenza point-in-time</strong></span></td>
+                <td>
+                  <span lang="en">Every lifecycle transition of a finding is appended to a hash-chained ledger that is never rewritten, so the state of your estate on <em>any past date</em> can be reconstructed and proved — not just the state of today.</span>
+                  <span lang="it">Ogni transizione di ciclo di vita di un finding viene aggiunta a un registro concatenato in hash e mai riscritto, così lo stato del parco macchine a <em>qualsiasi data passata</em> è ricostruibile e dimostrabile — non solo quello di oggi.</span>
+                </td>
+                <td><a href="#evidence">§ <span lang="en">Audit evidence</span><span lang="it">Evidenza per audit</span></a></td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -309,11 +318,182 @@
         <div class="outcome">
           <span lang="en">You should be able to answer: <em>“Which host do I patch first, why, by when, and who is working on
             it?”</em> — <strong>/risk</strong> answers <em>which and why</em>, <strong>/findings</strong> answers <em>by
-            when and who</em>, <strong>/audit</strong> proves <em>what was done and by whom</em>.</span>
+            when and who</em>, <strong>/audit</strong> proves <em>what was done and by whom</em>, and
+            <a href="#evidence"><strong>/api/findings/as-of</strong></a> proves <em>what the picture looked like on any
+              past date</em>.</span>
           <span lang="it">Devi poter rispondere a: <em>«Quale host correggo per primo, perché, entro quando e chi ci sta
             lavorando?»</em> — <strong>/risk</strong> risponde a <em>quale e perché</em>, <strong>/findings</strong>
             risponde a <em>entro quando e chi</em>, <strong>/audit</strong> dimostra <em>cosa è stato fatto e da
-            chi</em>.</span>
+            chi</em> e <a href="#evidence"><strong>/api/findings/as-of</strong></a> dimostra <em>com'era la situazione a
+              qualsiasi data passata</em>.</span>
+        </div>
+      </section>
+
+      <!-- ================================================= EVIDENCE -->
+      <section class="block" id="evidence">
+        <h2><span lang="en">Audit evidence (point-in-time)</span><span lang="it">Evidenza per audit (point-in-time)</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          An external auditor rarely asks what your dashboard shows today. The question is historical:
+          <em>“on 31 March you had N open vulnerabilities — prove it; on 30 June you had resolved K of them — prove that
+            too.”</em> The <a href="07-findings.html">/findings</a> table alone cannot answer it, because it is updated
+          <strong>in place</strong>: changing a status overwrites the previous one, so yesterday's state is destroyed
+          rather than archived. Six mechanisms close that gap — three that record and reconstruct the history, three
+          that make it defensible.
+        </p>
+        <p lang="it">
+          Un auditor esterno raramente chiede cosa mostra la tua dashboard oggi. La domanda è storica:
+          <em>«al 31 marzo avevi N vulnerabilità aperte — dimostralo; al 30 giugno ne avevi risolte K — dimostra anche
+            questo».</em> La sola tabella <a href="07-findings.html">/findings</a> non può rispondere, perché viene
+          aggiornata <strong>in place</strong>: cambiare uno stato sovrascrive il precedente, quindi lo stato di ieri
+          viene distrutto anziché archiviato. Sei meccanismi colmano questa lacuna — tre che registrano e ricostruiscono
+          la storia, tre che la rendono difendibile.
+        </p>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Mechanism</span><span lang="it">Meccanismo</span></th>
+                <th><span lang="en">What it guarantees</span><span lang="it">Cosa garantisce</span></th>
+                <th>API</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>Lifecycle event ledger</strong></span><span lang="it"><strong>Registro eventi di ciclo di vita</strong></span></td>
+                <td>
+                  <span lang="en">Every transition — <code>created</code>, <code>reopened</code>, <code>status_change</code>, <code>auto_fixed</code> — is written as a <strong>new row</strong> that is never modified, carrying the acting user, the from/to status and a hash linking it to the previous event. Plain re-observations emit no event: they do not change state.</span>
+                  <span lang="it">Ogni transizione — <code>created</code>, <code>reopened</code>, <code>status_change</code>, <code>auto_fixed</code> — viene scritta come <strong>riga nuova</strong> mai modificata, con l'utente che ha agito, lo stato di partenza e di arrivo e un hash che la lega all'evento precedente. Le semplici riosservazioni non generano eventi: non cambiano lo stato.</span>
+                </td>
+                <td><code>GET /api/audit/findings-verify</code></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Point-in-time reconstruction</strong></span><span lang="it"><strong>Ricostruzione point-in-time</strong></span></td>
+                <td>
+                  <span lang="en">Replays the ledger up to a chosen instant and returns the counts as they were: <code>unresolved</code> (open + triaged), <code>by_status</code>, <code>by_severity</code>. Give it a second date and it also returns the delta between the two.</span>
+                  <span lang="it">Riproduce il registro fino a un istante scelto e restituisce i conteggi com'erano: <code>unresolved</code> (open + triaged), <code>by_status</code>, <code>by_severity</code>. Indicando una seconda data restituisce anche il delta fra i due istanti.</span>
+                </td>
+                <td><code>GET /api/findings/as-of</code></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Sealed CVE counts</strong></span><span lang="it"><strong>Conteggi CVE sigillati</strong></span></td>
+                <td>
+                  <span lang="en">The number of CVEs found by a scan is written at the <em>end</em> of the run, so the ledger hash computed at insert time could not cover it. It now gets a second hash, anchored to the first: editing the count directly in the database breaks verification exactly like editing the description.</span>
+                  <span lang="it">Il numero di CVE trovate da una scansione viene scritto <em>a fine</em> run, quindi l'hash del ledger calcolato all'inserimento non poteva coprirlo. Ora riceve un secondo hash, ancorato al primo: modificare il conteggio direttamente a database rompe la verifica esattamente come modificare la descrizione.</span>
+                </td>
+                <td><code>GET /api/audit/verify</code></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Sealed posture runs</strong></span><span lang="it"><strong>Run di postura sigillate</strong></span></td>
+                <td>
+                  <span lang="en">The posture run table holds the figures an auditor reads as <em>“vulnerabilities detected on this date”</em> — it was the table with the most probative numbers and the least protection. It now carries the same chain as the scan ledger, with the run totals sealed when the run ends.</span>
+                  <span lang="it">La tabella delle run di postura contiene le cifre che un auditor legge come <em>«vulnerabilità rilevate a questa data»</em> — era la tabella con i numeri più probanti e la protezione minore. Ora ha la stessa catena del ledger delle scansioni, con i totali della run sigillati a fine esecuzione.</span>
+                </td>
+                <td><code>GET /api/audit/posture-verify</code></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Append-only enforced by the database</strong></span><span lang="it"><strong>Append-only imposto dal database</strong></span></td>
+                <td>
+                  <span lang="en">Hash chains prove a row <em>was not modified</em>; on their own they prevent nothing, and a chain truncated at the tail still verifies. Postgres triggers now reject every rewrite and deletion on the ledger tables, and the matching privileges are revoked from the roles the application uses — the app's own credentials cannot erase history.</span>
+                  <span lang="it">Le catene di hash dimostrano che una riga <em>non è stata modificata</em>; da sole non impediscono nulla, e una catena troncata in coda resta valida. Ora dei trigger Postgres rifiutano ogni riscrittura e cancellazione sulle tabelle di registro, e i permessi corrispondenti sono revocati ai ruoli usati dall'applicazione — le credenziali dell'app non possono cancellare la storia.</span>
+                </td>
+                <td><span lang="en">database level</span><span lang="it">livello database</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Signed evidence report</strong></span><span lang="it"><strong>Report di evidenza firmato</strong></span></td>
+                <td>
+                  <span lang="en">The deliverable, in one call: counts at both dates, the remediation delta, and the verification result of <em>all three</em> chains, signed with the instance secret. JSON, CSV or printable HTML.</span>
+                  <span lang="it">Il documento da consegnare, in una sola chiamata: conteggi alle due date, delta di remediation ed esito della verifica di <em>tutte e tre</em> le catene, firmato col segreto dell'istanza. JSON, CSV o HTML stampabile.</span>
+                </td>
+                <td><code>GET /api/audit/evidence</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">How It Works</span><span lang="it">Come funziona</span></h3>
+        <ol class="steps">
+          <li>
+            <span lang="en">Ask for the state on a given date. A bare date means <strong>end of day, UTC</strong> — “how many did I have on 31 March” means at the close of that day, not at midnight.</span>
+            <span lang="it">Chiedi lo stato a una certa data. Una data nuda significa <strong>fine giornata, UTC</strong> — «quante ne avevo il 31 marzo» significa a fine giornata, non a mezzanotte.</span>
+            <pre><code>curl 'http://localhost:8000/api/findings/as-of?date=2026-03-31'</code></pre>
+          </li>
+          <li>
+            <span lang="en">Add <code>since</code> to obtain the remediation delta between two dates — the literal answer to the audit question.</span>
+            <span lang="it">Aggiungi <code>since</code> per ottenere il delta di remediation fra due date — la risposta letterale alla domanda di audit.</span>
+            <pre><code>curl 'http://localhost:8000/api/findings/as-of?date=2026-06-30&amp;since=2026-03-31'</code></pre>
+          </li>
+          <li>
+            <span lang="en">Add <code>details=1</code> when the auditor wants the underlying list, not only the figures: you get every finding and the fingerprints behind each number.</span>
+            <span lang="it">Aggiungi <code>details=1</code> quando l'auditor vuole l'elenco sottostante, non solo le cifre: ottieni ogni finding e i fingerprint dietro ogni numero.</span>
+          </li>
+          <li>
+            <span lang="en">Read the <code>chain</code> block in the same response — the integrity proof travels with the figures, so the report is self-verifying.</span>
+            <span lang="it">Leggi il blocco <code>chain</code> nella stessa risposta — la prova di integrità viaggia insieme alle cifre, così il report si autoverifica.</span>
+          </li>
+          <li>
+            <span lang="en">When it is time to hand something over, export the <strong>signed evidence report</strong> instead of assembling one by hand. Pick <code>json</code> for machines, <code>csv</code> for a spreadsheet, or <code>html</code> and print it to PDF from the browser.</span>
+            <span lang="it">Quando è il momento di consegnare qualcosa, esporta il <strong>report di evidenza firmato</strong> invece di comporne uno a mano. Scegli <code>json</code> per le macchine, <code>csv</code> per un foglio di calcolo, oppure <code>html</code> e stampalo in PDF dal browser.</span>
+            <pre><code>curl -OJ 'http://localhost:8000/api/audit/evidence?date=2026-06-30&amp;since=2026-03-31&amp;format=html'</code></pre>
+          </li>
+          <li>
+            <span lang="en">Months later, when someone asks whether the file they hold is the one you issued, post its JSON version back to the application. The answer does not depend on the original data still existing.</span>
+            <span lang="it">Mesi dopo, quando qualcuno chiede se il file che ha in mano è quello che hai emesso, rimanda all'applicazione la sua versione JSON. La risposta non dipende dal fatto che i dati originali esistano ancora.</span>
+            <pre><code>curl -X POST --data-binary @audit-evidence-2026-06-30.json \
+     -H 'Content-Type: application/json' \
+     http://localhost:8000/api/audit/evidence/verify</code></pre>
+          </li>
+        </ol>
+
+        <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
+        <div class="outcome">
+          <span lang="en">
+            The delta separates <code>resolved</code>, <code>accepted</code>, <code>new</code>, <code>still_open</code> and
+            <code>vanished</code>. <strong>Accepted risk is never counted as resolved</strong>: formally accepting a risk is
+            not remediating it, and a report that merges the two is wrong. Findings that predate the ledger are still
+            reconstructed, but from <code>first_seen</code>/<code>status_changed_at</code> only — they are flagged
+            <code>basis: "estimated"</code> and counted apart from the <code>proven</code> ones, so what is
+            <em>proved</em> stays distinguishable from what is <em>inferred</em>. A non-empty <code>broken</code> list, or
+            <code>finals_broken</code>, means someone edited history: investigate before submitting anything.
+            The exported report's signature covers every figure <em>and</em> every verification verdict, so neither the
+            numbers nor a failed check can be quietly edited after export; a chain that could not be checked because the
+            database was unreachable is reported as <em>not checked</em>, never as one that passed.
+          </span>
+          <span lang="it">
+            Il delta separa <code>resolved</code>, <code>accepted</code>, <code>new</code>, <code>still_open</code> e
+            <code>vanished</code>. <strong>Il rischio accettato non viene mai contato come risolto</strong>: accettare
+            formalmente un rischio non è averlo corretto, e un report che fonde le due cose è sbagliato. I finding
+            precedenti al registro vengono comunque ricostruiti, ma solo da
+            <code>first_seen</code>/<code>status_changed_at</code> — sono marcati <code>basis: "estimated"</code> e
+            contati separatamente da quelli <code>proven</code>, così ciò che è <em>dimostrato</em> resta distinguibile
+            da ciò che è <em>dedotto</em>. Una lista <code>broken</code> non vuota, o <code>finals_broken</code>,
+            significa che qualcuno ha modificato la storia: indaga prima di consegnare qualsiasi cosa.
+            La firma del report esportato copre ogni cifra <em>e</em> ogni verdetto di verifica, quindi né i numeri né un
+            controllo fallito possono essere ritoccati in silenzio dopo l'export; una catena non verificabile perché il
+            database era irraggiungibile viene riportata come <em>non controllata</em>, mai come superata.
+          </span>
+        </div>
+
+        <div class="outcome">
+          <span lang="en">
+            <strong>What this does not claim.</strong> The <code>postgres</code> superuser role bypasses the append-only
+            triggers by design — a superuser can disable a trigger anyway, and pretending otherwise would be security
+            theatre: direct database access remains the trust boundary. The report signature proves a file came from
+            this instance unmodified, but it is a shared-secret MAC, not a digital signature a third party can verify
+            without the instance, and there is no external timestamping authority. Say this plainly to an auditor rather
+            than letting them assume more.
+          </span>
+          <span lang="it">
+            <strong>Cosa non viene affermato.</strong> Il ruolo superuser <code>postgres</code> aggira per scelta i
+            trigger append-only — un superuser può comunque disattivare un trigger, e fingere il contrario sarebbe teatro
+            di sicurezza: l'accesso diretto al database resta il confine di fiducia. La firma del report dimostra che un
+            file proviene da questa istanza e non è stato modificato, ma è un MAC a segreto condiviso, non una firma
+            digitale verificabile da terzi senza l'istanza, e non esiste un'autorità di marcatura temporale esterna.
+            Dichiaralo apertamente a un auditor, invece di lasciargli supporre di più.
+          </span>
         </div>
       </section>
 

@@ -28,7 +28,7 @@ from urllib.parse import urlparse
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import (HTMLResponse, JSONResponse, RedirectResponse,
-                               StreamingResponse)
+                               Response, StreamingResponse)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -47,14 +47,18 @@ from db import (persist_scan, persist_result, update_scan_summary, fetch_audit,
                 create_posture_run, persist_posture_asset, finalize_posture_run,
                 fetch_posture, fetch_posture_runs, fetch_posture_sbom,
                 fetch_findings, fetch_findings_by_fps, upsert_findings,
-                set_finding_status, close_stale_posture_findings)
+                set_finding_status, close_stale_posture_findings,
+                log_finding_events, fetch_finding_events, verify_findings_chain,
+                verify_posture_chain)
 from posture import scan_asset_posture
 from sbom_export import (sbom_rows, build_cyclonedx, build_spdx,
                          filter_rows, group_by_component, sort_rows, summarize_sbom)
 from risk import assess_run_risk, compute_trend
 from ingest import ingest_report, IngestError, SUPPORTED_TOOLS
 from findings import (fingerprint, merge_findings, posture_findings,
-                      summarize, is_breached, STATUSES)
+                      summarize, is_breached, STATUSES,
+                      lifecycle_events, parse_as_of, reconstruct_as_of,
+                      compare_states)
 from ticketing import create_ticket, TicketError
 from localscan import run_gitleaks, run_trivy_image, LocalScanError
 from compliance import derive_compliance, compliance_summary
@@ -66,6 +70,8 @@ from auth import (AuthRequired, Forbidden, PasswordChangeRequired, CurrentUser,
                   hash_password, ensure_default_admin, create_onetime_token,
                   consume_onetime_token, set_user_password,
                   password_policy_error, SESSION_COOKIE, SESSION_TTL, ROLES)
+from auth import _secret as _hmac_secret
+import evidence
 from mailer import (send_activation, send_reset, activation_link,
                     smtp_enabled, MailError)
 
@@ -478,6 +484,11 @@ def api_sbom_export(format: str = "cyclonedx", run_id: int | None = None,
     })
 
 
+def _actor(user: CurrentUser) -> dict:
+    """Snapshot dell'attore per i registri tamper-evident (scans, eventi)."""
+    return {"id": user.id, "name": user.username}
+
+
 @app.get("/findings", response_class=HTMLResponse)
 def findings_page(request: Request, user: CurrentUser = Depends(get_current_user)):
     """Pagina FINDINGS: ciclo di vita unificato (dedup + workflow + SLA)."""
@@ -519,6 +530,86 @@ def api_findings(status: str | None = None, severity: str | None = None,
     return {"findings": rows, "summary": summary}
 
 
+def _point_in_time(user: CurrentUser, date: str | None, since: str | None):
+    """
+    Ricostruisce lo stato dei finding a una data (e opzionalmente a una data
+    precedente, col relativo delta), applicando il cono di visibilita'.
+
+    Ritorna (payload, None) in caso di successo, (None, JSONResponse) se i
+    parametri sono invalidi o il DB non risponde. Condiviso da
+    /api/findings/as-of e dall'export di evidenza: i due DEVONO produrre gli
+    stessi numeri, altrimenti il report firmato non dimostra cio' che l'API
+    mostra a schermo.
+    """
+    try:
+        as_of = parse_as_of(date)
+        since_dt = parse_as_of(since) if since else None
+    except ValueError as exc:
+        return None, JSONResponse({"error": str(exc)}, status_code=400)
+    if since_dt and since_dt > as_of:
+        return None, JSONResponse({"error": "'since' deve precedere 'date'"},
+                                  status_code=400)
+
+    current = fetch_findings()
+    events = fetch_finding_events(until=as_of.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
+    if current is None or events is None:
+        return None, JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+
+    scope_ips = visible_asset_ips(user)
+    if scope_ips is not None:
+        by_fp = {r.get("fingerprint"): r for r in current}
+        current = [r for r in current if (r.get("asset_ip") or "") in scope_ips]
+        events = [
+            e for e in events
+            if (e.get("asset_ip")
+                or by_fp.get(e.get("fingerprint"), {}).get("asset_ip")
+                or "") in scope_ips
+        ]
+
+    state = reconstruct_as_of(events, current, as_of)
+    before = reconstruct_as_of(events, current, since_dt) if since_dt else None
+    delta = compare_states(before, state) if before else None
+    scope = "all assets" if scope_ips is None else f"visibility cone ({len(scope_ips)} assets)"
+    return {"state": state, "before": before, "delta": delta, "scope": scope}, None
+
+
+@app.get("/api/findings/as-of")
+def api_findings_as_of(date: str | None = None, since: str | None = None,
+                       details: bool = False,
+                       user: CurrentUser = Depends(_writer)):
+    """
+    Stato dei finding a una data (evidenza point-in-time per audit esterno).
+
+    'date'    ISO ('2026-03-31' = fine giornata UTC). Assente = adesso.
+    'since'   seconda data, precedente: aggiunge il delta fra i due istanti
+              (risolti / accettati / nuovi / ancora aperti).
+    'details' true = include l'elenco dei finding, non solo i conteggi.
+
+    Lo stato e' ricostruito per replay del registro append-only
+    'finding_events'; i finding nati prima del registro sono stimati da
+    first_seen/status_changed_at e contati a parte ('estimated'), cosi' e'
+    esplicito cosa e' provato e cosa e' dedotto. La risposta include l'esito
+    della verifica della catena hash del registro.
+    Editor: solo gli asset del proprio cono di visibilita'. Viewer: 403.
+    """
+    res, err = _point_in_time(user, date, since)
+    if err is not None:
+        return err
+    state, before, delta = res["state"], res["before"], res["delta"]
+    out = {"as_of": state["as_of"], "state": state,
+           "chain": verify_findings_chain()}
+    if before is not None:
+        out["since"] = before["as_of"]
+        out["state_since"] = before
+        out["delta"] = delta
+        if not details:
+            before.pop("findings", None)
+            delta.pop("fingerprints", None)
+    if not details:
+        state.pop("findings", None)
+    return out
+
+
 @app.post("/api/findings/import")
 async def api_findings_import(request: Request, tool: str = "auto",
                               asset_ip: str = "",
@@ -554,10 +645,12 @@ async def api_findings_import(request: Request, tool: str = "auto",
     existing = fetch_findings_by_fps(list(set(fps)))
     if existing is None:
         return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
-    rows, stats = merge_findings(normalized, {r["fingerprint"]: r for r in existing},
+    existing_by_fp = {r["fingerprint"]: r for r in existing}
+    rows, stats = merge_findings(normalized, existing_by_fp,
                                  cfg_sla=load_config().get("sla"))
     if not upsert_findings(rows):
         return JSONResponse({"error": "Persistenza fallita"}, status_code=503)
+    log_finding_events(lifecycle_events(rows, existing_by_fp, _actor(user)))
     return {"ok": True, "tool": detected, "parsed": len(normalized),
             "skipped_out_of_scope": skipped_out_of_scope, **stats}
 
@@ -582,7 +675,8 @@ async def api_findings_status(finding_id: int, request: Request,
         return JSONResponse(
             {"error": f"Stato non valido: {status}", "valid": list(STATUSES)},
             status_code=400)
-    if not set_finding_status(finding_id, status, (body.get("note") or "").strip()):
+    if not set_finding_status(finding_id, status, (body.get("note") or "").strip(),
+                              actor=_actor(user)):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=404)
     return {"ok": True, "status": status}
 
@@ -653,17 +747,20 @@ async def api_findings_scan_local(request: Request,
     existing = fetch_findings_by_fps(list(set(fps)))
     if existing is None:
         return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
-    rows, stats = merge_findings(normalized, {r["fingerprint"]: r for r in existing},
+    existing_by_fp = {r["fingerprint"]: r for r in existing}
+    rows, stats = merge_findings(normalized, existing_by_fp,
                                  cfg_sla=load_config().get("sla"))
     if not upsert_findings(rows):
         return JSONResponse({"error": "Persistenza fallita"}, status_code=503)
+    log_finding_events(lifecycle_events(rows, existing_by_fp, _actor(user)))
     return {"ok": True, "tool": tool, "parsed": len(normalized), **stats}
 
 
-def _sync_posture_findings(report: dict) -> None:
+def _sync_posture_findings(report: dict, actor: dict | None = None) -> None:
     """
     Best-effort: versa i finding della postura di UN asset nel ciclo di vita
     unificato (dedup/riapertura) e auto-chiude quelli non piu' osservati.
+    Ogni nascita, riapertura e auto-chiusura finisce nel registro eventi.
     Non solleva mai: la scansione di postura non dipende da questo passo.
     """
     try:
@@ -672,11 +769,13 @@ def _sync_posture_findings(report: dict) -> None:
         existing = fetch_findings_by_fps(list(set(fps)))
         if existing is None:
             return
-        rows, _ = merge_findings(normalized, {r["fingerprint"]: r for r in existing},
+        existing_by_fp = {r["fingerprint"]: r for r in existing}
+        rows, _ = merge_findings(normalized, existing_by_fp,
                                  cfg_sla=load_config().get("sla"))
         if rows:
             upsert_findings(rows)
-        close_stale_posture_findings(report.get("ip") or "", fps)
+            log_finding_events(lifecycle_events(rows, existing_by_fp, actor))
+        close_stale_posture_findings(report.get("ip") or "", fps, actor=actor)
     except Exception:
         pass
 
@@ -795,7 +894,7 @@ def api_posture_scan(ips: str | None = None,
         if not assets:
             yield _sse("error", {"message": "No asset selected."})
             return
-        run_id = create_posture_run()
+        run_id = create_posture_run(_actor(user))
         yield _sse("run", {"run_id": run_id, "total_assets": len(assets)})
 
         n = pkgs = vuln = vulns = score_sum = 0
@@ -805,7 +904,7 @@ def api_posture_scan(ips: str | None = None,
             report["os_major_version"] = asset.os_major_version or None
             persist_posture_asset(run_id, report)
             # Ciclo di vita unificato: dedup + riaperture + auto-fix (best-effort).
-            _sync_posture_findings(report)
+            _sync_posture_findings(report, _actor(user))
             n += 1
             pkgs += report["total_packages"]
             vuln += report["vulnerable_packages"]
@@ -1072,11 +1171,121 @@ def api_audit(
 
 @app.get("/api/audit/verify")
 def api_audit_verify(user: CurrentUser = Depends(_writer)):
-    """Verifica la catena hash del ledger (tamper-evidence). 503 se DB assente."""
+    """
+    Verifica la catena hash del ledger scansioni (tamper-evidence) su due
+    livelli: row_hash (campi immutabili + linkatura) e final_hash (version e
+    conteggio CVE sigillati a fine scansione). 503 se DB assente.
+    """
     res = verify_audit_chain()
     if res is None:
         return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
     return res
+
+
+@app.get("/api/audit/findings-verify")
+def api_findings_verify(user: CurrentUser = Depends(_writer)):
+    """
+    Verifica la catena hash del registro eventi dei finding: e' la prova di
+    integrita' che accompagna i conteggi point-in-time di /api/findings/as-of.
+    503 se il DB non e' raggiungibile.
+    """
+    res = verify_findings_chain()
+    if res is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    return res
+
+
+@app.get("/api/audit/posture-verify")
+def api_posture_verify(user: CurrentUser = Depends(_writer)):
+    """
+    Verifica la catena hash delle run di postura, sui due livelli: creazione
+    (attore + linkatura) e totali sigillati a fine run. Sono i numeri che un
+    audit legge come "vulnerabilita' rilevate a questa data".
+    503 se il DB non e' raggiungibile.
+    """
+    res = verify_posture_chain()
+    if res is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    return res
+
+
+EVIDENCE_FORMATS = ("json", "csv", "html")
+
+
+@app.get("/api/audit/evidence")
+def api_audit_evidence(date: str | None = None, since: str | None = None,
+                       format: str = "json",
+                       user: CurrentUser = Depends(_writer)):
+    """
+    Report di evidenza FIRMATO da consegnare a un audit esterno.
+
+    Mette insieme in un solo documento i conteggi point-in-time alle due date,
+    il delta di remediation e l'esito della verifica di TUTTE le catene hash
+    (ledger scansioni, registro eventi, run di postura), poi firma il tutto in
+    HMAC-SHA256 col segreto dell'istanza. Numeri e prova di integrita' viaggiano
+    insieme: separarli renderebbe il report inverificabile.
+
+    'format': json (macchina) | csv (foglio di calcolo) | html (stampabile ->
+    PDF dal browser). Nessuna libreria PDF: la stampa del browser produce lo
+    stesso documento senza aggiungere dipendenze.
+    Editor: il report copre solo il proprio cono di visibilita', ed e' scritto
+    nel campo 'scope' del report — un'evidenza parziale dichiarata tale.
+    """
+    fmt = (format or "json").strip().lower()
+    if fmt not in EVIDENCE_FORMATS:
+        return JSONResponse(
+            {"error": f"Formato non valido: {fmt}", "valid": list(EVIDENCE_FORMATS)},
+            status_code=400)
+    res, err = _point_in_time(user, date, since)
+    if err is not None:
+        return err
+    # I dettagli per-finding non entrano nel report: e' un documento di
+    # conteggi, e includerli esporrebbe l'inventario a chi lo riceve.
+    res["state"].pop("findings", None)
+    if res["before"]:
+        res["before"].pop("findings", None)
+    if res["delta"]:
+        res["delta"].pop("fingerprints", None)
+
+    report = evidence.build_report(
+        state=res["state"], before=res["before"], delta=res["delta"],
+        chains={"scans": verify_audit_chain(),
+                "finding_events": verify_findings_chain(),
+                "posture_runs": verify_posture_chain()},
+        actor=user.username, scope=res["scope"],
+    )
+    evidence.sign(report, _hmac_secret())
+
+    stamp = (report["generated_at"] or "")[:10]
+    if fmt == "json":
+        return report
+    if fmt == "csv":
+        body, media = evidence.to_csv(report), "text/csv; charset=utf-8"
+    else:
+        body, media = evidence.to_html(report), "text/html; charset=utf-8"
+    return Response(
+        content=body, media_type=media,
+        headers={"Content-Disposition":
+                 f'attachment; filename="audit-evidence-{stamp}.{fmt}"'})
+
+
+@app.post("/api/audit/evidence/verify")
+async def api_audit_evidence_verify(request: Request,
+                                    user: CurrentUser = Depends(_writer)):
+    """
+    Riverifica un report di evidenza esportato in precedenza (body: il JSON
+    del report). Dice se una singola cifra e' stata ritoccata dopo l'export.
+    Non richiede che i dati originali esistano ancora: la firma copre il
+    contenuto del documento, non lo stato corrente del database.
+    """
+    try:
+        report = await request.json()
+    except Exception:
+        return JSONResponse({"error": "Body non e' JSON valido"}, status_code=400)
+    if not isinstance(report, dict):
+        return JSONResponse({"error": "Il body deve essere il report JSON"},
+                            status_code=400)
+    return evidence.verify(report, _hmac_secret())
 
 
 def _scan_outcome(scan: dict) -> str:

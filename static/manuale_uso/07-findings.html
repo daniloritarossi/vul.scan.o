@@ -169,6 +169,20 @@
         </div>
         <p lang="en">Transitions are free — any status to any status — through <code>PATCH /api/findings/{id}/status</code>.</p>
         <p lang="it">Le transizioni sono libere — da qualsiasi stato a qualsiasi altro — tramite <code>PATCH /api/findings/{id}/status</code>.</p>
+        <p lang="en">
+          The table you see holds only the <em>current</em> status: an update overwrites the previous one. Every
+          transition is therefore also appended to a separate, never-rewritten ledger recording who changed what and
+          when — including the automatic closures and reopenings above, which are the ones an auditor questions first.
+          That ledger is what lets you reconstruct the state on any past date: see
+          <a href="index.html#evidence">Audit evidence</a>.
+        </p>
+        <p lang="it">
+          La tabella che vedi contiene solo lo stato <em>attuale</em>: un aggiornamento sovrascrive il precedente. Ogni
+          transizione viene perciò aggiunta anche a un registro separato e mai riscritto, che annota chi ha cambiato
+          cosa e quando — comprese le chiusure e riaperture automatiche qui sopra, quelle che un auditor contesta per
+          prime. È quel registro a permettere di ricostruire lo stato a qualsiasi data passata: vedi
+          <a href="index.html#evidence">Evidenza per audit</a>.
+        </p>
 
         <h4><span class="n">3</span><span lang="en">Remediation SLA</span><span lang="it">SLA di remediation</span></h4>
         <div class="scroll-x">

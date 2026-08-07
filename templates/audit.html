@@ -701,9 +701,13 @@
       let res;
       try { const r = await fetch('/api/audit/verify'); res = await r.json(); if (!r.ok) throw 0; }
       catch (e) { integrity = null; setIntegrityBadge('off'); return; }
-      integrity = { ok: res.ok, brokenSet: new Set(res.broken || []), legacy: res.legacy || 0, total: res.total || 0 };
+      // Due livelli di rottura: row_hash (campi immutabili) e final_hash (il
+      // conteggio CVE sigillato a fine scan). Per l'operatore sono la stessa
+      // cosa — la riga e' stata alterata — quindi un solo insieme.
+      const broken = [...(res.broken || []), ...(res.finals_broken || [])];
+      integrity = { ok: res.ok, brokenSet: new Set(broken), legacy: res.legacy || 0, total: res.total || 0 };
       if (!res.total) setIntegrityBadge('none');
-      else if (!res.ok) setIntegrityBadge('tampered', (res.broken || []).length);
+      else if (!res.ok) setIntegrityBadge('tampered', broken.length);
       else if (res.legacy > 0 && res.verified === 0) setIntegrityBadge('legacy');
       else setIntegrityBadge('ok', res.verified);
       if (last) renderCards(last.scans || []);   // aggiorna i chip per-scan

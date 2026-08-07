@@ -556,6 +556,125 @@ If the binary is missing, the endpoint returns 400 with installation instruction
 
 The `/findings` page shows KPIs (open, SLA breached, triaged, accepted, fixed), filters by status/severity/source/text, and a table with inline status changes.
 
+### 4-quater · Point-in-time audit evidence
+
+The question an external auditor actually asks is: *"at date D1 you had N open
+vulnerabilities — prove it; at date D2 you had resolved K of them — prove that
+too."* The `findings` table alone cannot answer it: it is updated **in place**,
+so yesterday's state is overwritten, not archived. Three mechanisms cover this.
+
+**Append-only event ledger (`finding_events`)** — every lifecycle transition is
+a **new row**, never modified:
+
+| Event | Emitted when | Recorded transition |
+|-------|--------------|---------------------|
+| `created` | a fingerprint is seen for the first time | `∅ → open` |
+| `reopened` | a `fixed` finding reappears in a later report | `fixed → open` |
+| `status_change` | manual transition via `PATCH /api/findings/{id}/status` | `<previous> → <new>` |
+| `auto_fixed` | posture finding no longer observed in the latest run | `open`/`triaged` `→ fixed` |
+
+Each row stores the actor (`actor_id`/`actor_name`), the deterministic
+`event_ts` and a `prev_hash`/`row_hash` pair chaining it to the previous event —
+the same tamper-evident construction used by the scan ledger. Plain
+re-observations (`last_seen`/`times_seen`) emit **no** event: they do not change
+state and would only inflate the ledger without probative value.
+`GET /api/audit/findings-verify` recomputes the chain.
+
+**Point-in-time reconstruction (`GET /api/findings/as-of`)** — replays the
+ledger up to a given instant:
+
+```bash
+# State on 31 March 2026 (a bare date means end of day, UTC)
+curl 'http://localhost:8000/api/findings/as-of?date=2026-03-31'
+
+# What changed between the two dates: resolved / accepted / new / still open
+curl 'http://localhost:8000/api/findings/as-of?date=2026-06-30&since=2026-03-31'
+
+# Same, including the finding list and the fingerprints behind each figure
+curl 'http://localhost:8000/api/findings/as-of?date=2026-06-30&since=2026-03-31&details=1'
+```
+
+The response reports `unresolved` (open + triaged), `by_status`, `by_severity`
+and, when `since` is given, a `delta` with `resolved`, `accepted`, `new`,
+`still_open` and `vanished`. **`accepted` is never merged into `resolved`**:
+formally accepted risk is not remediated risk, and an audit report that
+conflates the two is wrong.
+
+Findings created **before** the ledger existed have no events. They are still
+reconstructed — approximately — from `first_seen`/`status_changed_at`, but they
+are flagged `basis: "estimated"` and counted separately (`proven` vs
+`estimated`), so the distinction between *proven* and *inferred* stays visible
+to whoever reads the report. Every response also carries the outcome of the
+chain verification, so figures and their integrity proof travel together.
+
+**Sealed CVE counts (`final_hash`)** — `row_hash` is computed at insert time and
+therefore cannot cover `version`/`cve_count`/`cve_ids`, which `update_scan_summary`
+writes at the end of the scan. Those final values now get their own hash,
+anchored to `row_hash`, sealed once per scan. Altering the CVE count directly in
+the database breaks `GET /api/audit/verify` exactly like altering the
+description. The verification response separates the two levels: `verified` /
+`broken` for row hashes, `finals_verified` / `finals_pending` / `finals_broken`
+for the seals (`finals_pending` = scans predating the seal, or never finalized —
+not a breach).
+
+**Sealed posture runs** — `posture_runs` holds the figures an auditor reads as
+*"vulnerabilities detected on this date"*, so it carries the same two-level
+chain as `scans`: `row_hash` over the actor and creation timestamp, linked to
+the previous run, and `final_hash` sealing the run totals (`assets_scanned`,
+`total_packages`, `total_vulnerable`, `total_vulns`, `avg_score`) when the run
+finishes. Verified by `GET /api/audit/posture-verify`.
+
+**Append-only enforced by the database** — hash chains prove a row *was not
+modified*; on their own they prevent nothing, and a chain truncated at the tail
+still verifies. Postgres triggers now make append-only a constraint rather than
+a convention:
+
+| Table | UPDATE | DELETE |
+|-------|--------|--------|
+| `scan_results`, `posture_assets`, `posture_findings`, `posture_components`, `finding_events` | denied | denied |
+| `scans` | only the end-of-scan write; signed fields immutable, sealed values write-once | denied |
+| `posture_runs` | only the end-of-run write; same rules | denied |
+
+`UPDATE`/`DELETE`/`TRUNCATE` on those tables are also revoked from `anon` and
+`authenticated`, and `DELETE`/`TRUNCATE` from `service_role` too — the
+application's own credentials cannot rewrite or erase history, which is the
+threat that matters. A test-only `purge_test_ledger()` function can remove rows
+carrying the `_ftest_` marker and nothing else; the test suite exercises the real
+endpoints and would otherwise pollute the ledger.
+
+**Signed evidence report** — `GET /api/audit/evidence` produces the deliverable
+in one call: counts at both dates, the remediation delta, and the verification
+result of *all three* chains, HMAC-SHA256 signed with the instance secret.
+
+```bash
+# Machine-readable, spreadsheet, and printable (browser → PDF)
+curl -OJ 'http://localhost:8000/api/audit/evidence?date=2026-06-30&since=2026-03-31&format=json'
+curl -OJ 'http://localhost:8000/api/audit/evidence?date=2026-06-30&since=2026-03-31&format=csv'
+curl -OJ 'http://localhost:8000/api/audit/evidence?date=2026-06-30&since=2026-03-31&format=html'
+
+# Later: is this file still the one we issued?
+curl -X POST --data-binary @audit-evidence-2026-06-30.json \
+     -H 'Content-Type: application/json' \
+     http://localhost:8000/api/audit/evidence/verify
+```
+
+Figures and integrity proof travel together — a report claiming *"12 open"*
+without stating whether the ledger is intact proves nothing. The signature covers
+every figure *and* every verification verdict, so neither the numbers nor a
+failed check can be edited after export. A chain that could not be checked
+(DB unreachable) is reported as `available: false`, never as a passing check.
+`format=html` is a self-contained printable page: no PDF library is pulled in,
+because the browser's print dialog produces the same document. For an editor the
+report covers only their visibility cone, and says so in its `scope` field.
+
+> **Known limits.** Concurrent writers can fork a chain (single-writer
+> assumption). The `postgres`/`supabase_admin` roles bypass the triggers by
+> design: a superuser can disable a trigger anyway, and pretending otherwise
+> would be security theatre — direct Postgres access remains the trust boundary.
+> The signature proves a report came from this instance unmodified; it is a
+> shared-secret MAC, not a third-party-verifiable digital signature, and there is
+> no external timestamping authority.
+
 ### 5 · Asset management (`/assets`)
 
 Full CRUD with:
@@ -723,10 +842,17 @@ Stack: Postgres + PostgREST + Studio + nginx. Data in `supabase/volumes/db/data`
 | Postgres | localhost:5432 |
 
 Schema:
-- `scans` — one row per scan (product, version, CVE summary)
+- `scans` — one row per scan (product, version, CVE summary); audit ledger columns: actor, `prev_hash`/`row_hash` (immutable fields) and `final_ts`/`final_hash` (version + CVE count sealed at end of scan)
 - `scan_results` — one row per asset (ip, method, vuln\_match, cve\_count, cve\_ids)
-- `posture_runs` / `posture_assets` / `posture_findings` / `posture_components` — Full Posture (SCA) + SBOM
+- `posture_runs` / `posture_assets` / `posture_findings` / `posture_components` — Full Posture (SCA) + SBOM; `posture_runs` carries the same audit chain as `scans` (actor, `prev_hash`/`row_hash`, `final_hash` over the run totals)
 - `findings` — unified findings: fingerprint (dedup), source, severity, cve\_ids, cwe\_ids, status, SLA, reopen/observation counters, ticket\_ref/ticket\_url
+- `finding_events` — **append-only** lifecycle ledger (one row per transition: actor, from/to status, `event_ts`, hash chain); the source of point-in-time audit evidence, since `findings` is updated in place
+
+The ledger tables (`scans`, `scan_results`, `posture_*`, `finding_events`) are
+**append-only at database level**: `BEFORE UPDATE OR DELETE` triggers reject
+rewrites and deletions, and the matching privileges are revoked from the roles
+the application uses. Only the one legitimate end-of-run write is allowed, and
+only until the row is sealed. See [Point-in-time audit evidence](#4-quater--point-in-time-audit-evidence).
 
 Env overrides: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_PERSIST=0`.
 
@@ -796,6 +922,10 @@ omitted for editors for the same reason.
 | `GET /api/sbom` | full | full | cone only | full |
 | `GET /api/sbom/export` | full | full | cone only | 403 |
 | `GET /api/audit` | **all** | **all** | own-scope results only | 403 |
+| `GET /api/findings/as-of` (point-in-time evidence) | **all** | **all** | cone only, counts recomputed | 403 |
+| `GET /api/audit/verify`, `/api/audit/findings-verify`, `/api/audit/posture-verify` | ✅ | ✅ | ✅ | 403 |
+| `GET /api/audit/evidence` (signed report) | full | full | cone only, stated in `scope` | 403 |
+| `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | 403 |
 
 Notes:
 

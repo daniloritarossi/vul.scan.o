@@ -138,6 +138,52 @@
           tutte le voci successive, e la discrepanza è rilevabile senza bisogno di una copia separata dei dati. La
           verifica parte al caricamento della pagina e riporta sia il risultato complessivo sia quello per voce.
         </p>
+        <p lang="en">
+          Verification covers <strong>two levels</strong>. The first hash is computed when the entry is created, so it can
+          only cover the fields already known then — description, product, source, actor. The <em>number of CVEs</em> is
+          written at the end of the run and therefore gets a <strong>second hash of its own</strong>
+          (<code>final_hash</code>), anchored to the first and sealed once per scan. This matters in an audit: the CVE
+          count is exactly the figure that gets challenged, and without the seal it would have been the one number nobody
+          could prove. Editing it directly in the database now breaks verification like any other field. Scans that
+          predate the seal, or that never finished, are reported as <em>pending</em> — not as a breach.
+        </p>
+        <p lang="it">
+          La verifica copre <strong>due livelli</strong>. Il primo hash è calcolato alla creazione della voce, quindi può
+          coprire solo i campi già noti in quel momento — descrizione, prodotto, sorgente, attore. Il <em>numero di
+            CVE</em> viene scritto a fine run e riceve quindi un <strong>secondo hash proprio</strong>
+          (<code>final_hash</code>), ancorato al primo e sigillato una sola volta per scansione. In un audit questo è
+          decisivo: il conteggio CVE è esattamente la cifra che viene contestata, e senza il sigillo sarebbe stato
+          l'unico numero non dimostrabile. Modificarlo direttamente a database ora rompe la verifica come qualsiasi
+          altro campo. Le scansioni precedenti al sigillo, o mai concluse, sono riportate come <em>pending</em> — non
+          come una violazione.
+        </p>
+        <p lang="en">
+          The ledger proves <em>what was run and by whom</em>. To prove instead <em>how many vulnerabilities were open on
+            a given date and how many were closed since</em>, use the point-in-time evidence built on the finding
+          lifecycle ledger: see <a href="index.html#evidence">Audit evidence</a> and
+          <code>GET /api/findings/as-of</code>.
+        </p>
+        <p lang="it">
+          Il registro dimostra <em>cosa è stato eseguito e da chi</em>. Per dimostrare invece <em>quante vulnerabilità
+            erano aperte a una certa data e quante ne sono state chiuse da allora</em>, usa l'evidenza point-in-time
+          costruita sul registro del ciclo di vita dei finding: vedi <a href="index.html#evidence">Evidenza per
+            audit</a> e <code>GET /api/findings/as-of</code>.
+        </p>
+        <p lang="en">
+          Nothing on this page can be edited back. The ledger tables are <strong>append-only at database level</strong>:
+          triggers reject every rewrite and deletion, and the corresponding privileges are revoked from the roles the
+          application uses. The only write still permitted is the end-of-scan one that fills in the final values — and
+          only until they are sealed. A <span class="badge b-err">TAMPERED</span> badge therefore means someone reached
+          the database directly, not that the application misbehaved.
+        </p>
+        <p lang="it">
+          Niente di ciò che vedi in questa pagina può essere corretto a posteriori. Le tabelle di registro sono
+          <strong>append-only a livello database</strong>: i trigger rifiutano ogni riscrittura e cancellazione, e i
+          permessi corrispondenti sono revocati ai ruoli usati dall'applicazione. L'unica scrittura ancora consentita è
+          quella di fine scansione che riempie i valori definitivi — e solo finché non sono sigillati. Un badge
+          <span class="badge b-err">TAMPERED</span> significa quindi che qualcuno è arrivato direttamente al database,
+          non che l'applicazione abbia sbagliato.
+        </p>
 
         <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
         <div class="scroll-x">

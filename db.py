@@ -26,19 +26,44 @@ from typing import Optional
 logger = logging.getLogger("vfa.db")
 
 # Campi immutabili di una 'scans' che entrano nella catena hash. version e cve_*
-# sono esclusi: update_scan_summary li riscrive a fine scansione.
+# sono esclusi: update_scan_summary li riscrive a fine scansione (li copre
+# _scan_final_hash, sigillato quando i valori definitivi sono noti).
 _HASH_FIELDS = ("description", "product", "source", "actor_id", "hash_ts")
+
+# Campi definitivi sigillati a fine scansione, ancorati a row_hash.
+_FINAL_HASH_FIELDS = ("version", "cve_count", "cve_ids", "final_ts")
+
+
+def _canon(payload: dict, fields: tuple) -> str:
+    """Serializzazione deterministica dei campi indicati (liste ordinate)."""
+    sub = {}
+    for k in fields:
+        v = payload.get(k)
+        sub[k] = sorted(v, key=str) if isinstance(v, list) else v
+    return json.dumps(sub, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
 
 
 def _scan_hash(payload: dict, prev_hash: str) -> str:
     """sha256 deterministico su (prev_hash | campi immutabili canonicalizzati)."""
-    canon = json.dumps(
-        {k: payload.get(k) for k in _HASH_FIELDS},
-        sort_keys=True, ensure_ascii=False, separators=(",", ":"),
-    )
     return hashlib.sha256(
-        (str(prev_hash or "") + "|" + canon).encode("utf-8")
+        (str(prev_hash or "") + "|" + _canon(payload, _HASH_FIELDS)).encode("utf-8")
     ).hexdigest()
+
+
+def _scan_final_hash(payload: dict, row_hash: str) -> str:
+    """
+    Sigillo di fine scansione: sha256(row_hash | version, cve_count, cve_ids,
+    final_ts). Ancorandolo a row_hash, alterare il conteggio CVE a posteriori
+    rompe la verifica esattamente come alterare la descrizione.
+    """
+    return hashlib.sha256(
+        (str(row_hash or "") + "|" + _canon(payload, _FINAL_HASH_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _utc_iso() -> str:
+    """Timestamp UTC nel formato usato nei calcoli hash (deterministico)."""
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "http://localhost:8001")
 # Chiave demo service_role (firmata con il JWT_SECRET demo). Solo per uso locale.
@@ -135,22 +160,33 @@ def verify_audit_chain() -> Optional[dict]:
     """
     Ricalcola la catena hash del ledger e riporta le rotture.
 
-    Ritorna {total, verified, legacy, broken:[id...], ok} oppure None se il DB
-    non e' raggiungibile. Le righe precedenti alla migrazione (row_hash NULL)
-    sono contate come 'legacy' e non rompono la catena.
+    Verifica DUE livelli:
+      - row_hash   -> campi immutabili + linkatura alla riga precedente
+      - final_hash -> version/cve_count/cve_ids sigillati a fine scansione
+        (il CONTEGGIO CVE: senza questo controllo il numero sarebbe alterabile
+        a posteriori senza rompere nulla)
+
+    Ritorna {total, verified, legacy, broken:[id...], finals_verified,
+    finals_pending, finals_broken:[id...], ok} oppure None se il DB non e'
+    raggiungibile. Le righe precedenti alla migrazione (row_hash NULL) sono
+    contate come 'legacy' e non rompono la catena; le scansioni senza
+    final_hash (mai finalizzate o antecedenti al sigillo) sono 'finals_pending'
+    e non contano come rotture.
     """
     client = _get_client()
     if client is None:
         return None
     try:
         resp = (client.table("scans")
-                .select("id,description,product,source,actor_id,hash_ts,prev_hash,row_hash")
+                .select("id,description,product,source,actor_id,hash_ts,prev_hash,row_hash,"
+                        "version,cve_count,cve_ids,final_ts,final_hash")
                 .order("id").execute())
     except Exception as exc:
         logger.warning("verify_audit_chain fallita: %s", exc)
         return None
     rows = resp.data or []
     broken, verified, legacy = [], 0, 0
+    finals_broken, finals_verified, finals_pending = [], 0, 0
     prev = ""                      # row_hash dell'ultima riga hashata
     for r in rows:
         if not r.get("row_hash"):  # riga legacy pre-migrazione
@@ -163,8 +199,17 @@ def verify_audit_chain() -> Optional[dict]:
         else:
             broken.append(r["id"])
         prev = r["row_hash"]
+        if not r.get("final_hash"):
+            finals_pending += 1
+        elif r["final_hash"] == _scan_final_hash(r, r.get("row_hash") or ""):
+            finals_verified += 1
+        else:
+            finals_broken.append(r["id"])
     return {"total": len(rows), "verified": verified,
-            "legacy": legacy, "broken": broken, "ok": not broken}
+            "legacy": legacy, "broken": broken,
+            "finals_verified": finals_verified, "finals_pending": finals_pending,
+            "finals_broken": finals_broken,
+            "ok": not broken and not finals_broken}
 
 
 def persist_result(scan_id: Optional[int], rd: dict) -> None:
@@ -228,18 +273,36 @@ def fetch_audit(limit: int = 2000, date_from: Optional[str] = None,
 
 
 def update_scan_summary(scan_id: Optional[int], cve: dict) -> None:
-    """Aggiorna la riga 'scans' con la sintesi CVE finale (conteggio + LLM)."""
+    """
+    Aggiorna la riga 'scans' con la sintesi CVE finale (conteggio + LLM) e
+    SIGILLA i valori definitivi in final_hash (ancorato a row_hash).
+
+    Da qui in avanti version/cve_count/cve_ids sono tamper-evident: modificarli
+    a DB rompe /api/audit/verify. Il sigillo si applica una sola volta per
+    scansione; se la riga ha gia' un final_hash non viene riscritto (un secondo
+    aggiornamento resterebbe fuori dalla catena e va trattato come rottura).
+    """
     client = _get_client()
     if client is None or scan_id is None:
         return
+    row = {
+        "version": cve.get("version"),
+        "cve_count": cve.get("count"),
+        "cve_ids": cve.get("ids") or [],
+        "cve_summary": cve.get("summary"),
+        "cve_error": cve.get("error"),
+    }
     try:
-        client.table("scans").update({
-            "version": cve.get("version"),
-            "cve_count": cve.get("count"),
-            "cve_ids": cve.get("ids") or [],
-            "cve_summary": cve.get("summary"),
-            "cve_error": cve.get("error"),
-        }).eq("id", scan_id).execute()
+        resp = (client.table("scans").select("row_hash,final_hash")
+                .eq("id", scan_id).execute())
+        current = (resp.data or [{}])[0]
+        if current.get("row_hash") and not current.get("final_hash"):
+            row["final_ts"] = _utc_iso()
+            row["final_hash"] = _scan_final_hash(row, current["row_hash"])
+    except Exception as exc:
+        logger.warning("sigillo final_hash non applicato (scan_id=%s): %s", scan_id, exc)
+    try:
+        client.table("scans").update(row).eq("id", scan_id).execute()
     except Exception as exc:
         logger.warning("update_scan_summary fallita: %s", exc)
 
@@ -322,17 +385,110 @@ def delete_asset(asset_id: int) -> bool:
 # FULL POSTURE (SCA)
 # ---------------------------------------------------------------------------
 
-def create_posture_run() -> Optional[int]:
-    """Crea una riga posture_runs (vuota) e ritorna l'id. None se DB assente."""
+# Catena hash delle run di postura. posture_runs regge i CONTEGGI point-in-time
+# ed e' quindi evidenza di audit quanto 'scans': stessa costruzione a due
+# livelli (creazione firmata + totali sigillati a fine run).
+_POSTURE_HASH_FIELDS = ("actor_id", "hash_ts")
+_POSTURE_FINAL_FIELDS = ("assets_scanned", "total_packages", "total_vulnerable",
+                         "total_vulns", "avg_score", "final_ts")
+
+
+def _posture_hash(payload: dict, prev_hash: str) -> str:
+    """sha256(prev_hash | campi noti alla creazione della run)."""
+    return hashlib.sha256(
+        (str(prev_hash or "") + "|" + _canon(payload, _POSTURE_HASH_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _posture_final_hash(payload: dict, row_hash: str) -> str:
+    """sha256(row_hash | totali della run) — il sigillo di fine scansione."""
+    return hashlib.sha256(
+        (str(row_hash or "") + "|" + _canon(payload, _POSTURE_FINAL_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _last_posture_hash(client) -> str:
+    """row_hash dell'ultima run di postura. '' se nessuna."""
+    try:
+        resp = (client.table("posture_runs").select("row_hash")
+                .order("id", desc=True).limit(1).execute())
+        if resp.data:
+            return resp.data[0].get("row_hash") or ""
+    except Exception as exc:
+        logger.warning("_last_posture_hash fallita: %s", exc)
+    return ""
+
+
+def create_posture_run(actor: Optional[dict] = None) -> Optional[int]:
+    """
+    Crea una riga posture_runs (vuota) e ritorna l'id. None se DB assente.
+    Registra l'attore e aggancia la run alla catena hash delle run.
+    """
     client = _get_client()
     if client is None:
         return None
+    actor = actor or {}
+    row = {
+        "assets_scanned": 0,
+        "actor_id": actor.get("id"),
+        "actor_name": actor.get("name"),
+        "hash_ts": _utc_iso(),
+    }
+    prev_hash = _last_posture_hash(client)
+    row["prev_hash"] = prev_hash
+    row["row_hash"] = _posture_hash(row, prev_hash)
     try:
-        resp = client.table("posture_runs").insert({"assets_scanned": 0}).execute()
+        resp = client.table("posture_runs").insert(row).execute()
         return resp.data[0]["id"] if resp.data else None
     except Exception as exc:
         logger.warning("create_posture_run fallita: %s", exc)
         return None
+
+
+def verify_posture_chain() -> Optional[dict]:
+    """
+    Verifica la catena hash delle run di postura, sui due livelli: row_hash
+    (creazione + linkatura) e final_hash (totali sigillati a fine run).
+    Stessa semantica di verify_audit_chain. None se il DB non risponde.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("posture_runs")
+                .select("id,actor_id,hash_ts,prev_hash,row_hash,assets_scanned,"
+                        "total_packages,total_vulnerable,total_vulns,avg_score,"
+                        "final_ts,final_hash")
+                .order("id").execute())
+    except Exception as exc:
+        logger.warning("verify_posture_chain fallita: %s", exc)
+        return None
+    rows = resp.data or []
+    broken, verified, legacy = [], 0, 0
+    finals_broken, finals_verified, finals_pending = [], 0, 0
+    prev = ""
+    for r in rows:
+        if not r.get("row_hash"):          # run precedente alla migrazione
+            legacy += 1
+            continue
+        expect = _posture_hash(r, r.get("prev_hash") or "")
+        linked = (r.get("prev_hash") or "") == prev
+        if r["row_hash"] == expect and linked:
+            verified += 1
+        else:
+            broken.append(r["id"])
+        prev = r["row_hash"]
+        if not r.get("final_hash"):
+            finals_pending += 1
+        elif r["final_hash"] == _posture_final_hash(r, r.get("row_hash") or ""):
+            finals_verified += 1
+        else:
+            finals_broken.append(r["id"])
+    return {"total": len(rows), "verified": verified,
+            "legacy": legacy, "broken": broken,
+            "finals_verified": finals_verified, "finals_pending": finals_pending,
+            "finals_broken": finals_broken,
+            "ok": not broken and not finals_broken}
 
 
 def persist_posture_asset(run_id: Optional[int], report: dict) -> None:
@@ -374,18 +530,34 @@ def persist_posture_asset(run_id: Optional[int], report: dict) -> None:
 
 
 def finalize_posture_run(run_id: Optional[int], totals: dict) -> None:
-    """Aggiorna gli aggregati della run a fine scansione."""
+    """
+    Aggiorna gli aggregati della run a fine scansione e li SIGILLA in
+    final_hash (ancorato a row_hash). Da qui i totali della run — i numeri che
+    un audit legge come "vulnerabilita' rilevate a questa data" — non sono piu'
+    modificabili senza rompere /api/audit/posture-verify. Sigillo write-once:
+    una run gia' sigillata non viene riscritta.
+    """
     client = _get_client()
     if client is None or run_id is None:
         return
+    row = {
+        "assets_scanned": totals.get("assets_scanned"),
+        "total_packages": totals.get("total_packages"),
+        "total_vulnerable": totals.get("total_vulnerable"),
+        "total_vulns": totals.get("total_vulns"),
+        "avg_score": totals.get("avg_score"),
+    }
     try:
-        client.table("posture_runs").update({
-            "assets_scanned": totals.get("assets_scanned"),
-            "total_packages": totals.get("total_packages"),
-            "total_vulnerable": totals.get("total_vulnerable"),
-            "total_vulns": totals.get("total_vulns"),
-            "avg_score": totals.get("avg_score"),
-        }).eq("id", run_id).execute()
+        resp = (client.table("posture_runs").select("row_hash,final_hash")
+                .eq("id", run_id).execute())
+        current = (resp.data or [{}])[0]
+        if current.get("row_hash") and not current.get("final_hash"):
+            row["final_ts"] = _utc_iso()
+            row["final_hash"] = _posture_final_hash(row, current["row_hash"])
+    except Exception as exc:
+        logger.warning("sigillo posture non applicato (run_id=%s): %s", run_id, exc)
+    try:
+        client.table("posture_runs").update(row).eq("id", run_id).execute()
     except Exception as exc:
         logger.warning("finalize_posture_run fallita: %s", exc)
 
@@ -490,21 +662,176 @@ def upsert_findings(rows: list) -> bool:
         return False
 
 
-def set_finding_status(finding_id: int, status: str, note: str = "") -> bool:
-    """Transizione manuale di stato dal workflow UI. True se la riga esiste."""
+# ---------------------------------------------------------------------------
+# REGISTRO EVENTI DEI FINDING (append-only, tamper-evident)
+#
+# 'findings' e' aggiornata IN PLACE: lo stato passato viene distrutto, non
+# archiviato. Questo registro conserva ogni transizione come riga NUOVA, cosi'
+# lo stato a una data qualsiasi e' ricostruibile per replay (vedi
+# findings.reconstruct_as_of e l'endpoint /api/findings/as-of).
+# ---------------------------------------------------------------------------
+
+# Campi immutabili di un evento che entrano nella catena hash.
+_FEVENT_HASH_FIELDS = ("fingerprint", "event", "from_status", "to_status",
+                       "severity", "actor_id", "event_ts")
+
+
+def _fevent_hash(payload: dict, prev_hash: str) -> str:
+    """sha256(prev_hash | campi immutabili dell'evento canonicalizzati)."""
+    return hashlib.sha256(
+        (str(prev_hash or "") + "|" + _canon(payload, _FEVENT_HASH_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _last_fevent_hash(client) -> str:
+    """row_hash dell'ultimo evento registrato. '' se il registro e' vuoto."""
+    try:
+        resp = (client.table("finding_events").select("row_hash")
+                .order("id", desc=True).limit(1).execute())
+        if resp.data:
+            return resp.data[0].get("row_hash") or ""
+    except Exception as exc:
+        logger.warning("_last_fevent_hash fallita: %s", exc)
+    return ""
+
+
+def log_finding_events(events: list) -> int:
+    """
+    Appende eventi di ciclo di vita al registro, concatenati in hash.
+
+    'events' e' l'output di findings.lifecycle_events (o una lista costruita a
+    mano con le stesse chiavi); l'ordine della lista e' l'ordine di scrittura.
+    Best-effort come il resto della persistenza: ritorna il numero di righe
+    scritte, 0 se il DB non risponde. Scritture concorrenti possono biforcare
+    la catena, esattamente come per il ledger 'scans'.
+    """
+    client = _get_client()
+    if client is None or not events:
+        return 0
+    prev = _last_fevent_hash(client)
+    rows = []
+    for e in events:
+        actor = e.get("actor") or {}
+        row = {
+            "event_ts": e.get("event_ts") or _utc_iso(),
+            "finding_id": e.get("finding_id"),
+            "fingerprint": e.get("fingerprint") or "",
+            "event": e.get("event") or "",
+            "from_status": e.get("from_status"),
+            "to_status": e.get("to_status"),
+            "severity": e.get("severity") or None,
+            "asset_ip": e.get("asset_ip") or None,
+            "source": e.get("source") or None,
+            "actor_id": actor.get("id"),
+            "actor_name": actor.get("name"),
+            "note": e.get("note") or "",
+        }
+        row["prev_hash"] = prev
+        row["row_hash"] = _fevent_hash(row, prev)
+        prev = row["row_hash"]
+        rows.append(row)
+    try:
+        client.table("finding_events").insert(rows).execute()
+        return len(rows)
+    except Exception as exc:
+        logger.warning("log_finding_events fallita (%d eventi): %s", len(rows), exc)
+        return 0
+
+
+def fetch_finding_events(until: Optional[str] = None, fp: Optional[str] = None,
+                         limit: int = 50000):
+    """
+    Eventi del registro in ordine di scrittura (id crescente).
+
+    'until' (ISO) taglia lato DB gli eventi successivi: event_ts e' testo in
+    formato UTC fisso, quindi il confronto lessicografico coincide con quello
+    cronologico. Ritorna la lista, o None se il DB non e' raggiungibile.
+    """
     client = _get_client()
     if client is None:
+        return None
+    try:
+        q = client.table("finding_events").select("*")
+        if until:
+            q = q.lte("event_ts", until)
+        if fp:
+            q = q.eq("fingerprint", fp)
+        resp = q.order("id").limit(limit).execute()
+        return resp.data or []
+    except Exception as exc:
+        logger.warning("fetch_finding_events fallita: %s", exc)
+        return None
+
+
+def verify_findings_chain() -> Optional[dict]:
+    """
+    Ricalcola la catena hash del registro eventi.
+    Ritorna {total, verified, broken:[id...], ok}, None se il DB non risponde.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("finding_events")
+                .select("id,fingerprint,event,from_status,to_status,severity,"
+                        "actor_id,event_ts,prev_hash,row_hash")
+                .order("id").execute())
+    except Exception as exc:
+        logger.warning("verify_findings_chain fallita: %s", exc)
+        return None
+    rows = resp.data or []
+    broken, verified, prev = [], 0, ""
+    for r in rows:
+        expect = _fevent_hash(r, r.get("prev_hash") or "")
+        linked = (r.get("prev_hash") or "") == prev
+        if r.get("row_hash") == expect and linked:
+            verified += 1
+        else:
+            broken.append(r["id"])
+        prev = r.get("row_hash") or ""
+    return {"total": len(rows), "verified": verified,
+            "broken": broken, "ok": not broken}
+
+
+def set_finding_status(finding_id: int, status: str, note: str = "",
+                       actor: Optional[dict] = None) -> bool:
+    """
+    Transizione manuale di stato dal workflow UI. True se la riga esiste.
+
+    Registra l'evento (from_status -> to_status + attore) PRIMA di perdere lo
+    stato precedente: l'UPDATE lo sovrascrive e senza registro non sarebbe piu'
+    ricostruibile in audit.
+    """
+    client = _get_client()
+    if client is None:
+        return False
+    prev = fetch_finding(finding_id)
+    if prev is None:
         return False
     try:
         resp = client.table("findings").update({
             "status": status,
             "status_note": note or "",
-            "status_changed_at": "now()",
+            "status_changed_at": _utc_iso(),
         }).eq("id", finding_id).execute()
-        return bool(resp.data)
+        if not resp.data:
+            return False
     except Exception as exc:
         logger.warning("set_finding_status fallita (id=%s): %s", finding_id, exc)
         return False
+    log_finding_events([{
+        "event": "status_change",
+        "finding_id": finding_id,
+        "fingerprint": prev.get("fingerprint") or "",
+        "from_status": prev.get("status") or "open",
+        "to_status": status,
+        "severity": prev.get("severity"),
+        "asset_ip": prev.get("asset_ip"),
+        "source": prev.get("source"),
+        "actor": actor or {},
+        "note": note or "",
+    }])
+    return True
 
 
 def fetch_finding(finding_id: int):
@@ -535,34 +862,53 @@ def set_finding_ticket(finding_id: int, ref: str, url: str) -> bool:
         return False
 
 
-def close_stale_posture_findings(asset_ip: str, seen_fps: list) -> int:
+def close_stale_posture_findings(asset_ip: str, seen_fps: list,
+                                 actor: Optional[dict] = None) -> int:
     """
     Auto-fix: i finding di postura di un asset NON riosservati nell'ultima run
     (fingerprint assente) e ancora open/triaged passano a 'fixed'.
     Ritorna il numero di righe chiuse (0 se DB assente o niente da chiudere).
+
+    Ogni chiusura automatica produce un evento 'auto_fixed' nel registro: e' la
+    remediation che un auditor contesta per prima ("chi ha dichiarato risolto,
+    e quando?"), e senza traccia sarebbe una riga sovrascritta e basta.
     """
     client = _get_client()
     if client is None or not asset_ip:
         return 0
+    note = "Auto-fixed: not detected in latest posture run"
     try:
-        resp = (client.table("findings").select("id, fingerprint, status, source")
+        resp = (client.table("findings")
+                .select("id, fingerprint, status, source, severity")
                 .eq("asset_ip", asset_ip).in_("status", ["open", "triaged"])
                 .execute())
         seen = set(seen_fps or [])
-        stale = [r["id"] for r in (resp.data or [])
+        stale = [r for r in (resp.data or [])
                  if "posture" in (r.get("source") or "")
                  and r.get("fingerprint") not in seen]
         if not stale:
             return 0
         client.table("findings").update({
             "status": "fixed",
-            "status_note": "Auto-fixed: not detected in latest posture run",
-            "status_changed_at": "now()",
-        }).in_("id", stale).execute()
-        return len(stale)
+            "status_note": note,
+            "status_changed_at": _utc_iso(),
+        }).in_("id", [r["id"] for r in stale]).execute()
     except Exception as exc:
         logger.warning("close_stale_posture_findings fallita (ip=%s): %s", asset_ip, exc)
         return 0
+    log_finding_events([{
+        "event": "auto_fixed",
+        "finding_id": r["id"],
+        "fingerprint": r.get("fingerprint") or "",
+        "from_status": r.get("status") or "open",
+        "to_status": "fixed",
+        "severity": r.get("severity"),
+        "asset_ip": asset_ip,
+        "source": r.get("source"),
+        "actor": actor or {},
+        "note": note,
+    } for r in stale])
+    return len(stale)
 
 
 # ---------------------------------------------------------------------------

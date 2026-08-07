@@ -286,8 +286,217 @@ CREATE TABLE IF NOT EXISTS public.auth_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON public.auth_tokens(user_id);
 
+-- 8) AUDIT POINT-IN-TIME: registro append-only degli eventi di ciclo di vita.
+--    La tabella 'findings' e' aggiornata IN PLACE (UPDATE su status) e quindi
+--    NON conserva la storia: senza questo registro non e' possibile dimostrare
+--    a un auditor quante vulnerabilita' erano aperte a una certa data e quante
+--    ne sono state risolte in seguito. Qui ogni transizione e' una riga NUOVA,
+--    mai modificata, concatenata in hash come il ledger delle scansioni.
+--      fingerprint -> identita' stabile del finding (sopravvive a re-insert)
+--      event       -> created | reopened | status_change | auto_fixed
+--      event_ts    -> timestamp deterministico usato nel calcolo dell'hash
+--      prev_hash   -> row_hash dell'evento precedente (linkatura catena)
+--      row_hash    -> sha256(prev_hash | campi immutabili) alla creazione
+CREATE TABLE IF NOT EXISTS public.finding_events (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  at          timestamptz NOT NULL DEFAULT now(),
+  event_ts    text NOT NULL,
+  finding_id  bigint,
+  fingerprint text NOT NULL,
+  event       text NOT NULL,
+  from_status text,
+  to_status   text,
+  severity    text,
+  asset_ip    text,
+  source      text,
+  actor_id    bigint,
+  actor_name  text,
+  note        text DEFAULT '',
+  prev_hash   text,
+  row_hash    text
+);
+
+CREATE INDEX IF NOT EXISTS idx_finding_events_fp ON public.finding_events(fingerprint);
+CREATE INDEX IF NOT EXISTS idx_finding_events_ts ON public.finding_events(event_ts);
+
+-- Hash FINALE della scansione: copre i campi MUTABILI (version + cve_count +
+-- cve_ids) che update_scan_summary riscrive a fine scansione e che row_hash,
+-- calcolato all'insert, non puo' coprire. E' ancorato a row_hash, quindi il
+-- CONTEGGIO CVE — la cifra che un audit esterno contesta — diventa
+-- tamper-evident quanto il resto della riga.
+ALTER TABLE public.scans
+  ADD COLUMN IF NOT EXISTS final_ts   text,
+  ADD COLUMN IF NOT EXISTS final_hash text;
+
+-- 9) CATENA HASH DELLE RUN DI POSTURA.
+--    posture_runs regge i CONTEGGI point-in-time (quante vulnerabilita' a una
+--    certa data): era la tabella con i numeri piu' probanti e la protezione
+--    minore. Stessa costruzione di 'scans': row_hash sui campi noti alla
+--    creazione, final_hash sui totali sigillati a fine run.
+ALTER TABLE public.posture_runs
+  ADD COLUMN IF NOT EXISTS actor_id   bigint,
+  ADD COLUMN IF NOT EXISTS actor_name text,
+  ADD COLUMN IF NOT EXISTS hash_ts    text,
+  ADD COLUMN IF NOT EXISTS prev_hash  text,
+  ADD COLUMN IF NOT EXISTS row_hash   text,
+  ADD COLUMN IF NOT EXISTS final_ts   text,
+  ADD COLUMN IF NOT EXISTS final_hash text;
+
+-- 10) APPEND-ONLY A LIVELLO DATABASE.
+--     Le catene hash dimostrano che una riga NON e' stata modificata, ma da
+--     sole non impediscono nulla: con le credenziali dell'app si poteva ancora
+--     cancellare la coda di una catena, e una catena troncata resta valida.
+--     Qui l'append-only diventa un vincolo del DB, non una convenzione.
+--
+--     Bypass: i ruoli 'postgres'/'supabase_admin' (accesso diretto a Postgres)
+--     restano liberi. Non e' una svista — un superuser puo' comunque disattivare
+--     i trigger, e fingere il contrario sarebbe teatro di sicurezza. Il punto e'
+--     che le credenziali usate dall'applicazione (service_role, anon,
+--     authenticated) non possono piu' riscrivere ne' cancellare la storia.
+
+-- Tabelle puramente append-only: nessun UPDATE, nessun DELETE.
+CREATE OR REPLACE FUNCTION public.ledger_immutable_row() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF current_user IN ('postgres', 'supabase_admin') THEN
+    RETURN CASE TG_OP WHEN 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+  RAISE EXCEPTION 'ledger: % non consentito su %.% (tabella append-only)',
+    TG_OP, TG_TABLE_SCHEMA, TG_TABLE_NAME USING ERRCODE = '42501';
+END;
+$$;
+
+-- 'scans': un solo UPDATE lecito, quello di fine scansione che scrive i valori
+-- definitivi. I campi firmati non si toccano mai; i valori sigillati (version,
+-- conteggio CVE) diventano immutabili nel momento in cui il sigillo esiste.
+CREATE OR REPLACE FUNCTION public.scans_append_only() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF current_user IN ('postgres', 'supabase_admin') THEN
+    RETURN CASE TG_OP WHEN 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'ledger: DELETE non consentito su public.scans'
+      USING ERRCODE = '42501';
+  END IF;
+  IF (OLD.created_at, OLD.description, OLD.product, OLD.source, OLD.actor_id,
+      OLD.actor_name, OLD.hash_ts, OLD.prev_hash, OLD.row_hash)
+     IS DISTINCT FROM
+     (NEW.created_at, NEW.description, NEW.product, NEW.source, NEW.actor_id,
+      NEW.actor_name, NEW.hash_ts, NEW.prev_hash, NEW.row_hash) THEN
+    RAISE EXCEPTION 'ledger: campi firmati di public.scans non modificabili'
+      USING ERRCODE = '42501';
+  END IF;
+  IF OLD.final_hash IS NOT NULL AND
+     (OLD.final_hash, OLD.final_ts, OLD.version, OLD.cve_count, OLD.cve_ids)
+     IS DISTINCT FROM
+     (NEW.final_hash, NEW.final_ts, NEW.version, NEW.cve_count, NEW.cve_ids) THEN
+    RAISE EXCEPTION 'ledger: sigillo di public.scans gia apposto (write-once)'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- 'posture_runs': stessa regola, applicata ai totali della run.
+CREATE OR REPLACE FUNCTION public.posture_runs_append_only() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF current_user IN ('postgres', 'supabase_admin') THEN
+    RETURN CASE TG_OP WHEN 'DELETE' THEN OLD ELSE NEW END;
+  END IF;
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'ledger: DELETE non consentito su public.posture_runs'
+      USING ERRCODE = '42501';
+  END IF;
+  IF (OLD.created_at, OLD.actor_id, OLD.actor_name, OLD.hash_ts,
+      OLD.prev_hash, OLD.row_hash)
+     IS DISTINCT FROM
+     (NEW.created_at, NEW.actor_id, NEW.actor_name, NEW.hash_ts,
+      NEW.prev_hash, NEW.row_hash) THEN
+    RAISE EXCEPTION 'ledger: campi firmati di public.posture_runs non modificabili'
+      USING ERRCODE = '42501';
+  END IF;
+  IF OLD.final_hash IS NOT NULL AND
+     (OLD.final_hash, OLD.final_ts, OLD.assets_scanned, OLD.total_packages,
+      OLD.total_vulnerable, OLD.total_vulns, OLD.avg_score)
+     IS DISTINCT FROM
+     (NEW.final_hash, NEW.final_ts, NEW.assets_scanned, NEW.total_packages,
+      NEW.total_vulnerable, NEW.total_vulns, NEW.avg_score) THEN
+    RAISE EXCEPTION 'ledger: sigillo di public.posture_runs gia apposto (write-once)'
+      USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_scans_append_only        ON public.scans;
+DROP TRIGGER IF EXISTS trg_posture_runs_append_only ON public.posture_runs;
+DROP TRIGGER IF EXISTS trg_scan_results_immutable       ON public.scan_results;
+DROP TRIGGER IF EXISTS trg_posture_assets_immutable     ON public.posture_assets;
+DROP TRIGGER IF EXISTS trg_posture_findings_immutable   ON public.posture_findings;
+DROP TRIGGER IF EXISTS trg_posture_components_immutable ON public.posture_components;
+DROP TRIGGER IF EXISTS trg_finding_events_immutable     ON public.finding_events;
+
+CREATE TRIGGER trg_scans_append_only
+  BEFORE UPDATE OR DELETE ON public.scans
+  FOR EACH ROW EXECUTE FUNCTION public.scans_append_only();
+CREATE TRIGGER trg_posture_runs_append_only
+  BEFORE UPDATE OR DELETE ON public.posture_runs
+  FOR EACH ROW EXECUTE FUNCTION public.posture_runs_append_only();
+CREATE TRIGGER trg_scan_results_immutable
+  BEFORE UPDATE OR DELETE ON public.scan_results
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+CREATE TRIGGER trg_posture_assets_immutable
+  BEFORE UPDATE OR DELETE ON public.posture_assets
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+CREATE TRIGGER trg_posture_findings_immutable
+  BEFORE UPDATE OR DELETE ON public.posture_findings
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+CREATE TRIGGER trg_posture_components_immutable
+  BEFORE UPDATE OR DELETE ON public.posture_components
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+CREATE TRIGGER trg_finding_events_immutable
+  BEFORE UPDATE OR DELETE ON public.finding_events
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+
+-- Valvola di sfogo per la suite di test, che esercita gli endpoint reali e
+-- quindi scrive nel registro. Puo' cancellare SOLO le righe con marcatore di
+-- test '_ftest_': non e' un bypass generico del registro.
+CREATE OR REPLACE FUNCTION public.purge_test_ledger() RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE removed integer;
+BEGIN
+  DELETE FROM public.finding_events WHERE fingerprint LIKE '\_ftest\_%';
+  GET DIAGNOSTICS removed = ROW_COUNT;
+  RETURN removed;
+END;
+$$;
+
 GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
--- 8) Ricarica la cache schema di PostgREST.
+-- I GRANT sopra sono volutamente larghi (ambiente locale): le revoche vanno
+-- DOPO, altrimenti verrebbero riconcesse a ogni riesecuzione dello schema.
+-- Difesa in profondita': i trigger bloccano comunque, ma un permesso mai
+-- concesso e' meglio di un permesso revocato da un'eccezione.
+REVOKE UPDATE, DELETE, TRUNCATE ON
+  public.scans, public.scan_results, public.posture_runs, public.posture_assets,
+  public.posture_findings, public.posture_components, public.finding_events
+  FROM anon, authenticated;
+REVOKE DELETE, TRUNCATE ON
+  public.scans, public.scan_results, public.posture_runs, public.posture_assets,
+  public.posture_findings, public.posture_components, public.finding_events
+  FROM service_role;
+-- service_role conserva UPDATE solo dove l'app deve davvero scrivere il
+-- risultato finale (scans, posture_runs); i trigger delimitano cosa puo' toccare.
+REVOKE UPDATE ON
+  public.scan_results, public.posture_assets, public.posture_findings,
+  public.posture_components, public.finding_events
+  FROM service_role;
+
+REVOKE ALL ON FUNCTION public.purge_test_ledger() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.purge_test_ledger() TO service_role;
+
+-- 11) Ricarica la cache schema di PostgREST.
 NOTIFY pgrst, 'reload schema';
