@@ -747,6 +747,41 @@
     // --- FIX VERSION: risultati resolver per (package|ecosystem|version), sopravvivono ai re-render ---
     const fixResults = {};
     const fixKey = (f) => [f.package, f.ecosystem || '', f.version || ''].join('|');
+
+    // Nessuna fonte copre tutto il parco: OSV gli ecosistemi di pacchetti, NVD
+    // il software desktop via CPE, MSRC i prodotti Microsoft (con le KB). Il
+    // numero mostrato deve dire da chi e' affermato: senza la fonte, una fix
+    // version e' un'asserzione senza provenienza.
+    const SOURCE_META = {
+      osv: { label: 'OSV', full: 'OSV.dev', cls: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+      nvd: { label: 'NVD', full: 'NVD (NIST) — matched by CPE', cls: 'text-sky-700 bg-sky-50 border-sky-200' },
+      msrc: { label: 'MSRC', full: 'Microsoft Security Response Center', cls: 'text-violet-700 bg-violet-50 border-violet-200' },
+    };
+    const sourceNames = (list) => (list || []).map((s) => (SOURCE_META[s] || {}).label || s).join(', ') || 'none';
+    function sourceTitle(r) {
+      const m = SOURCE_META[r.source] || {};
+      let t = m.full || r.source_label || r.source || 'unknown source';
+      if (r.vendors && r.vendors.length) t += ` · CPE vendor: ${r.vendors.join(', ')}`;
+      if (r.window) t += ` · indexed releases: ${r.window}`;
+      return t;
+    }
+    function srcChip(r) {
+      const m = SOURCE_META[r.source];
+      if (!m) return '';
+      return ` <span class="px-1.5 border ${m.cls} font-code-sm text-[9px] rounded-full align-middle"
+        title="${esc(sourceTitle(r))}">${esc(m.label)}</span>`;
+    }
+    // Su Windows la remediation concreta e' la KB da installare, non solo il
+    // numero di build: MSRC e' l'unica fonte che la pubblica.
+    function kbChips(r) {
+      const kbs = (r.kbs || []).slice(0, 3);
+      if (!kbs.length) return '';
+      const more = (r.kbs || []).length - kbs.length;
+      return kbs.map((kb) => ` <a href="https://support.microsoft.com/help/${esc(kb)}" target="_blank" rel="noopener"
+        class="px-1.5 border text-violet-700 bg-violet-50 border-violet-200 font-code-sm text-[9px] rounded-full"
+        title="Microsoft update to install">KB${esc(kb)}</a>`).join('')
+        + (more > 0 ? ` <span class="font-code-sm text-[9px] text-slate-500">+${more}</span>` : '');
+    }
     function fixCell(f) {
       const key = fixKey(f);
       const r = fixResults[key];
@@ -762,11 +797,20 @@
           <span class="material-symbols-outlined animate-spin text-[14px]" style="font-size:14px">progress_activity</span>resolving…</span>`;
       }
       if (r.error) return `<span class="font-code-sm text-[10px] text-rose-600" title="${esc(r.error)}">error — retry later</span>`;
-      if (!r.fix_version) return `<span class="px-2 py-0.5 border text-slate-500 bg-slate-50 border-slate-200 font-code-sm text-[10px] rounded-full">no fix available</span>`;
-      const warn = r.unfixed ? ` <span class="px-1.5 border text-amber-700 bg-amber-50 border-amber-200 font-code-sm text-[9px] rounded-full" title="CVEs without a published fix">${r.unfixed} unfixed</span>` : '';
-      return `<span data-fixcell="${esc(key)}" title="${esc(f.version || '?')} → ${esc(r.fix_version)}"
+      // Nessuna fonte indicizza il pacchetto: non e' un guasto e ritentare non
+      // cambia nulla, quindi niente invito a riprovare. Si dichiara comunque
+      // COSA e' stato interrogato, altrimenti "not indexed" e' un vicolo cieco.
+      if (r.supported === false) return `<span class="px-2 py-0.5 border text-slate-500 bg-slate-50 border-slate-200 font-code-sm text-[10px] rounded-full"
+        title="${esc(r.detail || 'No source indexes this package')} — sources queried: ${esc(sourceNames(r.sources_tried))}">not indexed</span>`;
+      if (!r.fix_version) return `<span class="px-2 py-0.5 border text-slate-500 bg-slate-50 border-slate-200 font-code-sm text-[10px] rounded-full"
+        title="${esc(sourceTitle(r))} knows the package but publishes no fixed version">no fix available${srcChip(r)}</span>`;
+      const warn = (r.unfixed ? ` <span class="px-1.5 border text-amber-700 bg-amber-50 border-amber-200 font-code-sm text-[9px] rounded-full" title="CVEs without a published fix">${r.unfixed} unfixed</span>` : '')
+        + (r.fix_after ? ` <span class="px-1.5 border text-amber-700 bg-amber-50 border-amber-200 font-code-sm text-[9px] rounded-full" title="Some CVEs only state the last affected version (${esc(r.fix_after)}); the real fix is above it, so this upgrade may not be enough">&gt; ${esc(r.fix_after)}</span>` : '')
+        + (r.cross_ecosystem ? ` <span class="px-1.5 border text-amber-700 bg-amber-50 border-amber-200 font-code-sm text-[9px] rounded-full" title="No ecosystem recorded for this package: the result may refer to same-named packages on other platforms">approximate</span>` : '')
+        + kbChips(r);
+      return `<span data-fixcell="${esc(key)}" title="${esc(f.version || '?')} → ${esc(r.fix_version)} · ${esc(sourceTitle(r))}"
         class="inline-flex items-center gap-1 px-2 py-0.5 border text-emerald-700 bg-emerald-50 border-emerald-200 font-code-sm text-[10px] rounded-full font-semibold">
-        <span class="material-symbols-outlined text-[12px]" style="font-size:12px">upgrade</span>${esc(r.fix_version)}</span>${warn}`;
+        <span class="material-symbols-outlined text-[12px]" style="font-size:12px">upgrade</span>${esc(r.fix_version)}</span>${srcChip(r)}${warn}`;
     }
     function fRow(f) {
       return `<tr class="hover:bg-white/60 transition-colors">
@@ -840,11 +884,13 @@
     });
     $('exportFindingsCSV').addEventListener('click', () => exportCSV(_computeFindings().map(f => ({
       Severity: f.max_severity, Package: f.package, Version: f.version, Ecosystem: f.ecosystem,
-      Category: f.category, Asset: f.ip, CVEs: (f.cve_ids || []).join('; '), Total_CVEs: f.vuln_count || 0, Fix_Version: f.fix_version || ''
+      Category: f.category, Asset: f.ip, CVEs: (f.cve_ids || []).join('; '), Total_CVEs: f.vuln_count || 0,
+      Fix_Version: f.fix_version || '', Fix_Source: f.fix_source || '', Fix_KBs: f.fix_kbs || ''
     })), 'posture_findings.csv'));
     $('exportFindingsXLS').addEventListener('click', () => exportXLS(_computeFindings().map(f => ({
       Severity: f.max_severity, Package: f.package, Version: f.version, Ecosystem: f.ecosystem,
-      Category: f.category, Asset: f.ip, CVEs: (f.cve_ids || []).join('; '), Total_CVEs: f.vuln_count || 0, Fix_Version: f.fix_version || ''
+      Category: f.category, Asset: f.ip, CVEs: (f.cve_ids || []).join('; '), Total_CVEs: f.vuln_count || 0,
+      Fix_Version: f.fix_version || '', Fix_Source: f.fix_source || '', Fix_KBs: f.fix_kbs || ''
     })), 'posture_findings.xlsx'));
 
     // --- load latest run ---
@@ -1530,8 +1576,21 @@
       const finish = () => {
         fixResults[key] = plan.error
           ? { status: 'done', fix_version: null, error: plan.error }
-          : { status: 'done', fix_version: plan.fix_version, unfixed: plan.unfixed || 0, total: (plan.cves || []).length };
-        allFindings.forEach(f => { if (fixKey(f) === key) f.fix_version = plan.fix_version || ''; });
+          : {
+            status: 'done', fix_version: plan.fix_version, unfixed: plan.unfixed || 0,
+            total: (plan.cves || []).length, supported: plan.supported !== false,
+            cross_ecosystem: !!plan.cross_ecosystem, detail: plan.detail || '',
+            source: plan.source || '', source_label: plan.source_label || '',
+            sources_tried: plan.sources_tried || [], kbs: plan.kbs || [],
+            fix_after: plan.fix_after || null, window: plan.window || '',
+            vendors: plan.vendors || []
+          };
+        allFindings.forEach(f => {
+          if (fixKey(f) !== key) return;
+          f.fix_version = plan.fix_version || '';
+          f.fix_source = (SOURCE_META[plan.source] || {}).full || plan.source_label || plan.source || '';
+          f.fix_kbs = (plan.kbs || []).map(k => 'KB' + k).join(' ');
+        });
         applyFilter();
       };
       if (plan.error || !(plan.cves || []).length
@@ -1702,7 +1761,9 @@
             res.innerHTML = `
               <div style="font:700 11px Inter,sans-serif;letter-spacing:.4em;color:#67e8f9">MINIMUM SAFE VERSION</div>
               <div style="font:700 64px 'JetBrains Mono',monospace;margin-top:10px;background:linear-gradient(90deg,#a5f3fc,#e0e7ff,#a5b4fc);-webkit-background-clip:text;background-clip:text;color:transparent;animation:qvr-reveal .9s cubic-bezier(.2,.9,.3,1) forwards">${esc(plan.fix_version || 'N/A')}</div>
-              <div style="font:500 12px 'JetBrains Mono',monospace;color:#94a3b8;margin-top:12px">resolves ${N - (plan.unfixed || 0)} / ${N} CVEs${plan.unfixed ? ` · <span style="color:#f59e0b">${plan.unfixed} without published fix</span>` : ''}</div>`;
+              <div style="font:500 12px 'JetBrains Mono',monospace;color:#94a3b8;margin-top:12px">resolves ${N - (plan.unfixed || 0)} / ${N} CVEs${plan.unfixed ? ` · <span style="color:#f59e0b">${plan.unfixed} without published fix</span>` : ''}</div>
+              <div style="font:500 11px 'JetBrains Mono',monospace;color:#64748b;margin-top:8px;letter-spacing:.15em">SOURCE: ${esc((SOURCE_META[plan.source] || {}).full || plan.source_label || plan.source || 'unknown')}</div>
+              ${(plan.kbs || []).length ? `<div style="font:500 11px 'JetBrains Mono',monospace;color:#c4b5fd;margin-top:6px">install ${esc((plan.kbs || []).slice(0, 4).map(k => 'KB' + k).join(' · '))}</div>` : ''}`;
             ov.appendChild(res);
             ov.querySelector('#qvrReactor').style.opacity = '0.25';
             timers.push(setTimeout(close, 2400));

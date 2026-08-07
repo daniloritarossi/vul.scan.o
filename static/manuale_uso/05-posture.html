@@ -398,17 +398,76 @@
             published fix are counted separately (unfixed).»</em>
         </p>
         <p lang="en">
-          Mechanically it calls <code>GET /api/posture/fixplan?package=…</code>, which queries OSV.dev for the fixed
-          version of each CVE affecting that package and returns the <strong>minimum version that clears all of
-            them</strong>, plus a separate count of CVEs with no published fix. A full-page animation — labelled
-          <em>QUANTUM VERSION RESOLVER</em> — plays while it computes.
+          Mechanically it calls <code>GET /api/posture/fixplan?package=…</code>, which returns the <strong>minimum
+            version that clears every CVE affecting the installed one</strong>, plus a separate count of CVEs with no
+          published fix. A full-page animation — labelled <em>QUANTUM VERSION RESOLVER</em> — plays while it computes.
         </p>
         <p lang="it">
-          Meccanicamente chiama <code>GET /api/posture/fixplan?package=…</code>, che interroga OSV.dev per la versione
-          corretta di ciascun CVE che riguarda quel pacchetto e restituisce la <strong>versione minima che li risolve
-            tutti</strong>, più un conteggio separato dei CVE senza fix pubblicata. Durante il calcolo scorre
-          un'animazione a tutta pagina etichettata <em>QUANTUM VERSION RESOLVER</em>.
+          Meccanicamente chiama <code>GET /api/posture/fixplan?package=…</code>, che restituisce la <strong>versione
+            minima che risolve ogni CVE riguardante quella installata</strong>, più un conteggio separato dei CVE senza
+          fix pubblicata. Durante il calcolo scorre un'animazione a tutta pagina etichettata
+          <em>QUANTUM VERSION RESOLVER</em>.
         </p>
+
+        <h4><span class="n">10</span><span lang="en">Where the answer comes from</span><span lang="it">Da dove viene la risposta</span></h4>
+        <p lang="en">
+          No single database covers a mixed estate, so the resolver queries sources in cascade and <strong>every result
+            states which one produced it</strong> — a fix version without a provenance is an assertion nobody can check.
+          The source appears as a coloured chip next to the version, in the resolver overlay, and as a
+          <code>Fix_Source</code> column in the CSV/XLS export.
+        </p>
+        <p lang="it">
+          Nessun database singolo copre un parco misto, quindi il resolver interroga le fonti in cascata e <strong>ogni
+            risultato dichiara quale l'ha prodotto</strong> — una fix version senza provenienza è un'affermazione che
+          nessuno può verificare. La fonte compare come chip colorato accanto alla versione, nell'overlay del resolver e
+          come colonna <code>Fix_Source</code> nell'export CSV/XLS.
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Source</span><span lang="it">Fonte</span></th>
+                <th><span lang="en">Covers</span><span lang="it">Copre</span></th>
+                <th><span lang="en">Why it is in the chain</span><span lang="it">Perché è nella catena</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge">OSV</span></td>
+                <td><span lang="en">Package ecosystems: Debian, Ubuntu, PyPI, npm, Maven, crates.io…</span><span lang="it">Ecosistemi di pacchetti: Debian, Ubuntu, PyPI, npm, Maven, crates.io…</span></td>
+                <td><span lang="en">Exact version-range matching, no API key. First choice wherever the package has an ecosystem.</span><span lang="it">Match esatto sui range di versione, nessuna API key. Prima scelta ovunque il pacchetto abbia un ecosistema.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">MSRC</span></td>
+                <td><span lang="en">Microsoft products only: Windows, Edge, Defender, Office…</span><span lang="it">Solo prodotti Microsoft: Windows, Edge, Defender, Office…</span></td>
+                <td><span lang="en">The only source publishing <strong>KB numbers</strong>. On Windows the real remediation is “install KB5087538”, not “reach build X” — so for Microsoft products MSRC is asked before NVD. KB chips in the cell link straight to the Microsoft update page.</span><span lang="it">L'unica fonte che pubblica i <strong>numeri KB</strong>. Su Windows la remediation reale è «installa la KB5087538», non «arriva alla build X» — perciò per i prodotti Microsoft si interroga MSRC prima di NVD. I chip KB nella cella portano direttamente alla pagina dell'aggiornamento Microsoft.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">NVD</span></td>
+                <td><span lang="en">Everything else, matched by CPE — Notepad++, PuTTY, 7-Zip, VLC, Wireshark…</span><span lang="it">Tutto il resto, via CPE — Notepad++, PuTTY, 7-Zip, VLC, Wireshark…</span></td>
+                <td><span lang="en">Fills the gap OSV leaves on Windows desktop software. Requires no key; a free one raises the rate limit from 5 to 50 requests per 30 s (Settings → NVD).</span><span lang="it">Colma il buco che OSV lascia sul software desktop Windows. Non richiede chiavi; una gratuita alza il rate limit da 5 a 50 richieste per 30 s (Impostazioni → NVD).</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">
+          <span lang="en">Two honest limits worth knowing before you quote a number. <strong>NVD is matched by CPE with a
+              wildcard vendor</strong>: the same product lives under several vendor names (Notepad++ appears as
+            <code>notepad-plus-plus</code>, <code>don_ho</code> and <code>notepad_plus_plus</code>, and the CVEs hang off
+            only one of them), so pinning a vendor would return zero on a product that has thirteen — a false negative,
+            the worst possible outcome here. The vendors actually matched are shown in the chip tooltip.
+            <strong>MSRC is indexed over a monthly window</strong> (default: last 3 releases, configurable): it is
+            authoritative for “which build do I need”, partial for “how many CVEs does this product have in total”. The
+            covered window is in the tooltip too.</span>
+          <span lang="it">Due limiti onesti da conoscere prima di citare un numero. <strong>NVD viene interrogata via CPE
+              con vendor jolly</strong>: lo stesso prodotto vive sotto più nomi vendor (Notepad++ compare come
+            <code>notepad-plus-plus</code>, <code>don_ho</code> e <code>notepad_plus_plus</code>, e le CVE sono attaccate
+            solo a uno di essi), quindi fissare un vendor restituirebbe zero su un prodotto che ne ha tredici — un falso
+            negativo, l'esito peggiore possibile qui. I vendor davvero corrispondenti sono nel tooltip del chip.
+            <strong>MSRC è indicizzata su una finestra mensile</strong> (default: ultime 3 pubblicazioni, configurabile):
+            è autorevole su «a quale build devo arrivare», parziale su «quante CVE ha in tutto questo prodotto». Anche la
+            finestra coperta è nel tooltip.</span>
+        </div>
         <div class="tip">
           <span lang="en">This is the single most practical control on the page: it converts “this package has 23 CVEs” into
             “upgrade to ≥ X and 21 of them disappear”. The unfixed count tells you what upgrading will <em>not</em>
@@ -416,6 +475,61 @@
           <span lang="it">È il controllo più pratico della pagina: converte «questo pacchetto ha 23 CVE» in «aggiorna a ≥ X e 21
             spariscono». Il conteggio dei non corretti dice cosa l'aggiornamento <em>non</em> risolverà — quelli richiedono
             mitigazione, non un cambio di versione.</span>
+        </div>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Result</span><span lang="it">Esito</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-ok">upgrade X</span></td>
+                <td>
+                  <span lang="en">The minimum version clearing every CVE that affects the <em>installed</em> version. Only CVEs matching your version and ecosystem are counted, so the figure is the smallest upgrade that actually helps.</span>
+                  <span lang="it">La versione minima che elimina ogni CVE riguardante la versione <em>installata</em>. Contano solo le CVE che corrispondono alla tua versione e al tuo ecosistema, quindi la cifra è il più piccolo aggiornamento realmente utile.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge">no fix available</span></td>
+                <td>
+                  <span lang="en">OSV knows the package but publishes no fixed version for the CVEs affecting it. Mitigate; do not wait for a version bump.</span>
+                  <span lang="it">OSV conosce il pacchetto ma non pubblica una versione corretta per le CVE che lo riguardano. Mitiga, non aspettare un cambio di versione.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge">not indexed</span></td>
+                <td>
+                  <span lang="en">No configured source lists this package. The tooltip names the sources that were queried, so it is not a dead end. Retrying will not change the outcome. Note that the app deliberately does <strong>not</strong> ask OSV without an ecosystem as a last resort: for a name like <code>putty</code> OSV would answer with the Linux packages of the same name, and offering a Mageia package version as the upgrade for a Windows install would be a wrong remediation instruction.</span>
+                  <span lang="it">Nessuna fonte configurata elenca questo pacchetto. Il tooltip dice quali fonti sono state interrogate, quindi non è un vicolo cieco. Ritentare non cambierà l'esito. Nota che l'app di proposito <strong>non</strong> interroga OSV senza ecosistema come ultima risorsa: per un nome come <code>putty</code> OSV risponderebbe con i pacchetti Linux omonimi, e proporre una versione di pacchetto Mageia come aggiornamento per un'installazione Windows sarebbe un'istruzione di remediation sbagliata.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">&gt; X</span></td>
+                <td>
+                  <span lang="en">Some CVEs only declare the <em>last affected</em> version, not the one that fixes them. The real fix sits above <code>X</code>, so the version shown may not be enough. Treat it as a floor, not an answer.</span>
+                  <span lang="it">Alcune CVE dichiarano solo l'<em>ultima versione affetta</em>, non quella che le corregge. La fix reale sta sopra <code>X</code>, quindi la versione mostrata può non bastare. Trattala come un limite inferiore, non come una risposta.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">approximate</span></td>
+                <td>
+                  <span lang="en">The finding carried no ecosystem, so the query could not be scoped to one. The result may refer to same-named packages on other platforms — check it before acting.</span>
+                  <span lang="it">Il finding non aveva un ecosistema, quindi la query non ha potuto restringersi. Il risultato può riferirsi a pacchetti omonimi di altre piattaforme — verificalo prima di agire.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">error — retry later</span></td>
+                <td>
+                  <span lang="en">A genuinely transient failure: network, timeout, or an OSV server error. This one <em>is</em> worth retrying.</span>
+                  <span lang="it">Un guasto davvero transitorio: rete, timeout o errore del server OSV. Questo <em>vale</em> la pena ritentarlo.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

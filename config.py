@@ -40,6 +40,26 @@ _DEFAULTS: dict = {
         "url": "https://api.osv.dev/v1/query",
         "timeout": 15,
     },
+    # NVD: fonte per il software che OSV non indicizza (app desktop Windows).
+    # api_key opzionale (gratuita su nvd.nist.gov): alza il rate limit da
+    # 5 a 50 richieste per 30s. Senza chiave l'app rallenta, non fallisce.
+    "nvd": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "cpe_url": "https://services.nvd.nist.gov/rest/json/cpes/2.0",
+        "api_key": "",
+        "timeout": 30,
+        "cache_ttl_hours": 12,
+    },
+    # MSRC (Microsoft Security Response Center): fix e numeri KB per i soli
+    # prodotti Microsoft. L'indice copre le ultime 'releases' pubblicazioni
+    # mensili: finestra piu' larga = piu' CVE storiche ma download piu' pesante.
+    "msrc": {
+        "url": "https://api.msrc.microsoft.com/cvrf/v3.0/updates",
+        "enabled": True,
+        "releases": 3,
+        "timeout": 60,
+        "cache_ttl_hours": 12,
+    },
     # Ticketing remediation (findings -> GitHub Issues / Jira).
     "ticketing": {
         "provider": "",            # "github" | "jira" | "" (disabilitato)

@@ -440,6 +440,67 @@
           </div>
         </section>
 
+        <!-- ── NVD ───────────────────────────────────────────────── -->
+        <section class="neural-panel rounded-2xl p-6 space-y-5">
+          <div class="flex items-center gap-3 mb-1">
+            <span class="material-symbols-outlined text-sky-500">travel_explore</span>
+            <h3 class="font-label-caps text-label-caps text-slate-800 tracking-[0.15em]">NVD (NIST)</h3>
+          </div>
+          <p class="font-code-sm text-[11px] text-slate-500 leading-relaxed" data-i18n="settings.nvd_hint">
+            Fallback source for software OSV does not index — Windows desktop applications are matched by CPE.
+            The API key is optional and free (nvd.nist.gov): it raises the rate limit from 5 to 50 requests per 30s.
+            Without it the resolver is slower, not broken.
+          </p>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.nvd_key">NVD API Key (optional)</label>
+              <input id="nvdKey" type="password" autocomplete="off" class="setting-input" placeholder="—" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.nvd_to">NVD Timeout (s)</label>
+              <input id="nvdTimeout" type="number" min="5" max="120" class="setting-input" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.nvd_ttl">Cache TTL (hours)</label>
+              <input id="nvdTtl" type="number" min="1" max="168" class="setting-input" />
+            </div>
+          </div>
+        </section>
+
+        <!-- ── MSRC ──────────────────────────────────────────────── -->
+        <section class="neural-panel rounded-2xl p-6 space-y-5">
+          <div class="flex items-center gap-3 mb-1">
+            <span class="material-symbols-outlined text-violet-500">shield_with_house</span>
+            <h3 class="font-label-caps text-label-caps text-slate-800 tracking-[0.15em]">MICROSOFT MSRC</h3>
+          </div>
+          <p class="font-code-sm text-[11px] text-slate-500 leading-relaxed" data-i18n="settings.msrc_hint">
+            Microsoft products only, but the only source that publishes KB numbers — the update you actually install
+            on Windows. The index covers the last N monthly releases: a wider window means more historical CVEs and
+            heavier downloads.
+          </p>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.msrc_enabled">Enabled</label>
+              <select id="msrcEnabled" class="setting-input">
+                <option value="1">yes</option>
+                <option value="0">no</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.msrc_rel">Indexed releases (months)</label>
+              <input id="msrcReleases" type="number" min="1" max="24" class="setting-input" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.msrc_to">MSRC Timeout (s)</label>
+              <input id="msrcTimeout" type="number" min="10" max="300" class="setting-input" />
+            </div>
+            <div class="space-y-1">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.msrc_ttl">Cache TTL (hours)</label>
+              <input id="msrcTtl" type="number" min="1" max="168" class="setting-input" />
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
   </div>
@@ -584,6 +645,15 @@
         $('osvUrl').value = cfg.osv?.url || '';
         $('osvTimeout').value = cfg.osv?.timeout ?? 15;
 
+        // NVD / MSRC (fonti di fallback per il software non coperto da OSV)
+        $('nvdKey').value = cfg.nvd?.api_key || '';
+        $('nvdTimeout').value = cfg.nvd?.timeout ?? 30;
+        $('nvdTtl').value = cfg.nvd?.cache_ttl_hours ?? 12;
+        $('msrcEnabled').value = (cfg.msrc?.enabled === false) ? '0' : '1';
+        $('msrcReleases').value = cfg.msrc?.releases ?? 3;
+        $('msrcTimeout').value = cfg.msrc?.timeout ?? 60;
+        $('msrcTtl').value = cfg.msrc?.cache_ttl_hours ?? 12;
+
         // Ticketing
         applyTkProvider(cfg.ticketing?.provider || '');
         $('ghToken').value = cfg.ticketing?.github_token || '';
@@ -633,6 +703,17 @@
         osv: {
           url: $('osvUrl').value,
           timeout: parseInt($('osvTimeout').value) || 15,
+        },
+        nvd: {
+          api_key: $('nvdKey').value.trim(),
+          timeout: parseInt($('nvdTimeout').value) || 30,
+          cache_ttl_hours: parseInt($('nvdTtl').value) || 12,
+        },
+        msrc: {
+          enabled: $('msrcEnabled').value === '1',
+          releases: parseInt($('msrcReleases').value) || 3,
+          timeout: parseInt($('msrcTimeout').value) || 60,
+          cache_ttl_hours: parseInt($('msrcTtl').value) || 12,
         },
         ticketing: {
           provider: tkProvider,

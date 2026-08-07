@@ -460,7 +460,9 @@ start.sh ──► encdec setup ──► wizard config.json ──► .venv + d
 | `config.py` | Reads/writes `config.json`; embedded defaults |
 | `osint.py` | Identifies product and version from free-text description |
 | `scanner.py` | Asset scanning: TCP banner grabbing + SSH audit (with password decrypt) |
-| `cve.py` | CVE lookup on OSV.dev + AI summary + remediation |
+| `cve.py` | CVE lookup on OSV.dev + AI summary + remediation; orchestrates the fix-plan source cascade |
+| `nvd.py` | NVD (NIST) source: CPE resolution + version-range matching for software OSV does not index |
+| `msrc.py` | Microsoft MSRC source: monthly CVRF index → fixed builds and KB numbers for Microsoft products |
 | `posture.py` | Per-asset SCA: package inventory + OSV |
 | `ingest.py` | Ingests external scanner reports (Trivy, Grype, Nuclei, Semgrep, Gitleaks, Trufflehog) |
 | `findings.py` | Finding lifecycle: fingerprint dedup, workflow states, SLA |
@@ -502,9 +504,55 @@ Results reach the UI **one asset at a time** via Server-Sent Events.
 ### 3 · CVE lookup and AI summary
 
 - **OSV.dev** — structured query (no API key)
+- **NVD (NIST)** — CPE-matched fallback for software OSV does not index (see below)
+- **Microsoft MSRC** — KB numbers for Microsoft products (see below)
 - **AI summary** — Ollama or Claude API
 - **Remediation** — AI-generated suggestions
 - **Triage report** — consolidated report (language: `it` / `en`)
+
+#### Source cascade
+
+No single database covers a mixed estate. OSV reasons in terms of **package
+ecosystems** and has no `Windows` ecosystem, so a query for Notepad++ or PuTTY
+answers `400 invalid ecosystem`. The fix-plan resolver therefore queries sources
+in order, and **every result declares which one produced it** — a fix version
+without a provenance is an assertion nobody can check.
+
+| Source | Covers | Why it is in the chain |
+|--------|--------|------------------------|
+| **OSV.dev** | Package ecosystems: Debian, Ubuntu, PyPI, npm, Maven, crates.io… | Exact version-range matching, no API key. First choice wherever the package has an ecosystem. |
+| **Microsoft MSRC** | Microsoft products only: Windows, Edge, Defender, Office… | The only source publishing **KB numbers**. On Windows the real remediation is "install KB5087538", not "reach build X" — so Microsoft products hit MSRC before NVD. |
+| **NVD (NIST)** | Everything else, matched by CPE: Notepad++, PuTTY, 7-Zip, VLC, Wireshark… | Fills the gap OSV leaves on Windows desktop software. |
+
+Routing: an ecosystem OSV knows goes to OSV; `Windows`/`macOS`/empty skips it
+(the 400 is guaranteed) and goes to MSRC when the product is Microsoft,
+otherwise NVD. A **transient** failure from a source is surfaced as-is and never
+masked by falling through to the next one — an outage must not silently become
+"no vulnerabilities".
+
+The response carries `source`, `source_label` and `sources_tried`, plus
+`kbs` (MSRC), `vendors` and `fix_after` (NVD), and `window` (the MSRC months
+indexed). In the UI the source appears as a coloured chip beside the version, in
+the resolver overlay, and as a `Fix_Source` column in the CSV/XLS export.
+
+**Two design decisions worth knowing before quoting a number:**
+
+- **NVD is queried with a wildcard vendor.** The same product lives under
+  several vendor names — Notepad++ appears as `notepad-plus-plus`, `don_ho` and
+  `notepad_plus_plus`, and the CVEs hang off only one of them. Pinning a vendor
+  returns **zero on a product that has thirteen**: a false negative, which is the
+  worst possible failure here. The vendors actually matched are reported back and
+  shown in the chip tooltip.
+- **MSRC is indexed over a monthly window** (`msrc.releases`, default 3). It is
+  authoritative for *"which build do I need"*; it is partial for *"how many CVEs
+  does this product have in total"*. The covered window travels with the result.
+
+Configuration lives in Settings → **NVD** / **MSRC** (`nvd` and `msrc` sections
+of `config.json`). The NVD API key is optional and free
+([nvd.nist.gov](https://nvd.nist.gov/developers/request-an-api-key)): it raises
+the rate limit from 5 to 50 requests per 30 s. Without it the resolver is slower,
+not broken. Responses and the MSRC index are cached in-process with a
+configurable TTL (default 12 h).
 
 **RAG pattern** (UI: `RAG · CVE INTELLIGENCE` panel): CVE IDs fetched live from OSV.dev are injected into the LLM prompt (retrieve → augment → generate), with an anti-hallucination constraint *"don't invent identifiers not listed"*. It's an architectural, API-based RAG, not embeddings/vector-store based.
 

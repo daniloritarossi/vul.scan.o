@@ -88,14 +88,14 @@
           VUL.SCAN.O is a web application for <strong>authorized vulnerability audits</strong>. It keeps an inventory of
           the hosts you are allowed to test, identifies vulnerable software starting from a free-text description (even
           without an explicit CVE), runs network and software-composition scans, enriches every result with public
-          vulnerability data (OSV.dev, EPSS, CISA KEV) and tracks the resulting findings through a complete remediation
+          vulnerability data (OSV.dev, NVD, Microsoft MSRC, EPSS, CISA KEV) and tracks the resulting findings through a complete remediation
           lifecycle with deduplication, workflow states, SLAs and ticketing.
         </p>
         <p lang="it">
           VUL.SCAN.O è un'applicazione web per <strong>audit di vulnerabilità autorizzati</strong>. Gestisce un
           inventario degli host che sei autorizzato a testare, identifica il software vulnerabile partendo da una
           descrizione in testo libero (anche senza un CVE esplicito), esegue scansioni di rete e di composizione
-          software, arricchisce ogni risultato con dati pubblici sulle vulnerabilità (OSV.dev, EPSS, CISA KEV) e segue
+          software, arricchisce ogni risultato con dati pubblici sulle vulnerabilità (OSV.dev, NVD, Microsoft MSRC, EPSS, CISA KEV) e segue
           i finding risultanti lungo un ciclo di vita completo di remediation con deduplica, stati di workflow, SLA e
           ticketing.
         </p>
@@ -214,8 +214,8 @@
         <h2><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></h2>
 
         <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
-        <p lang="en">Seven ideas explain almost every screen in the product. Read this once and the rest of the manual becomes obvious.</p>
-        <p lang="it">Sette concetti spiegano quasi ogni schermata del prodotto. Leggili una volta e il resto del manuale diventa evidente.</p>
+        <p lang="en">Eight ideas explain almost every screen in the product. Read this once and the rest of the manual becomes obvious.</p>
+        <p lang="it">Otto concetti spiegano quasi ogni schermata del prodotto. Leggili una volta e il resto del manuale diventa evidente.</p>
 
         <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio</span></h3>
         <div class="scroll-x">
@@ -259,6 +259,14 @@
                   <span lang="it">Un difetto deduplicato con fingerprint stabile, stato di workflow (<code>open → triaged → accepted | fixed</code>), SLA di remediation e link opzionale al ticket. Alimentato dalle scansioni di postura <em>e</em> dai report importati di scanner esterni.</span>
                 </td>
                 <td><a href="07-findings.html">/findings</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Vulnerability sources</strong></span><span lang="it"><strong>Fonti delle vulnerabilità</strong></span></td>
+                <td>
+                  <span lang="en">No single database covers a mixed estate, so lookups run in cascade: <strong>OSV</strong> for package ecosystems (Debian, PyPI, npm…), <strong>MSRC</strong> for Microsoft products — the only source publishing the KB numbers you actually install — and <strong>NVD</strong>, matched by CPE, for the Windows desktop software OSV does not index. Every answer says which source produced it: a fix version without a provenance is an assertion nobody can check.</span>
+                  <span lang="it">Nessun database singolo copre un parco misto, quindi le interrogazioni vanno in cascata: <strong>OSV</strong> per gli ecosistemi di pacchetti (Debian, PyPI, npm…), <strong>MSRC</strong> per i prodotti Microsoft — l'unica fonte che pubblica i numeri KB da installare davvero — e <strong>NVD</strong>, via CPE, per il software desktop Windows che OSV non indicizza. Ogni risposta dichiara la fonte che l'ha prodotta: una fix version senza provenienza è un'affermazione che nessuno può verificare.</span>
+                </td>
+                <td><a href="05-posture.html">/intel</a>, <a href="11-settings.html">Settings</a></td>
               </tr>
               <tr>
                 <td><span lang="en"><strong>Contextual risk</strong></span><span lang="it"><strong>Rischio contestuale</strong></span></td>
@@ -615,7 +623,7 @@
           <a class="card" href="11-settings.html">
             <div class="t">11 <span lang="en">Settings</span><span lang="it">Impostazioni</span></div>
             <div class="r">/settings</div>
-            <div class="d"><span lang="en">AI/LLM, OSINT, scanner, OSV, SMTP and auth policy, ticketing.</span><span lang="it">AI/LLM, OSINT, scanner, OSV, SMTP e policy di autenticazione, ticketing.</span></div>
+            <div class="d"><span lang="en">AI/LLM, OSINT, scanner, vulnerability sources (OSV, NVD, MSRC), SMTP and auth policy, ticketing.</span><span lang="it">AI/LLM, OSINT, scanner, fonti vulnerabilità (OSV, NVD, MSRC), SMTP e policy di autenticazione, ticketing.</span></div>
           </a>
           <a class="card" href="12-reference.html">
             <div class="t">12 <span lang="en">Reference</span><span lang="it">Riferimento</span></div>

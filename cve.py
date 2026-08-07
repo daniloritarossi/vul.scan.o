@@ -10,6 +10,12 @@ Due livelli:
    e i relativi id. Deterministico, nessuna API key, matching esatto sui range
    di versione affetti. E' la fonte autorevole per "quante CVE ci sono".
 
+   OSV pero' ragiona per ecosistemi di PACCHETTI e non ha un ecosistema
+   'Windows': per le applicazioni desktop non risponde. Il fix plan usa quindi
+   una cascata di fonti (vedi compute_fix_plan): MSRC per i prodotti Microsoft
+   — l'unica che pubblica i numeri KB — e NVD, che ragiona per CPE, per tutto
+   il resto del software Windows.
+
 2) SINTESI IN LINGUAGGIO NATURALE: LLM locale (Ollama) o Claude (Anthropic)
    configurabile via config.json. Best-effort: se l'LLM non e' raggiungibile
    la sintesi e' vuota e il sistema mostra solo il conteggio.
@@ -19,11 +25,16 @@ inventarne; il conteggio "ufficiale" viene sempre da OSV, mai dal modello.
 """
 
 import json as _json
+import logging
 import re as _re
 
 import requests
 
+import msrc
+import nvd
 from config import load_config
+
+logger = logging.getLogger("vfa.cve")
 
 try:
     import anthropic as _anthropic
@@ -210,37 +221,92 @@ def _max_ver(values: list) -> str | None:
     return max(vals, key=_ver_key) if vals else None
 
 
-def compute_fix_plan(name: str, ecosystem: str | None = None,
-                     version: str | None = None, timeout: int | None = None) -> dict:
+def _osv_detail(resp) -> str:
+    """Messaggio d'errore di OSV, se il corpo e' quello atteso."""
+    try:
+        return str((resp.json() or {}).get("message") or "").strip()
+    except Exception:
+        return ""
+
+
+def _osv_fixplan_query(pname: str, ecosystem: str | None, version: str | None,
+                       timeout: int) -> tuple:
     """
-    Fix plan per (pacchetto, ecosistema): per ogni vulnerabilita' OSV estrae le
-    versioni 'fixed' dai range affected e calcola la versione MINIMA che le
+    Interroga OSV per il fix plan.
+
+    OSV accetta solo i propri ecosistemi (Debian, PyPI, npm, ...) e NON ha un
+    ecosistema 'Windows': le applicazioni desktop dell'inventario Windows
+    ricevono un 400 'invalid ecosystem'. In quel caso NON si ripiega su una
+    query senza ecosistema: per un nome come 'putty' OSV risponderebbe con i
+    pacchetti Alpine/Debian/Mageia omonimi, e proporre '0.84-1.mga9' come
+    aggiornamento per un PuTTY installato su Windows sarebbe un'istruzione di
+    remediation sbagliata — peggio di nessuna risposta.
+
+    La query senza ecosistema si usa solo quando il chiamante non ne ha uno
+    (non c'e' alternativa) e il risultato viene marcato come cross-ecosistema.
+
+    Ritorna (vulns, eco_usato, errore, ritentabile):
+      - errore None       -> query riuscita
+      - ritentabile True  -> guasto transitorio (rete, timeout, 5xx)
+      - ritentabile False -> OSV non copre questo pacchetto/ecosistema
+    """
+    pkg: dict = {"name": pname}
+    if ecosystem:
+        pkg["ecosystem"] = ecosystem
+    payload: dict = {"package": pkg}
+    if version:
+        payload["version"] = version
+    elif not ecosystem:
+        # Senza ne' ecosistema ne' versione OSV risponde 'invalid query':
+        # inutile spendere la chiamata.
+        return None, None, "OSV requires an ecosystem or a version", False
+
+    try:
+        resp = requests.post(_osv_url(), json=payload,
+                             headers={"Content-Type": "application/json"},
+                             timeout=timeout)
+    except Exception as exc:                          # rete, DNS, timeout
+        return None, ecosystem, str(exc), True
+    if resp.status_code == 200:
+        return (resp.json().get("vulns") or []), ecosystem, None, False
+    if resp.status_code == 400:                       # query non valida per OSV
+        return None, ecosystem, _osv_detail(resp) or "invalid query", False
+    return None, ecosystem, f"OSV HTTP {resp.status_code}", True
+
+
+def _osv_fix_plan(name: str, ecosystem: str | None = None,
+                  version: str | None = None, timeout: int | None = None) -> dict:
+    """
+    Fix plan da OSV per (pacchetto, ecosistema): per ogni vulnerabilita' estrae
+    le versioni 'fixed' dai range affected e calcola la versione MINIMA che le
     risolve tutte (= max delle fixed, per-vuln si prende la fix piu' recente
     tra i branch cosi' l'upgrade unico copre ogni caso).
 
-    Ritorna: {"package", "ecosystem", "current", "cves": [{"id", "fixed"}],
-              "fix_version": str|None, "unfixed": int, "error": str|None}.
+    'supported' False significa che OSV non indicizza questo pacchetto (tipico
+    delle app desktop Windows): non e' un guasto e ritentare non cambiera'
+    nulla — il chiamante passa alla fonte successiva. 'error' e' riservato ai
+    guasti davvero transitori.
     """
     base = {"package": name, "ecosystem": ecosystem, "current": version,
-            "cves": [], "fix_version": None, "unfixed": 0, "error": None}
+            "cves": [], "fix_version": None, "unfixed": 0,
+            "supported": True, "cross_ecosystem": not ecosystem,
+            "error": None, "detail": None, "source": SOURCE_OSV}
     if not name:
         return base
     if timeout is None:
         timeout = _osv_timeout()
-    pkg: dict = {"name": _osv_pkg_name(name)}
-    if ecosystem:
-        pkg["ecosystem"] = ecosystem
-    try:
-        resp = requests.post(_osv_url(), json={"package": pkg},
-                             headers={"Content-Type": "application/json"},
-                             timeout=timeout)
-        resp.raise_for_status()
-        vulns = resp.json().get("vulns") or []
-    except Exception as exc:
-        base["error"] = str(exc)
-        return base
 
     pname = _osv_pkg_name(name).lower()
+    vulns, _used_eco, err, retryable = _osv_fixplan_query(
+        pname, ecosystem, version, timeout)
+    if err is not None and retryable:
+        base["error"] = err
+        return base
+    if vulns is None:
+        base["supported"] = False
+        base["detail"] = err or "OSV does not index this package"
+        return base
+
     eco = (ecosystem or "").lower()
     cves = []
     for v in vulns:
@@ -257,6 +323,12 @@ def compute_fix_plan(name: str, ecosystem: str | None = None,
             if eco and not (aeco == eco or aeco.startswith(eco + ":") or eco.startswith(aeco)):
                 continue
             for rng in (aff.get("ranges") or []):
+                # I range GIT hanno come 'fixed' un commit SHA, non una
+                # versione installabile: finirebbe in cima all'ordinamento e
+                # verrebbe mostrato come "aggiorna a eb31d845..." — istruzione
+                # inseguibile. Contano solo i range con versioni vere.
+                if (rng.get("type") or "").upper() == "GIT":
+                    continue
                 for ev in (rng.get("events") or []):
                     if ev.get("fixed"):
                         fixes.append(ev["fixed"])
@@ -265,6 +337,105 @@ def compute_fix_plan(name: str, ecosystem: str | None = None,
     base["cves"] = cves
     base["fix_version"] = _max_ver([c["fixed"] for c in cves])
     base["unfixed"] = sum(1 for c in cves if not c["fixed"])
+    return base
+
+
+# --------------------------------------------------------------------------
+# CASCATA DELLE FONTI
+#
+# Nessuna fonte copre tutto il parco:
+#   OSV  -> ecosistemi di pacchetti (Debian, PyPI, npm, Maven...). Non ha un
+#           ecosistema 'Windows': per le app desktop risponde 400.
+#   MSRC -> solo prodotti Microsoft, ma e' l'unica che pubblica i numeri KB,
+#           cioe' la remediation davvero eseguibile su Windows.
+#   NVD  -> ragiona per CPE e copre il software desktop che manca a OSV.
+#
+# L'ordine non e' arbitrario: per un prodotto Microsoft la risposta piu' utile
+# e' la KB, quindi MSRC precede NVD. Il campo 'source' accompagna sempre il
+# risultato: chi legge un numero deve poter risalire a chi lo afferma.
+# --------------------------------------------------------------------------
+
+SOURCE_OSV = "osv"
+SOURCE_NVD = "nvd"
+SOURCE_MSRC = "msrc"
+
+SOURCE_LABELS = {
+    SOURCE_OSV: "OSV.dev",
+    SOURCE_NVD: "NVD (NIST)",
+    SOURCE_MSRC: "Microsoft MSRC",
+}
+
+# Ecosistemi che l'inventario produce ma che OSV non ha: interrogarlo sarebbe
+# una chiamata sprecata con risposta 400 garantita.
+_NON_OSV_ECOSYSTEMS = {"windows", "macos", "darwin", "generic"}
+
+
+def _osv_capable(ecosystem: str | None) -> bool:
+    return (ecosystem or "").strip().lower() not in _NON_OSV_ECOSYSTEMS
+
+
+def compute_fix_plan(name: str, ecosystem: str | None = None,
+                     version: str | None = None, timeout: int | None = None) -> dict:
+    """
+    Fix plan con cascata di fonti. Ritorna sempre la stessa forma, arricchita
+    con la provenienza:
+
+      {"package", "ecosystem", "current", "cves": [{"id", "fixed", ...}],
+       "fix_version", "unfixed", "supported", "cross_ecosystem", "error",
+       "detail", "source", "source_label", "sources_tried",
+       "kbs": [...], "fix_after": str|None, "window": str|None,
+       "vendors": [...]}
+
+    'supported' False = nessuna fonte indicizza il pacchetto (non e' un guasto:
+    ritentare non cambia nulla). 'error' resta riservato ai guasti transitori.
+    """
+    attempted: list = []
+    base = {"package": name, "ecosystem": ecosystem, "current": version,
+            "cves": [], "fix_version": None, "unfixed": 0, "supported": True,
+            "cross_ecosystem": not ecosystem, "error": None, "detail": None,
+            "source": None, "source_label": None, "sources_tried": attempted,
+            "kbs": [], "fix_after": None, "window": None, "vendors": []}
+    if not name:
+        return base
+
+    def _stamp(result: dict, source: str) -> dict:
+        merged = {**base, **result}
+        merged["source"] = source
+        merged["source_label"] = SOURCE_LABELS.get(source, source)
+        merged["sources_tried"] = attempted
+        merged["package"] = name
+        merged["ecosystem"] = ecosystem
+        merged["current"] = version
+        return merged
+
+    # 1) Prodotti Microsoft, ma solo fuori dagli ecosistemi di pacchetti: un
+    #    'dotnet' pacchettizzato su Debian lo cura Debian, non MSRC.
+    if not _osv_capable(ecosystem) and msrc.is_microsoft(name):
+        attempted.append(SOURCE_MSRC)
+        plan = msrc.fix_plan(name, version)
+        if plan.get("error"):
+            logger.info("MSRC non disponibile per %s: %s", name, plan["error"])
+        elif plan.get("supported"):
+            return _stamp(plan, SOURCE_MSRC)
+
+    # 2) OSV per gli ecosistemi che conosce.
+    if _osv_capable(ecosystem):
+        attempted.append(SOURCE_OSV)
+        plan = _osv_fix_plan(name, ecosystem, version, timeout)
+        if plan.get("error"):
+            return _stamp(plan, SOURCE_OSV)          # guasto: non mascherarlo
+        if plan.get("supported"):
+            return _stamp(plan, SOURCE_OSV)
+
+    # 3) NVD: copre per CPE cio' che OSV non indicizza.
+    attempted.append(SOURCE_NVD)
+    plan = nvd.fix_plan(name, version, timeout)
+    if plan.get("supported") or plan.get("error"):
+        return _stamp(plan, SOURCE_NVD)
+
+    base["supported"] = False
+    base["detail"] = ("Not indexed by any configured source ("
+                      + ", ".join(SOURCE_LABELS.get(s, s) for s in attempted) + ")")
     return base
 
 

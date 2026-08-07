@@ -72,6 +72,8 @@ from auth import (AuthRequired, Forbidden, PasswordChangeRequired, CurrentUser,
                   password_policy_error, SESSION_COOKIE, SESSION_TTL, ROLES)
 from auth import _secret as _hmac_secret
 import evidence
+import msrc
+import nvd
 from mailer import (send_activation, send_reset, activation_link,
                     smtp_enabled, MailError)
 
@@ -814,6 +816,8 @@ def api_settings_get(user: CurrentUser = Depends(_admin_manager)):
         masked["ticketing"]["jira_api_token"] = "••••••••"
     if masked.get("smtp", {}).get("password"):
         masked["smtp"]["password"] = "••••••••"
+    if masked.get("nvd", {}).get("api_key"):
+        masked["nvd"]["api_key"] = "••••••••"
     return masked
 
 
@@ -844,6 +848,13 @@ async def api_settings_post(request: Request,
             cfg[section][key] = val
 
     save_config(cfg)
+    # Le fonti tengono in cache risposte e indici: dopo un cambio di chiave,
+    # timeout o finestra le voci vecchie sarebbero calcolate su impostazioni
+    # che non valgono piu'.
+    if "nvd" in body:
+        nvd.clear_cache()
+    if "msrc" in body:
+        msrc.clear_cache()
     return {"ok": True}
 
 
