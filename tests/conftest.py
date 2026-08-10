@@ -33,7 +33,7 @@ import app as app_module  # noqa: E402
 import auth  # noqa: E402
 import db  # noqa: E402
 
-ROLES = ("admin", "manager", "editor", "viewer")
+ROLES = ("admin", "manager", "editor", "auditor", "viewer", "stakeholder")
 ROLE_PASSWORD = "Ftest-Passw0rd-2026!"          # rispetta min_password_len=12
 USERNAME = "_ftest_{role}".format
 
@@ -91,8 +91,9 @@ def role_clients(role_user_ids):
 @pytest.fixture(scope="session")
 def cone_fixture(role_user_ids, role_clients):
     """
-    Due asset + due gruppi per esercitare il cono di visibilita' dell'editor:
-      - asset_in / group_in  -> assegnati all'editor di test
+    Due asset + due gruppi per esercitare il cono di visibilita' dei ruoli
+    scoped (editor, stakeholder):
+      - asset_in / group_in  -> assegnati all'editor e allo stakeholder di test
       - asset_out / group_out -> NON assegnati (fuori scope)
     """
     admin_c = role_clients["admin"]
@@ -114,7 +115,9 @@ def cone_fixture(role_user_ids, role_clients):
     admin_c.put(f"/api/groups/{group_in}/members",
                 json={"user_ids": [role_user_ids["editor"]]})
     admin_c.put(f"/api/assets/{asset_in}/assignments",
-                json={"user_ids": [role_user_ids["editor"]], "group_ids": []})
+                json={"user_ids": [role_user_ids["editor"],
+                                   role_user_ids["stakeholder"]],
+                      "group_ids": []})
 
     yield {"asset_in": asset_in, "asset_out": asset_out,
            "group_in": group_in, "group_out": group_out}

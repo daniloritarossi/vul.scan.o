@@ -38,6 +38,41 @@ Backend **FastAPI** · Frontend **HTML + Tailwind** (CDN) · real-time results v
 
 ---
 
+## Who it's for
+
+The product is built around a small number of **people**, each of whom maps to
+exactly one of the [six RBAC roles](#roles). Roles describe **capabilities, not
+job titles**: several personas legitimately share one role, and that is
+deliberate — three near-identical roles would only drift apart over time.
+
+| Persona | Role | What they come here to do | Where they live |
+|---|---|---|---|
+| **CISO / CSO** | `auditor` | Read the posture number and its trend, then pull the signed evidence when someone asks for proof. Never changes state. | `/`, `/risk`, `/audit` |
+| **Compliance officer, external auditor** | `auditor` | Answer *"how many criticals were open on 31 March, and prove it"*: point-in-time evidence, hash-chain verification, NIS2 art. 21(2) and OWASP mapping. | `/audit`, `/api/findings/as-of` |
+| **Vulnerability management lead, security manager** | `manager` | Prioritise with EPSS/KEV plus asset business context, own the SLAs, hand work out by assigning visibility cones, open tickets. | `/risk`, `/findings`, `/assets` |
+| **Security / vulnerability analyst** | `editor` | The daily operator: triage findings, run scans, import Trivy/Grype/Nuclei/Semgrep reports, apply the multi-source fix plan. Sees only their assigned assets. | `/findings`, `/intel`, `/` |
+| **DevSecOps / AppSec engineer** | `editor` | Export CycloneDX 1.5 / SPDX 2.3 for the pipeline, import SAST and secret-scanning output, push findings to GitHub Issues or Jira. | `/sbom`, `/findings` |
+| **Pentester, authorized external tester** | `editor` or `manager` | The active side: network scans, free-text software identification without a CVE, OSINT enrichment — strictly on assets they are authorized to test. | `/intel`, `/`, `/assets` |
+| **Platform / IT administrator** | `admin` | Installs and keeps it running: accounts and groups, SMTP, AI provider, ticketing credentials, the Supabase stack. Does no security work. | `/admin`, `/settings` |
+| **System or asset owner, department head** | `stakeholder` | Non-security: sees the patch status of *their own* hosts and what to do about it — read-only, and only inside their cone. | `/`, `/findings`, `/risk` |
+| **Board observer, executive stakeholder** | `viewer` | Fleet-wide numbers, read-only, no audit ledger (it names people). | `/`, `/risk` |
+| **MSSP / consultancy** | `admin` + groups | One instance, several clients kept apart by `asset_assignments`; the signed evidence report is the deliverable. | `/admin`, `/audit` |
+
+**Who it is *not* for.** There is no SOC L1 / incident responder persona: the
+product has no alerting, no webhooks, no SIEM integration and no real-time
+detection. It is an **ASPM / vulnerability management** tool — it tells you what
+is exposed and whether it got better since last month, not that something is
+happening right now.
+
+> **One thing worth staffing explicitly.** The contextual risk score in
+> [`risk.py`](risk.py) is driven by `environment`, `internet_facing` and
+> `criticality` on each asset. Nobody owns those fields by default. Left at
+> `criticality = 3`, contextual prioritisation degrades to plain CVSS ordering
+> — decide early who fills them in (usually the manager, with input from the
+> stakeholder who owns the system).
+
+---
+
 ## Minimum requirements
 
 ### Operating system
@@ -925,55 +960,107 @@ seeds a default administrator:
 | **admin** | Everything, including application configuration and user/group management |
 | **manager** | Everything except writing configuration and managing users; manages asset assignments; full audit |
 | **editor** | Works **only inside the visibility cone**: the assets assigned to them directly or through one of their groups |
-| **viewer** | Read-only: no scans, no imports, no exports, no audit; usernames redacted |
+| **auditor** | Read-only over the **whole fleet**, plus the audit ledger, point-in-time evidence and signed report. Writes nothing at all; asset usernames redacted |
+| **viewer** | Read-only over the **whole fleet**: no scans, no imports, no exports, no audit; usernames redacted |
+| **stakeholder** | Read-only **inside the visibility cone**: sees only the assets assigned to them or to one of their groups, and cannot write anything — not even there |
+
+**Why `auditor` exists as a separate role.** The people who need the audit
+ledger — CISO, compliance officer, external auditor — previously had to be
+given `manager`, which also grants scans, imports, status changes and
+assignment management. That is far more authority than an observer should
+hold. The audit routes were gated by the *writer* dependency, i.e. a read
+protected by a write alias ("anyone who is not a viewer"), which left out
+precisely the person whose job is to read it.
+
+It is a distinct role rather than a wider `viewer` for two reasons: the ledger
+exposes `actor_name`, i.e. activity attributable to an identified person — a
+different sensitivity class from vulnerability counts — and widening `viewer`
+would grant that retroactively to every viewer account already created.
+
+**Why `stakeholder` exists as a separate role.** Write permission and asset
+visibility are two independent axes, but until this role only one combination
+of "restricted" existed: `editor`, scoped *and* able to write. A non-security
+asset owner — the department head who has to see the patch status of their own
+twelve servers — had to be given either `viewer` (reads the entire fleet,
+including other departments' critical findings) or `editor` (sees only their
+own assets, but can edit them and launch scans against them). `stakeholder`
+fills the empty cell: read-only **and** scoped. It carries no audit access, for
+the same `actor_name` reason that keeps the ledger out of `viewer`.
+
+The distinction is enforced by two disjoint lists in `auth.py` —
+`UNSCOPED_ROLES` (who sees the whole fleet) and `READONLY_ROLES` (who cannot
+write) — and every read endpoint filters through `visible_asset_ids()` /
+`visible_asset_ips()` by the `scoped` property, never by role name, so the new
+role inherits the cone with no per-endpoint changes.
+
+> **Upgrading an existing installation.** The `users.role` CHECK constraint
+> lists the roles explicitly, and Postgres `init/` scripts only run on a fresh
+> volume — so on an existing database, creating a user with a newly added role
+> fails until the constraint is replaced. `01-schema.sql` carries an idempotent
+> `DO $$` block that swaps it (it triggers on any constraint that predates the
+> newest role, so a database still stuck before `auditor` is fixed in the same
+> pass); to apply it to a database that is already running, without recreating
+> the volume:
+>
+> ```bash
+> docker exec -i vfa-supabase-db psql -U postgres -d postgres <<'SQL'
+> ALTER TABLE public.users DROP CONSTRAINT users_role_check;
+> ALTER TABLE public.users ADD CONSTRAINT users_role_check
+>   CHECK (role IN ('admin','manager','editor','auditor','viewer','stakeholder'));
+> SQL
+> docker kill -s SIGUSR1 vfa-supabase-rest   # reload the PostgREST schema cache
+> ```
 
 ### Visibility cone
 
-The editor's scope is defined by **asset assignments**, managed from the
-`ASSIGNED TO` column of the `/assets` page (admin/manager only):
+The scope of the **scoped roles** — `editor` (writes inside the cone) and
+`stakeholder` (only reads it) — is defined by **asset assignments**, managed
+from the `ASSIGNED TO` column of the `/assets` page (admin/manager only):
 
 - an asset can be assigned to one or more **users** and/or **groups**;
 - a user can belong to **multiple groups** (managed in `/admin`);
-- an editor sees an asset if it is assigned to them **or** to a group they belong to;
-- an unassigned ("orphan") asset is visible only to admin/manager/viewer;
+- a scoped user sees an asset if it is assigned to them **or** to a group they belong to;
+- an unassigned ("orphan") asset is visible only to admin/manager/auditor/viewer;
 - an editor creating an asset gets it **auto-assigned** to themselves (or to one
   of their groups via `assign_group_id`), so they can never create assets
   outside their own cone;
 - editors **cannot** change assignments (self-escalation prevention): only
-  admin and manager can.
+  admin and manager can;
+- a stakeholder with no assignment sees an **empty** inventory, not the whole
+  fleet: the cone fails closed.
 
-Aggregates are **recomputed inside the cone**, not masked: an editor's
+Aggregates are **recomputed inside the cone**, not masked: a scoped user's
 `/api/risk` score is calculated only on their assets, so nothing leaks about
 the rest of the fleet. In `/api/risk/trend` the per-run global counters are
-omitted for editors for the same reason.
+omitted for scoped roles for the same reason.
 
 ### Permission matrix
 
-| Endpoint | admin | manager | editor | viewer |
-|---|---|---|---|---|
-| `GET /api/assets`, `/api/assets/all` | all | all | only assigned assets | all, `username` redacted |
-| `POST /api/assets` | ✅ | ✅ | ✅ auto-assigned to self/own group | 403 |
-| `PUT /api/assets/{id}/assignments` | ✅ any user/group | ✅ any user/group | 403 (self-escalation) | 403 |
-| `PUT/PATCH/DELETE /api/assets/{id}` | ✅ | ✅ | ✅ only in scope | 403 |
-| `GET/POST/PUT/DELETE /api/users` | ✅ | GET only | 403 | 403 |
-| `GET /api/groups` | ✅ all | ✅ all | own groups only | 403 |
-| `POST/DELETE /api/groups`, `PUT .../members` | ✅ | 403 | 403 | 403 |
-| `GET /api/findings` | all | all | findings of assigned assets | all, read-only |
-| `POST /api/findings/import` | ✅ | ✅ | ✅ out-of-scope rows skipped (with count) | 403 |
-| `PATCH /api/findings/{id}/status` | ✅ | ✅ | ✅ only in scope | 403 |
-| `POST /api/findings/{id}/ticket` | ✅ | ✅ | ✅ only in scope | 403 |
-| `POST /api/findings/scan-local` | ✅ | ✅ | ✅ `asset_ip` required and in scope | 403 |
-| `GET /api/scan`, `/api/posture/scan` | ✅ | ✅ | only assigned assets | 403 |
-| `GET /api/settings` | ✅ | ✅ read | 403 | 403 |
-| `POST /api/settings` (app configuration) | ✅ **admin only** | 403 | 403 | 403 |
-| `GET /api/risk`, `/api/risk/trend` | all | all | recomputed on the cone only | all |
-| `GET /api/sbom` | full | full | cone only | full |
-| `GET /api/sbom/export` | full | full | cone only | 403 |
-| `GET /api/audit` | **all** | **all** | own-scope results only | 403 |
-| `GET /api/findings/as-of` (point-in-time evidence) | **all** | **all** | cone only, counts recomputed | 403 |
-| `GET /api/audit/verify`, `/api/audit/findings-verify`, `/api/audit/posture-verify` | ✅ | ✅ | ✅ | 403 |
-| `GET /api/audit/evidence` (signed report) | full | full | cone only, stated in `scope` | 403 |
-| `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | 403 |
+| Endpoint | admin | manager | editor | auditor | viewer | stakeholder |
+|---|---|---|---|---|---|---|
+| `GET /api/assets`, `/api/assets/all` | all | all | only assigned assets | all, `username` redacted | all, `username` redacted | only assigned assets, `username` redacted |
+| `POST /api/assets` | ✅ | ✅ | ✅ auto-assigned to self/own group | 403 | 403 | 403 |
+| `PUT /api/assets/{id}/assignments` | ✅ any user/group | ✅ any user/group | 403 (self-escalation) | 403 | 403 | 403 |
+| `PUT/PATCH/DELETE /api/assets/{id}` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
+| `GET/POST/PUT/DELETE /api/users` | ✅ | GET only | 403 | 403 | 403 | 403 |
+| `GET /api/groups` | ✅ all | ✅ all | own groups only | 403 | 403 | 403 |
+| `POST/DELETE /api/groups`, `PUT .../members` | ✅ | 403 | 403 | 403 | 403 | 403 |
+| `GET /api/findings` | all | all | findings of assigned assets | all, read-only | all, read-only | assigned assets only, read-only |
+| `POST /api/findings/import` | ✅ | ✅ | ✅ out-of-scope rows skipped (with count) | 403 | 403 | 403 |
+| `PATCH /api/findings/{id}/status` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
+| `POST /api/findings/{id}/ticket` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
+| `POST /api/findings/scan-local` | ✅ | ✅ | ✅ `asset_ip` required and in scope | 403 | 403 | 403 |
+| `GET /api/scan`, `/api/posture/scan` | ✅ | ✅ | only assigned assets | 403 | 403 | 403 |
+| `GET /api/settings` | ✅ | ✅ read | 403 | 403 | 403 | 403 |
+| `POST /api/settings` (app configuration) | ✅ **admin only** | 403 | 403 | 403 | 403 | 403 |
+| `GET /api/risk`, `/api/risk/trend` | all | all | recomputed on the cone only | all | all | recomputed on the cone only |
+| `GET /api/sbom` | full | full | cone only | full | full | cone only |
+| `GET /api/sbom/export` | full | full | cone only | **full** | 403 | 403 |
+| `GET /api/audit` | **all** | **all** | own-scope results only | **all** | 403 | 403 |
+| `GET /api/findings/as-of` (point-in-time evidence) | **all** | **all** | cone only, counts recomputed | **all** | 403 | 403 |
+| `GET /api/audit/verify`, `/api/audit/findings-verify`, `/api/audit/posture-verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
+| `GET /api/audit/evidence` (signed report) | full | full | cone only, stated in `scope` | **full** | 403 | 403 |
+| `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 
 Notes:
 
@@ -981,7 +1068,21 @@ Notes:
   secrets (API keys, ticketing credentials) and whoever writes it can redirect
   ticketing/LLM traffic — that is a global privilege, no per-cone variant makes sense.
 - **`GET /api/scan` is an action, not a read**: the HTTP verb is misleading —
-  the scanner touches assets with credentials, so it is denied to viewers.
+  the scanner touches assets with credentials, so it is denied to viewers
+  and auditors alike.
+- **The audit family is guarded by a read dependency, not a write one.**
+  `_audit_reader` (`admin`, `manager`, `editor`, `auditor`) covers `/audit`,
+  `/api/audit*` and `/api/findings/as-of`; `_writer` (`admin`, `manager`,
+  `editor`) stays on the routes that actually change state. Adding a role to
+  one no longer silently grants the other.
+- **`auditor` gets SBOM export but not scans**: a CycloneDX/SPDX file is
+  read-only data and a normal audit deliverable, while a scan authenticates
+  against hosts.
+- **`stakeholder` reads the cone and nothing else**: same 403s as `viewer` on
+  every write and on the whole audit family, but the reads it does get are
+  narrowed to the assets assigned to them. `GET /api/asset/health` stays
+  available because it is confined to assets in scope — for a stakeholder that
+  means probing only their own hosts, a strictly narrower reach than `viewer`.
 - **Batch import with mixed hosts**: an editor importing a Trivy/Grype report
   containing out-of-scope hosts gets those rows silently skipped with a count
   in the response (`skipped_out_of_scope`), so CI pipelines don't break.
@@ -1038,9 +1139,10 @@ Empty host = email disabled, invitation links are handed to the admin manually.
 ### Data model (Supabase)
 
 ```
-users             (id, username UNIQUE, password_hash, role,
-                   email UNIQUE, email_verified_at, is_active,
-                   must_change_password, password_changed_at)
+users             (id, username UNIQUE, password_hash, email UNIQUE,
+                   email_verified_at, is_active, must_change_password,
+                   password_changed_at,
+                   role admin|manager|editor|auditor|viewer|stakeholder)
 groups            (id, name UNIQUE)
 user_groups       (user_id, group_id)              -- N:N membership
 asset_assignments (asset_id, user_id XOR group_id) -- the visibility cone

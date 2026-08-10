@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=38" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=39" />
   <script src="/static/vendor/chart.umd.min.js"></script>
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
@@ -26,7 +26,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=25"></script>
+  <script src="/static/i18n.js?v=27"></script>
   <script src="/static/tableutils.js"></script>
 </head>
 
@@ -194,7 +194,7 @@
 
     let charts = {};
     let currentRunId = null;
-    let isViewer = false;
+    let isReadOnly = false;
 
     async function loadRuns() {
       try {
@@ -352,7 +352,7 @@
 
     function envSelect(a) {
       const opts = [['unknown', 'Unknown'], ['production', 'Production'], ['staging', 'Staging'], ['dev', 'Dev']];
-      return `<select data-ctx="environment" data-id="${a.asset_id}" ${(isViewer || a.asset_id == null) ? 'disabled' : ''}
+      return `<select data-ctx="environment" data-id="${a.asset_id}" ${(isReadOnly || a.asset_id == null) ? 'disabled' : ''}
         class="bg-white border border-slate-200 rounded-lg px-2 py-1 font-code-sm text-[11px] text-slate-700 focus:outline-none focus:ring-1 focus:ring-cyan-300">
         ${opts.map(([v, l]) => `<option value="${v}" ${a.environment === v ? 'selected' : ''}>${l}</option>`).join('')}
       </select>`;
@@ -472,10 +472,13 @@
     window.addEventListener('langchange', () => { loadRisk(); loadTrend(); });
 
     (async function init() {
-      // Ruolo corrente -> select environment disabilitato per i viewer.
-      // Solo UI: l'enforcement vero è server-side su PATCH /api/assets/{id}/context (_writer).
+      // Ruolo corrente -> select environment disabilitato per i ruoli di sola
+      // lettura (auditor, viewer, stakeholder). Allowlist sui ruoli che
+      // scrivono davvero: un ruolo nuovo nasce read-only invece di ereditare
+      // i controlli. Solo UI: l'enforcement vero è server-side su
+      // PATCH /api/assets/{id}/context (_writer).
       const u = await (window.vfaUser || Promise.resolve(null));
-      isViewer = !!(u && u.role === 'viewer');
+      isReadOnly = !(u && ['admin', 'manager', 'editor'].includes(u.role));
       await loadRuns();
       await Promise.all([loadRisk(), loadTrend()]);
     })();

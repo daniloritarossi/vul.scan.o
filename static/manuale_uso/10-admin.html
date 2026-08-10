@@ -50,7 +50,7 @@
             <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
             <ol class="sub">
               <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
-              <li><a href="#roles"><span lang="en">The four roles</span><span lang="it">I quattro ruoli</span></a></li>
+              <li><a href="#roles"><span lang="en">The six roles</span><span lang="it">I sei ruoli</span></a></li>
               <li><a href="#users"><span lang="en">Users panel</span><span lang="it">Pannello utenti</span></a></li>
               <li><a href="#groups"><span lang="en">Groups panel</span><span lang="it">Pannello gruppi</span></a></li>
               <li><a href="#matrix"><span lang="en">Role matrix</span><span lang="it">Matrice dei ruoli</span></a></li>
@@ -102,7 +102,7 @@
 
       <!-- ======================================= ROLES -->
       <section class="block" id="roles">
-        <h2><span lang="en">The four roles</span><span lang="it">I quattro ruoli</span></h2>
+        <h2><span lang="en">The six roles</span><span lang="it">I sei ruoli</span></h2>
 
         <div class="scroll-x">
           <table>
@@ -130,9 +130,19 @@
                 <td><span lang="en">Team engineer.</span><span lang="it">Tecnico di team.</span></td>
               </tr>
               <tr>
+                <td><span class="badge b-audit">auditor</span></td>
+                <td><span lang="en">Read-only over the <strong>whole fleet</strong>, plus the audit ledger, point-in-time evidence and the signed report. Writes nothing at all — no scans, no imports, no status changes; asset usernames are redacted. SBOM export is allowed, because a CycloneDX/SPDX file is read-only data and a normal audit deliverable.</span><span lang="it">Sola lettura sull'<strong>intero parco macchine</strong>, più il registro di audit, l'evidenza point-in-time e il report firmato. Non scrive nulla — niente scansioni, niente import, niente cambi di stato; gli username degli asset sono oscurati. L'export SBOM è consentito, perché un file CycloneDX/SPDX è un dato di sola lettura e un normale deliverable d'audit.</span></td>
+                <td><span lang="en">CISO, compliance officer, external auditor.</span><span lang="it">CISO, compliance officer, auditor esterno.</span></td>
+              </tr>
+              <tr>
                 <td><span class="badge">viewer</span></td>
-                <td><span lang="en">Read-only: no scans, no imports, no exports, no audit page; asset usernames are redacted.</span><span lang="it">Sola lettura: nessuna scansione, nessun import, nessun export, nessuna pagina audit; gli username degli asset sono oscurati.</span></td>
-                <td><span lang="en">Auditor, stakeholder.</span><span lang="it">Auditor, stakeholder.</span></td>
+                <td><span lang="en">Read-only over the <strong>whole fleet</strong>: no scans, no imports, no exports, no audit page; asset usernames are redacted.</span><span lang="it">Sola lettura sull'<strong>intero parco macchine</strong>: nessuna scansione, nessun import, nessun export, nessuna pagina audit; gli username degli asset sono oscurati.</span></td>
+                <td><span lang="en">Board observer.</span><span lang="it">Osservatore di direzione.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">stakeholder</span></td>
+                <td><span lang="en">Read-only <strong>inside the visibility cone</strong>: sees only the assets assigned to them or to one of their groups, and cannot write anything — not even there. No audit page, no SBOM export; asset usernames are redacted.</span><span lang="it">Sola lettura <strong>dentro il cono di visibilità</strong>: vede solo gli asset assegnati a lui o a un suo gruppo, e non può scrivere nulla — nemmeno lì. Niente pagina audit, niente export SBOM; gli username degli asset sono oscurati.</span></td>
+                <td><span lang="en">System or asset owner, department head.</span><span lang="it">Owner di sistema o di asset, capo reparto.</span></td>
               </tr>
             </tbody>
           </table>
@@ -142,10 +152,46 @@
           role and group membership are re-read from the database on every request. There is no stale-claim window to
           wait out after a demotion.
         </p>
+        <p lang="en">
+          <strong>Why <em>auditor</em> is its own role rather than a wider <em>viewer</em>.</strong> The audit ledger
+          records <code>actor_name</code> — activity attributable to an identified person. That is a different
+          sensitivity class from vulnerability counts, so it is granted explicitly instead of appearing retroactively on
+          every viewer account already created. And it is one role, not three: a CISO, a compliance officer and an
+          external auditor need exactly the same capabilities, so giving each a role of its own would only produce
+          identical matrices that drift apart over time. Roles describe capabilities; the job title belongs on the
+          person, not on the permission set.
+        </p>
+        <p lang="en">
+          <strong>Why <em>stakeholder</em> exists.</strong> Writing and seeing are two independent axes, but for a long
+          time only one restricted combination existed: <em>editor</em>, scoped <em>and</em> able to write. A
+          non-security asset owner — the department head who has to see the patch status of their own twelve servers —
+          had to be given either <em>viewer</em>, which reads the entire fleet including other departments' critical
+          findings, or <em>editor</em>, which sees only their own assets but can also edit them and launch scans against
+          them. <em>stakeholder</em> fills the empty cell: read-only <strong>and</strong> scoped. With no assignment it
+          shows an empty inventory rather than the whole fleet — the cone fails closed.
+        </p>
         <p lang="it">
           I ruoli hanno effetto <strong>immediato</strong>: il token di sessione contiene solo l'id utente e la sua
           scadenza, e ruolo e appartenenza ai gruppi vengono riletti dal database a ogni richiesta. Non c'è alcuna
           finestra di claim obsoleti da attendere dopo una retrocessione.
+        </p>
+        <p lang="it">
+          <strong>Perché <em>auditor</em> è un ruolo a sé e non un <em>viewer</em> allargato.</strong> Il registro di
+          audit contiene <code>actor_name</code> — attività attribuibile a una persona identificata. È una classe di
+          sensibilità diversa dai conteggi di vulnerabilità, quindi va concessa esplicitamente invece di comparire
+          retroattivamente su tutti gli account viewer già creati. Ed è un ruolo solo, non tre: CISO, compliance officer
+          e auditor esterno hanno bisogno esattamente delle stesse capacità, quindi dare a ciascuno un ruolo proprio
+          produrrebbe solo matrici identiche destinate a divergere nel tempo. I ruoli descrivono capacità; il titolo
+          professionale sta sulla persona, non sul set di permessi.
+        </p>
+        <p lang="it">
+          <strong>Perché esiste <em>stakeholder</em>.</strong> Scrivere e vedere sono due assi indipendenti, ma per
+          molto tempo esisteva una sola combinazione ristretta: <em>editor</em>, scoped <em>e</em> in grado di scrivere.
+          Un owner di asset non-security — il capo reparto che deve vedere lo stato delle patch dei propri dodici server
+          — andava messo o su <em>viewer</em>, che però legge tutto il parco macchine, comprese le vulnerabilità critiche
+          degli altri reparti, o su <em>editor</em>, che vede solo i suoi asset ma li può anche modificare e ci può
+          lanciare scansioni. <em>stakeholder</em> riempie la casella vuota: sola lettura <strong>e</strong> scoped.
+          Senza assegnazioni mostra un inventario vuoto invece dell'intero parco: il cono fallisce in chiusura.
         </p>
       </section>
 
@@ -172,7 +218,7 @@
             <tbody>
               <tr><td><strong>username</strong></td><td><span lang="en">The login name — unique and required.</span><span lang="it">Il nome di accesso — unico e obbligatorio.</span></td></tr>
               <tr><td><strong>email (activation link)</strong></td><td><span lang="en">The destination for the one-time activation link — unique and required.</span><span lang="it">La destinazione del link di attivazione monouso — unica e obbligatoria.</span></td></tr>
-              <tr><td><span lang="en"><strong>Role selector</strong></span><span lang="it"><strong>Selettore ruolo</strong></span></td><td>admin / manager / editor / viewer</td></tr>
+              <tr><td><span lang="en"><strong>Role selector</strong></span><span lang="it"><strong>Selettore ruolo</strong></span></td><td>admin / manager / editor / auditor / viewer / stakeholder</td></tr>
               <tr>
                 <td><span class="badge b-acc">INVITE USER</span></td>
                 <td>
@@ -322,26 +368,35 @@
         <figure>
           <img src="img/admin-rolematrix.webp" alt="Role visibility matrix modal" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>The role visibility matrix</b> — an in-app reference for what each role can see and do, with
-              per-cell qualifiers.</span>
-            <span lang="it"><b>La matrice di visibilità dei ruoli</b> — un riferimento in-app su ciò che ogni ruolo può vedere e
-              fare, con qualificatori per cella.</span>
+            <span lang="en"><b>The role visibility matrix</b> — an in-app reference for what each of the six roles can see and
+              do, with per-cell qualifiers. Read the <b>AUDITOR</b> column downwards: everything that writes is denied,
+              while <em>Audit history</em>, <em>Point-in-time evidence</em> and <em>SBOM export</em> are full. Then read
+              <b>STAKEHOLDER</b>: the same denials, but the reads that remain say <em>cone only</em>.</span>
+            <span lang="it"><b>La matrice di visibilità dei ruoli</b> — un riferimento in-app su ciò che ognuno dei sei ruoli
+              può vedere e fare, con qualificatori per cella. Leggi la colonna <b>AUDITOR</b> dall'alto in basso: tutto
+              ciò che scrive è negato, mentre <em>Audit history</em>, <em>Point-in-time evidence</em> e <em>SBOM
+                export</em> sono pieni. Poi leggi <b>STAKEHOLDER</b>: gli stessi divieti, ma le letture che restano
+              dicono <em>solo cono</em>.</span>
           </figcaption>
         </figure>
 
         <p lang="en">
           The <span class="badge b-acc">ROLE MATRIX</span> button opens a modal listing every capability — assets
           view and write, asset assignments, users management, groups and membership, findings view and write, scans,
-          risk and trend, SBOM export, audit history, settings view and write — against the four roles. Its header states
-          the rule the whole product follows: <em>“Enforcement is server-side on every endpoint; the editor operates only
-            inside their visibility cone.”</em>
+          risk and trend, SBOM export, audit history, point-in-time evidence, settings view and write — against the six
+          roles. Its header states the rule the whole product follows: <em>“Enforcement is server-side on every endpoint;
+            editor and stakeholder operate only inside their visibility cone — the editor writes inside it, the
+            stakeholder only reads it. The auditor writes nothing at all, but is the only read-only role that can open
+            the audit ledger and export signed evidence.”</em>
         </p>
         <p lang="it">
           Il pulsante <span class="badge b-acc">ROLE MATRIX</span> apre una finestra che elenca ogni capacità — vista e
           scrittura degli asset, assegnazioni, gestione utenti, gruppi e appartenenze, vista e scrittura dei finding,
-          scansioni, rischio e tendenza, export SBOM, storico audit, vista e scrittura delle impostazioni — rispetto ai
-          quattro ruoli. L'intestazione dichiara la regola che l'intero prodotto segue: <em>«Enforcement is server-side
-            on every endpoint; the editor operates only inside their visibility cone.»</em>
+          scansioni, rischio e tendenza, export SBOM, storico audit, evidenza point-in-time, vista e scrittura delle
+          impostazioni — rispetto ai sei ruoli. L'intestazione dichiara la regola che l'intero prodotto segue:
+          <em>«Enforcement is server-side on every endpoint; editor and stakeholder operate only inside their visibility
+            cone — the editor writes inside it, the stakeholder only reads it. The auditor writes nothing at all, but is
+            the only read-only role that can open the audit ledger and export signed evidence.»</em>
         </p>
         <p lang="en">Cells are qualified rather than binary, which is what makes the matrix genuinely useful:</p>
         <p lang="it">Le celle sono qualificate invece che binarie, ed è ciò che rende la matrice davvero utile:</p>
@@ -350,7 +405,8 @@
           <li><em>cone only</em> — <span lang="en">limited to assigned assets.</span><span lang="it">limitato agli asset assegnati.</span></li>
           <li><em>cone only, auto-assigned on create</em> — <span lang="en">an editor's new assets land inside their own cone.</span><span lang="it">i nuovi asset di un editor finiscono nel suo stesso cono.</span></li>
           <li><em>recomputed on the cone</em> — <span lang="en">aggregates are rebuilt, not masked.</span><span lang="it">gli aggregati vengono ricostruiti, non mascherati.</span></li>
-          <li><em>all, usernames redacted</em> — <span lang="en">a viewer sees the assets but not the accounts.</span><span lang="it">un viewer vede gli asset ma non gli account.</span></li>
+          <li><em>all, usernames redacted</em> — <span lang="en">an auditor or viewer sees the assets but not the accounts that log into them.</span><span lang="it">un auditor o un viewer vede gli asset ma non gli account con cui vi si accede.</span></li>
+          <li><em>cone only, usernames redacted</em> · <em>cone only, read-only</em> — <span lang="en">the stakeholder cells: the cone of an editor with the write column of a viewer.</span><span lang="it">le celle dello stakeholder: il cono di un editor con la colonna di scrittura di un viewer.</span></li>
           <li><em>all, read-only</em> · <em>view only</em> · <em>own groups, view only</em> · <em>own scope only</em>.</li>
         </ul>
         <p lang="en">A full text version of the matrix is in <a href="12-reference.html#matrix">Appendix A</a>.</p>

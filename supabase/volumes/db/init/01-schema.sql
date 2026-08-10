@@ -220,16 +220,42 @@ GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
 
 -- 7) RBAC / CONO DI VISIBILITA': utenti, gruppi e assegnazioni asset.
---    Ruoli applicativi: admin | manager | editor | viewer.
---    Lo scope dell'editor e' definito dalle assegnazioni asset -> utente/gruppo.
+--    Ruoli applicativi: admin | manager | editor | auditor | viewer | stakeholder.
+--    Lo scope e' definito dalle assegnazioni asset -> utente/gruppo e vale per
+--    'editor' (scrive dentro il cono) e 'stakeholder' (legge solo il cono).
+--    'auditor' e' sola lettura sull'intera flotta PIU' il registro di audit e
+--    l'evidenza point-in-time firmata (CISO / compliance / auditor esterno).
 CREATE TABLE IF NOT EXISTS public.users (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   created_at    timestamptz NOT NULL DEFAULT now(),
   username      text NOT NULL UNIQUE,
   password_hash text NOT NULL,             -- PBKDF2-HMAC-SHA256 (vedi auth.py)
   role          text NOT NULL DEFAULT 'viewer'
-                CHECK (role IN ('admin','manager','editor','viewer'))
+                CHECK (role IN ('admin','manager','editor','auditor','viewer','stakeholder'))
 );
+
+-- Migrazione idempotente per installazioni esistenti: ogni volta che si
+-- aggiunge un ruolo il CHECK precedente va sostituito, altrimenti l'INSERT del
+-- nuovo ruolo fallisce. Il predicato cerca il vincolo che NON conosce l'ultimo
+-- ruolo introdotto ('stakeholder'), quindi copre anche i DB fermi alla
+-- versione pre-'auditor'.
+DO $$
+DECLARE con_name text;
+BEGIN
+  SELECT conname INTO con_name
+    FROM pg_constraint
+   WHERE conrelid = 'public.users'::regclass
+     AND contype = 'c'
+     AND pg_get_constraintdef(oid) LIKE '%role%'
+     AND pg_get_constraintdef(oid) NOT LIKE '%stakeholder%'
+   LIMIT 1;
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE public.users DROP CONSTRAINT %I', con_name);
+    ALTER TABLE public.users
+      ADD CONSTRAINT users_role_check
+      CHECK (role IN ('admin','manager','editor','auditor','viewer','stakeholder'));
+  END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.groups (
   id         bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

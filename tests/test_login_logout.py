@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 import app as app_module
 from conftest import ROLE_PASSWORD
 
-ROLES = ("admin", "manager", "editor", "viewer")
+ROLES = ("admin", "manager", "editor", "auditor", "viewer", "stakeholder")
 
 
 def test_login_success_returns_correct_role(role_user_ids):

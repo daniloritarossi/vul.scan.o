@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=38" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=39" />
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -24,7 +24,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=25"></script>
+  <script src="/static/i18n.js?v=27"></script>
 </head>
 
 <body
@@ -44,7 +44,7 @@
           <div>
             <h2 class="font-display-lg text-3xl font-bold tracking-tight text-slate-900" data-i18n="admin.header">Users &amp; Groups</h2>
             <p class="font-code-sm text-code-sm text-slate-500 mt-1"><span data-i18n="admin.subtitle">Roles and visibility cones —</span> <span
-                class="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">admin · manager · editor · viewer</span></p>
+                class="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">admin · manager · editor · auditor · viewer · stakeholder</span></p>
           </div>
           <button id="roleMatrixBtn"
             class="font-label-caps text-label-caps text-slate-600 border border-slate-200 bg-white px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm flex items-center gap-2">
@@ -66,6 +66,8 @@
             <select id="u-role"
               class="bg-white/70 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition">
               <option value="viewer">viewer</option>
+              <option value="stakeholder">stakeholder</option>
+              <option value="auditor">auditor</option>
               <option value="editor">editor</option>
               <option value="manager">manager</option>
               <option value="admin">admin</option>
@@ -121,7 +123,9 @@
       <!-- MODALE: matrice di visibilita' dei ruoli -->
       <div id="roleMatrixModal"
         class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 items-center justify-center p-4">
-        <div class="neural-panel rounded-2xl p-6 w-full max-w-3xl bg-white max-h-[85vh] flex flex-col">
+        <!-- max-w-5xl: con sei colonne (cinque ruoli + capacita') la tabella
+             sforava il 3xl e l'ultima colonna finiva fuori dall'area visibile. -->
+        <div class="neural-panel rounded-2xl p-6 w-full max-w-5xl bg-white max-h-[85vh] flex flex-col">
           <div class="flex items-center justify-between mb-1">
             <h3 class="font-headline-md text-headline-md font-bold text-slate-900 flex items-center gap-2">
               <span class="material-symbols-outlined text-cyan-500">table_chart</span>
@@ -134,8 +138,9 @@
           </div>
           <p class="font-code-sm text-code-sm text-slate-500 mb-4" data-i18n="rolem.desc">
             What each role can see and do. Enforcement is server-side on every
-            endpoint; the editor operates only inside their visibility cone
-            (assets assigned to them or to one of their groups).
+            endpoint; editor and stakeholder operate only inside their
+            visibility cone (assets assigned to them or to one of their
+            groups) — the editor writes inside it, the stakeholder only reads it.
           </p>
           <div class="overflow-auto">
             <table class="w-full text-left border-collapse">
@@ -145,7 +150,9 @@
                   <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-rose-500">ADMIN</span></th>
                   <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-cyan-600">MANAGER</span></th>
                   <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-emerald-600">EDITOR</span></th>
+                  <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-violet-600">AUDITOR</span></th>
                   <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-slate-500">VIEWER</span></th>
+                  <th class="font-label-caps text-label-caps px-4 py-3"><span class="px-2 py-0.5 rounded-full text-white bg-amber-500">STAKEHOLDER</span></th>
                 </tr>
               </thead>
               <tbody id="roleMatrixRows" class="divide-y divide-slate-100/70 font-code-sm text-[12px] text-slate-600"></tbody>
@@ -177,7 +184,9 @@
       admin: 'bg-rose-50 text-rose-700 border-rose-200',
       manager: 'bg-cyan-50 text-cyan-700 border-cyan-200',
       editor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      auditor: 'bg-violet-50 text-violet-700 border-violet-200',
       viewer: 'bg-slate-50 text-slate-500 border-slate-200',
+      stakeholder: 'bg-amber-50 text-amber-700 border-amber-200',
     };
 
     async function apiJson(url, opts) {
@@ -222,7 +231,7 @@
           <td class="px-5 py-3 whitespace-nowrap">${statusBadge(u)}</td>
           <td class="px-5 py-3">
             <select data-uid="${u.id}" class="role-sel border rounded-lg px-2 py-1 font-label-caps text-[10px] ${ROLE_BADGE[u.role] || ''}">
-              ${['admin', 'manager', 'editor', 'viewer'].map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
+              ${['admin', 'manager', 'editor', 'auditor', 'viewer', 'stakeholder'].map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
             </select>
           </td>
           <td class="px-5 py-3">${gnames}</td>
@@ -381,19 +390,21 @@
     // ── Matrice di visibilita' dei ruoli (modale statica) ────────────────
     // true = pieno, false = negato, stringa = chiave i18n 'rolem.*' (sfumatura).
     const ROLE_MATRIX = [
-      ['rolem.r_assets_view',  'all',  'all',       'cone',        'redacted'],
-      ['rolem.r_assets_write', true,   true,        'cone_auto',   false],
-      ['rolem.r_assign',       true,   true,        false,         false],
-      ['rolem.r_users',        true,   'view_only', false,         false],
-      ['rolem.r_groups',       true,   'view_only', 'own_groups',  false],
-      ['rolem.r_find_view',    'all',  'all',       'cone',        'readonly'],
-      ['rolem.r_find_write',   true,   true,        'cone',        false],
-      ['rolem.r_scans',        true,   true,        'cone',        false],
-      ['rolem.r_risk',         'all',  'all',       'cone_recalc', 'all'],
-      ['rolem.r_sbom',         true,   true,        'cone',        false],
-      ['rolem.r_audit',        'all',  'all',       'own_scope',   false],
-      ['rolem.r_set_view',     true,   true,        false,         false],
-      ['rolem.r_set_write',    true,   false,       false,         false],
+      //  capacita'              admin   manager      editor         auditor      viewer      stakeholder
+      ['rolem.r_assets_view',  'all',  'all',       'cone',        'redacted',  'redacted', 'cone_redacted'],
+      ['rolem.r_assets_write', true,   true,        'cone_auto',   false,       false,      false],
+      ['rolem.r_assign',       true,   true,        false,         false,       false,      false],
+      ['rolem.r_users',        true,   'view_only', false,         false,       false,      false],
+      ['rolem.r_groups',       true,   'view_only', 'own_groups',  false,       false,      false],
+      ['rolem.r_find_view',    'all',  'all',       'cone',        'readonly',  'readonly', 'cone_readonly'],
+      ['rolem.r_find_write',   true,   true,        'cone',        false,       false,      false],
+      ['rolem.r_scans',        true,   true,        'cone',        false,       false,      false],
+      ['rolem.r_risk',         'all',  'all',       'cone_recalc', 'all',       'all',      'cone_readonly'],
+      ['rolem.r_sbom',         true,   true,        'cone',        true,        false,      false],
+      ['rolem.r_audit',        'all',  'all',       'own_scope',   'all',       false,      false],
+      ['rolem.r_evidence',     'all',  'all',       'own_scope',   'all',       false,      false],
+      ['rolem.r_set_view',     true,   true,        false,         false,       false,      false],
+      ['rolem.r_set_write',    true,   false,       false,         false,       false,      false],
     ];
 
     function matrixCell(v) {
@@ -411,13 +422,15 @@
     function renderRoleMatrix() {
       const tbody = document.getElementById('roleMatrixRows');
       if (!tbody) return;
-      tbody.innerHTML = ROLE_MATRIX.map(([label, a, m, e, v]) => `
+      tbody.innerHTML = ROLE_MATRIX.map(([label, a, m, e, au, v, s]) => `
         <tr class="hover:bg-white/60 transition-colors">
-          <td class="px-4 py-2.5 text-slate-700 font-semibold">${t(label)}</td>
+          <td class="px-4 py-2.5 text-slate-700 font-semibold min-w-[15rem]">${t(label)}</td>
           <td class="px-4 py-2.5">${matrixCell(a)}</td>
           <td class="px-4 py-2.5">${matrixCell(m)}</td>
           <td class="px-4 py-2.5">${matrixCell(e)}</td>
+          <td class="px-4 py-2.5">${matrixCell(au)}</td>
           <td class="px-4 py-2.5">${matrixCell(v)}</td>
+          <td class="px-4 py-2.5">${matrixCell(s)}</td>
         </tr>`).join('');
     }
 

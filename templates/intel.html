@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=38" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=39" />
   <script src="/static/vendor/chart.umd.min.js"></script>
   <style>
     .material-symbols-outlined {
@@ -173,7 +173,7 @@
       to { transform: translateX(0); opacity: 1; }
     }
   </style>
-  <script src="/static/i18n.js?v=25"></script>
+  <script src="/static/i18n.js?v=27"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
   <script src="/static/vendor/d3.min.js"></script>
@@ -930,7 +930,7 @@
       </label>`).join('')
         : '<p class="font-code-sm text-[11px] text-slate-500 px-1">No assets.</p>';
       $('assetPickCount').textContent = selectedIps.size;
-      $('runScan').disabled = isViewer || selectedIps.size === 0;
+      $('runScan').disabled = isReadOnly || selectedIps.size === 0;
     }
     $('assetPickBtn').addEventListener('click', (e) => { e.stopPropagation(); $('assetPickPanel').classList.toggle('hidden'); });
     document.addEventListener('click', (e) => { if (!e.target.closest('#assetPickPanel') && !e.target.closest('#assetPickBtn')) $('assetPickPanel').classList.add('hidden'); });
@@ -938,16 +938,16 @@
       const cb = e.target.closest('.asset-cb'); if (!cb) return;
       if (cb.checked) selectedIps.add(cb.dataset.ip); else selectedIps.delete(cb.dataset.ip);
       $('assetPickCount').textContent = selectedIps.size;
-      $('runScan').disabled = isViewer || selectedIps.size === 0;
+      $('runScan').disabled = isReadOnly || selectedIps.size === 0;
     });
     $('assetAll').addEventListener('click', () => { assetList.forEach(a => selectedIps.add(a.ip)); renderPicker(); });
     $('assetNone').addEventListener('click', () => { selectedIps.clear(); renderPicker(); });
 
     // --- run scan (SSE) ---
     let es = null;
-    let isViewer = false;
+    let isReadOnly = false;
     function runScan() {
-      if (isViewer) return;
+      if (isReadOnly) return;
       if (es) es.close();
       if (selectedIps.size === 0) return;
       assetsData = [];
@@ -976,11 +976,13 @@
       es.addEventListener('error', () => { $('progressLabel').textContent = 'error'; $('runScan').disabled = false; if (es) es.close(); });
     }
     $('runScan').addEventListener('click', runScan);
-    // Ruolo corrente -> adatta la UI (bottone scan nascosto ai viewer).
+    // Ruolo corrente -> adatta la UI (bottone scan nascosto ai ruoli di sola
+    // lettura: auditor, viewer, stakeholder). Allowlist sui ruoli che scrivono
+    // davvero, cosi' un ruolo nuovo nasce senza il bottone.
     // Solo UI: l'enforcement vero è server-side su /api/posture/scan (_writer).
     (window.vfaUser || Promise.resolve(null)).then((u) => {
-      if (u && u.role === 'viewer') {
-        isViewer = true;
+      if (!(u && ['admin', 'manager', 'editor'].includes(u.role))) {
+        isReadOnly = true;
         $('runScan').disabled = true;
         $('runScan').style.display = 'none';
       }

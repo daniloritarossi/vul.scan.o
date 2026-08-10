@@ -74,7 +74,7 @@
 
       <!-- ======================================= OVERVIEW -->
       <section class="block" id="overview">
-        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all (cone-scoped) · export: admin, manager, editor</span><span lang="it">lettura: tutti (limitata al cono) · export: admin, manager, editor</span></span></h2>
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">read: all (cone-scoped) · export: admin, manager, editor, auditor</span><span lang="it">lettura: tutti (limitata al cono) · export: admin, manager, editor, auditor</span></span></h2>
 
         <p lang="en">
           The subtitle is precise: <em>“Per-asset package inventory — generated from SCA posture.”</em> This page does
@@ -291,11 +291,13 @@
         </p>
         <div class="note">
           <span lang="en">Exports respect the visibility cone: an editor's CycloneDX file contains only their own assets'
-            components. <strong>Viewers can browse this page but cannot export</strong> — the endpoint answers
-            <code>403</code>.</span>
+            components. <strong>Viewers and stakeholders can browse this page but cannot export</strong> — the endpoint answers
+            <code>403</code>. An <strong>auditor</strong> can export the full file: a CycloneDX/SPDX document is
+            read-only data and a normal audit deliverable, unlike a scan.</span>
           <span lang="it">Gli export rispettano il cono di visibilità: il file CycloneDX di un editor contiene solo i componenti
-            dei suoi asset. <strong>I viewer possono consultare la pagina ma non esportare</strong> — l'endpoint risponde
-            <code>403</code>.</span>
+            dei suoi asset. <strong>Viewer e stakeholder possono consultare la pagina ma non esportare</strong> — l'endpoint risponde
+            <code>403</code>. Un <strong>auditor</strong> può esportare il file completo: un documento CycloneDX/SPDX è
+            un dato di sola lettura e un normale deliverable d'audit, a differenza di una scansione.</span>
         </div>
       </section>
 

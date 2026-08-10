@@ -199,7 +199,17 @@ async def _pwchange_handler(request: Request, exc: PasswordChangeRequired):
 # Dependency riutilizzabili per la matrice dei ruoli.
 _admin_only = require_roles("admin")
 _admin_manager = require_roles("admin", "manager")
-_writer = require_roles("admin", "manager", "editor")   # tutto tranne viewer
+_writer = require_roles("admin", "manager", "editor")   # scritture reali
+# Lettura del registro di audit e dell'evidenza point-in-time. NON e' un
+# permesso di scrittura: prima queste rotte usavano _writer, cioe' una lettura
+# protetta da un alias di scrittura ("chiunque non sia viewer"), il che
+# lasciava fuori proprio la persona che l'audit lo deve leggere.
+# 'stakeholder' resta fuori come 'viewer': il registro espone 'actor_name',
+# cioe' attivita' attribuibile a persone identificate, e un asset owner di
+# reparto non deve leggere chi ha fatto cosa.
+_audit_reader = require_roles("admin", "manager", "editor", "auditor")
+# Export di dati read-only che sono un deliverable d'audit (SBOM standard).
+_exporter = require_roles("admin", "manager", "editor", "auditor")
 
 
 def _require_asset_in_scope(user: CurrentUser, asset_id: int) -> None:
@@ -413,7 +423,7 @@ def assets_page(request: Request, user: CurrentUser = Depends(get_current_user))
 
 
 @app.get("/audit", response_class=HTMLResponse)
-def audit_page(request: Request, user: CurrentUser = Depends(_writer)):
+def audit_page(request: Request, user: CurrentUser = Depends(_audit_reader)):
     """Pagina AUDIT: storico dei risultati di scansione salvati su Supabase."""
     return templates.TemplateResponse("audit.html", {"request": request})
 
@@ -464,7 +474,7 @@ def api_sbom(run_id: int | None = None,
 
 @app.get("/api/sbom/export")
 def api_sbom_export(format: str = "cyclonedx", run_id: int | None = None,
-                    user: CurrentUser = Depends(_writer)):
+                    user: CurrentUser = Depends(_exporter)):
     """
     Esporta la SBOM in formato standard.
     format: 'cyclonedx' (CycloneDX 1.5) | 'spdx' (SPDX 2.3).
@@ -504,8 +514,9 @@ def api_findings(status: str | None = None, severity: str | None = None,
     """
     Elenco finding unificati + aggregati per la UI.
     Filtri opzionali: status, severity, source (substring), q (testo libero).
-    Editor: solo i finding degli asset nel proprio cono di visibilita'
-    (anche gli aggregati sono ricalcolati sul sottoinsieme, niente leak).
+    Ruoli scoped (editor, stakeholder): solo i finding degli asset nel proprio
+    cono di visibilita' (anche gli aggregati sono ricalcolati sul
+    sottoinsieme, niente leak).
     503 se il DB non e' raggiungibile.
     """
     rows = fetch_findings()
@@ -578,7 +589,7 @@ def _point_in_time(user: CurrentUser, date: str | None, since: str | None):
 @app.get("/api/findings/as-of")
 def api_findings_as_of(date: str | None = None, since: str | None = None,
                        details: bool = False,
-                       user: CurrentUser = Depends(_writer)):
+                       user: CurrentUser = Depends(_audit_reader)):
     """
     Stato dei finding a una data (evidenza point-in-time per audit esterno).
 
@@ -592,7 +603,8 @@ def api_findings_as_of(date: str | None = None, since: str | None = None,
     first_seen/status_changed_at e contati a parte ('estimated'), cosi' e'
     esplicito cosa e' provato e cosa e' dedotto. La risposta include l'esito
     della verifica della catena hash del registro.
-    Editor: solo gli asset del proprio cono di visibilita'. Viewer: 403.
+    Admin, manager e auditor: tutta la flotta. Editor: solo gli asset del
+    proprio cono di visibilita'. Viewer: 403.
     """
     res, err = _point_in_time(user, date, since)
     if err is not None:
@@ -1008,16 +1020,17 @@ def api_risk_trend(user: CurrentUser = Depends(get_current_user)):
     """
     Serie storica del rischio (score/CVE per run) + delta finding-level fra le
     due run piu' recenti (nuove vs risolte). 503 se il DB non risponde.
-    Editor: il delta e' calcolato sul solo cono di visibilita'; nella serie
-    storica i contatori globali per-run vengono omessi (nessun leak indiretto).
+    Ruoli scoped (editor, stakeholder): il delta e' calcolato sul solo cono di
+    visibilita'; nella serie storica i contatori globali per-run vengono omessi
+    (nessun leak indiretto).
     """
     runs = fetch_posture_runs()
     if runs is None:
         return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
     scope_ips = visible_asset_ips(user)
     if scope_ips is not None:
-        # Gli aggregati per-run (avg_score, total_vulns) sono globali: per gli
-        # editor si mantengono solo id/data delle run nella serie.
+        # Gli aggregati per-run (avg_score, total_vulns) sono globali: per i
+        # ruoli scoped si mantengono solo id/data delle run nella serie.
         runs = [{"id": r.get("id"), "created_at": r.get("created_at")}
                 for r in runs]
     current = previous = None
@@ -1060,7 +1073,8 @@ async def api_assets_context(index: int, request: Request,
 
 
 def _audit_scope_filter(data: list, user: CurrentUser) -> list:
-    """Applica il cono di visibilita' RBAC: l'editor vede solo i propri asset."""
+    """Applica il cono di visibilita' RBAC: i ruoli scoped vedono solo i propri
+    asset."""
     scope_ips = visible_asset_ips(user)
     if scope_ips is None:
         return data
@@ -1137,7 +1151,7 @@ def _audit_kpis(data: list) -> dict:
 
 @app.get("/api/audit")
 def api_audit(
-    user: CurrentUser = Depends(_writer),
+    user: CurrentUser = Depends(_audit_reader),
     page: int = 0, page_size: int = 20,
     date_from: str | None = None, date_to: str | None = None,
     outcome: str | None = None, source: str | None = None,
@@ -1146,8 +1160,8 @@ def api_audit(
 ):
     """
     Storico scansioni (scans + scan_results annidati) letto da Supabase.
-    Admin e manager: tutto. Editor: solo i risultati relativi agli asset del
-    proprio cono di visibilita'. Viewer: 403.
+    Admin, manager e auditor: tutto. Editor: solo i risultati relativi agli
+    asset del proprio cono di visibilita'. Viewer: 403.
 
     Filtri (tutti opzionali): date_from/date_to (ISO, lato DB), outcome, source,
     os_type, actor (lato server). Paginazione: page/page_size (page_size=0 = tutto).
@@ -1181,7 +1195,7 @@ def api_audit(
 
 
 @app.get("/api/audit/verify")
-def api_audit_verify(user: CurrentUser = Depends(_writer)):
+def api_audit_verify(user: CurrentUser = Depends(_audit_reader)):
     """
     Verifica la catena hash del ledger scansioni (tamper-evidence) su due
     livelli: row_hash (campi immutabili + linkatura) e final_hash (version e
@@ -1194,7 +1208,7 @@ def api_audit_verify(user: CurrentUser = Depends(_writer)):
 
 
 @app.get("/api/audit/findings-verify")
-def api_findings_verify(user: CurrentUser = Depends(_writer)):
+def api_findings_verify(user: CurrentUser = Depends(_audit_reader)):
     """
     Verifica la catena hash del registro eventi dei finding: e' la prova di
     integrita' che accompagna i conteggi point-in-time di /api/findings/as-of.
@@ -1207,7 +1221,7 @@ def api_findings_verify(user: CurrentUser = Depends(_writer)):
 
 
 @app.get("/api/audit/posture-verify")
-def api_posture_verify(user: CurrentUser = Depends(_writer)):
+def api_posture_verify(user: CurrentUser = Depends(_audit_reader)):
     """
     Verifica la catena hash delle run di postura, sui due livelli: creazione
     (attore + linkatura) e totali sigillati a fine run. Sono i numeri che un
@@ -1226,7 +1240,7 @@ EVIDENCE_FORMATS = ("json", "csv", "html")
 @app.get("/api/audit/evidence")
 def api_audit_evidence(date: str | None = None, since: str | None = None,
                        format: str = "json",
-                       user: CurrentUser = Depends(_writer)):
+                       user: CurrentUser = Depends(_audit_reader)):
     """
     Report di evidenza FIRMATO da consegnare a un audit esterno.
 
@@ -1282,7 +1296,7 @@ def api_audit_evidence(date: str | None = None, since: str | None = None,
 
 @app.post("/api/audit/evidence/verify")
 async def api_audit_evidence_verify(request: Request,
-                                    user: CurrentUser = Depends(_writer)):
+                                    user: CurrentUser = Depends(_audit_reader)):
     """
     Riverifica un report di evidenza esportato in precedenza (body: il JSON
     del report). Dice se una singola cifra e' stata ritoccata dopo l'export.
@@ -1499,14 +1513,15 @@ def _assignments_by_asset() -> dict:
 def api_assets(user: CurrentUser = Depends(get_current_user)):
     """
     Ritorna l'inventario interpretato (senza password).
-    Editor: solo asset assegnati. Viewer: username redatto.
+    Editor/stakeholder: solo asset assegnati.
+    Auditor/viewer/stakeholder: username redatto.
     """
     try:
         assets = _scope_filter_assets(load_assets(ASSETS_FILE), user)
     except AssetStoreError as exc:
         return JSONResponse({"error": str(exc)}, status_code=503)
     out = [a.to_dict() for a in assets]
-    if user.role == "viewer":
+    if user.readonly:
         for d in out:
             d["username"] = None
     return {"assets": out}
@@ -1535,7 +1550,8 @@ def api_assets_all(user: CurrentUser = Depends(get_current_user)):
     """
     Inventario completo per la gestione CRUD, con le assegnazioni
     utente/gruppo di ogni asset (cono di visibilita').
-    Editor: solo asset assegnati. Viewer: username redatto.
+    Editor/stakeholder: solo asset assegnati.
+    Auditor/viewer/stakeholder: username redatto.
     """
     try:
         assets = _scope_filter_assets(load_assets(ASSETS_FILE), user)
@@ -1546,7 +1562,7 @@ def api_assets_all(user: CurrentUser = Depends(get_current_user)):
     for a in assets:
         d = _asset_full(a)
         d["assignments"] = assign.get(a.id, [])
-        if user.role == "viewer":
+        if user.readonly:
             d["username"] = ""
             d["has_password"] = False
         out.append(d)

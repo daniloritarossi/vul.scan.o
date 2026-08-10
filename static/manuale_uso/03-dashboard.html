@@ -75,7 +75,7 @@
 
       <!-- ======================================= OVERVIEW -->
       <section class="block" id="overview">
-        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">all roles · scanning denied to viewer</span><span lang="it">tutti i ruoli · scansione negata al viewer</span></span></h2>
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles"><span lang="en">all roles (stakeholder: own cone) · scanning denied to auditor, viewer and stakeholder</span><span lang="it">tutti i ruoli (stakeholder: proprio cono) · scansione negata ad auditor, viewer e stakeholder</span></span></h2>
 
         <p lang="en">
           The Dashboard is the only page that hosts <em>both</em> scan engines. The <strong>threat intelligence
@@ -525,16 +525,16 @@
             <a href="09-audit.html">/audit</a>.</p>
           <p lang="en"><strong>After a posture scan:</strong> all three KPI cards update with fresh trend arrows, CRITICAL
             FINDINGS and TOP EXPLOITABLE populate, and a new run appears in the /intel run selector.</p>
-          <p lang="en"><strong>As a viewer:</strong> both scan buttons are unavailable — viewers can read everything but trigger
-            nothing (the server answers <code>403</code> regardless of what the UI shows).</p>
+          <p lang="en"><strong>As an auditor, viewer or stakeholder:</strong> both scan buttons are unavailable — these roles read
+            but trigger nothing (the server answers <code>403</code> regardless of what the UI shows).</p>
           <p lang="it"><strong>Dopo una scansione mirata:</strong> la console contiene la trascrizione completa che termina con
             <em>«Scan complete · n asset(s)»</em>, il grafo prodotti mostra il prodotto identificato con le dipendenze
             misurate, la pipeline mostra tre spunte verdi, EXPORT XLS diventa disponibile e una nuova voce compare in
             <a href="09-audit.html">/audit</a>.</p>
           <p lang="it"><strong>Dopo una scansione di postura:</strong> tutte e tre le card KPI si aggiornano con nuove frecce di
             tendenza, CRITICAL FINDINGS e TOP EXPLOITABLE si popolano e una nuova run compare nel selettore di /intel.</p>
-          <p lang="it"><strong>Come viewer:</strong> entrambi i pulsanti di scansione non sono disponibili — i viewer leggono
-            tutto ma non avviano nulla (il server risponde <code>403</code> a prescindere da ciò che mostra
+          <p lang="it"><strong>Come auditor, viewer o stakeholder:</strong> entrambi i pulsanti di scansione non sono disponibili — questi
+            ruoli leggono ma non avviano nulla (il server risponde <code>403</code> a prescindere da ciò che mostra
             l'interfaccia).</p>
         </div>
       </section>

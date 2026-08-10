@@ -13,14 +13,18 @@ quindi un ruolo non ammesso riceve 403 senza alcun side-effect, alcuna
 chiamata di rete o scrittura reale. Il percorso positivo di queste rotte e'
 coperto nei test dedicati (cono di visibilita', gestione utenti, settings).
 
-ROLES = admin, manager, editor, viewer (vedi auth.py).
+ROLES = admin, manager, editor, auditor, viewer, stakeholder (vedi auth.py).
 """
 import pytest
 
-ROLES = ("admin", "manager", "editor", "viewer")
+ROLES = ("admin", "manager", "editor", "auditor", "viewer", "stakeholder")
 ADMIN_ONLY = ("admin",)
 ADMIN_MANAGER = ("admin", "manager")
-WRITER = ("admin", "manager", "editor")           # tutto tranne viewer
+WRITER = ("admin", "manager", "editor")           # scritture reali
+# Lettura del registro di audit / evidenza point-in-time: include l'auditor,
+# che non scrive nulla ma e' esattamente la persona che quelle rotte le legge.
+AUDIT_READER = ("admin", "manager", "editor", "auditor")
+EXPORTER = AUDIT_READER                           # export SBOM (deliverable d'audit)
 ALL = ROLES
 
 
@@ -41,13 +45,13 @@ READ_MATRIX = [
     ("GET", "/findings", {}, ALL, True),
     ("GET", "/intel", {}, ALL, True),
     ("GET", "/risk", {}, ALL, True),
-    ("GET", "/audit", {}, WRITER, True),
+    ("GET", "/audit", {}, AUDIT_READER, True),
     ("GET", "/settings", {}, ADMIN_MANAGER, True),
     ("GET", "/admin", {}, ADMIN_ONLY, True),
     ("GET", "/api/me", {}, ALL, True),
     ("GET", "/api/assets", {}, ALL, True),
     ("GET", "/api/assets/all", {}, ALL, True),
-    ("GET", "/api/audit", {}, WRITER, True),
+    ("GET", "/api/audit", {}, AUDIT_READER, True),
     ("GET", "/api/groups", {}, WRITER, True),
     ("GET", "/api/users", {}, ADMIN_MANAGER, True),
     ("GET", "/api/settings", {}, ADMIN_MANAGER, True),
@@ -56,7 +60,9 @@ READ_MATRIX = [
     ("GET", "/api/risk", {"params": {"probe": "false"}}, ALL, True),
     ("GET", "/api/risk/trend", {}, ALL, True),
     ("GET", "/api/sbom", {}, ALL, True),
-    ("GET", "/api/sbom/export", {"params": {"format": "cyclonedx"}}, WRITER, True),
+    ("GET", "/api/sbom/export", {"params": {"format": "cyclonedx"}}, EXPORTER, True),
+    ("GET", "/api/audit/verify", {}, AUDIT_READER, True),
+    ("GET", "/api/audit/findings-verify", {}, AUDIT_READER, True),
 ]
 
 # Rotte mutanti/pesanti: verificate SOLO in negativo (403 per i ruoli esclusi).
@@ -81,10 +87,10 @@ GATE_ONLY_MATRIX = [
     ("PATCH", "/api/findings/999999/status", {"json": {}}, WRITER),
     ("POST", "/api/findings/999999/ticket", {"json": {}}, WRITER),
     ("POST", "/api/findings/scan-local", {"json": {}}, ADMIN_MANAGER),
-    ("GET", "/api/findings/as-of", {}, WRITER),
-    ("GET", "/api/audit/posture-verify", {}, WRITER),
-    ("GET", "/api/audit/evidence", {}, WRITER),
-    ("POST", "/api/audit/evidence/verify", {"json": {}}, WRITER),
+    ("GET", "/api/findings/as-of", {}, AUDIT_READER),
+    ("GET", "/api/audit/posture-verify", {}, AUDIT_READER),
+    ("GET", "/api/audit/evidence", {}, AUDIT_READER),
+    ("POST", "/api/audit/evidence/verify", {"json": {}}, AUDIT_READER),
     ("GET", "/api/posture/scan", {}, WRITER),
     ("POST", "/api/identify", {"json": {}}, WRITER),
     ("GET", "/api/scan", {}, WRITER),

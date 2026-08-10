@@ -75,7 +75,7 @@
 
       <!-- ======================================= OVERVIEW -->
       <section class="block" id="overview">
-        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles">admin · manager (<span lang="en">all</span><span lang="it">tutto</span>) · editor (<span lang="en">own scope</span><span lang="it">proprio ambito</span>) · <span lang="en">viewer denied</span><span lang="it">viewer negato</span></span></h2>
+        <h2><span lang="en">Page Overview</span><span lang="it">Panoramica</span> <span class="roles">admin · manager · auditor (<span lang="en">all</span><span lang="it">tutto</span>) · editor (<span lang="en">own scope</span><span lang="it">proprio ambito</span>) · <span lang="en">viewer and stakeholder denied</span><span lang="it">viewer e stakeholder negati</span></span></h2>
 
         <p lang="en">
           The subtitle names the storage explicitly: <em>“Scan results history stored on Supabase · most recent
@@ -88,16 +88,32 @@
           dipendenze risolte — ed espande sotto i risultati per asset.
         </p>
         <p lang="en">
-          Access is deliberately asymmetric: administrators and managers see the entire ledger, an <em>editor</em> sees
-          only results inside their own visibility cone, and a <em>viewer</em> cannot open the page at all. Audit history
-          is the one place where partial visibility would be actively misleading, so viewers are excluded rather than
-          shown a filtered version.
+          Access is deliberately asymmetric: administrators, managers and <em>auditors</em> see the entire ledger, an
+          <em>editor</em> sees only results inside their own visibility cone, and neither a <em>viewer</em> nor a
+          <em>stakeholder</em> can open the page at all. Audit history is the one place where partial visibility would
+          be actively misleading, so those two roles are excluded rather than shown a filtered version — and the ledger
+          records <code>actor_name</code>, which is not theirs to read.
+        </p>
+        <p lang="en">
+          The <span class="badge b-audit">auditor</span> role exists for this page. It reads the whole ledger and
+          exports signed evidence, but writes nothing anywhere in the product — no scans, no imports, no status changes.
+          Before it existed, anyone who needed the audit history had to be given <em>manager</em>, which also grants all
+          of those; a CISO, a compliance officer or an external auditor now gets read access without the authority to
+          change what they are auditing.
         </p>
         <p lang="it">
-          L'accesso è volutamente asimmetrico: amministratori e manager vedono l'intero registro, un <em>editor</em> vede
-          solo i risultati del proprio cono di visibilità e un <em>viewer</em> non può aprire la pagina. Lo storico di
-          audit è l'unico posto in cui una visibilità parziale sarebbe attivamente fuorviante, quindi i viewer vengono
-          esclusi invece che ricevere una versione filtrata.
+          L'accesso è volutamente asimmetrico: amministratori, manager e <em>auditor</em> vedono l'intero registro, un
+          <em>editor</em> vede solo i risultati del proprio cono di visibilità e né un <em>viewer</em> né uno
+          <em>stakeholder</em> possono aprire la pagina. Lo storico di audit è l'unico posto in cui una visibilità
+          parziale sarebbe attivamente fuorviante, quindi questi due ruoli vengono esclusi invece che ricevere una
+          versione filtrata — e il registro contiene <code>actor_name</code>, che non spetta a loro leggere.
+        </p>
+        <p lang="it">
+          Il ruolo <span class="badge b-audit">auditor</span> esiste per questa pagina. Legge l'intero registro ed
+          esporta l'evidenza firmata, ma non scrive nulla in nessun punto del prodotto — niente scansioni, niente
+          import, niente cambi di stato. Prima che esistesse, chiunque avesse bisogno dello storico di audit doveva
+          ricevere <em>manager</em>, che concede anche tutto il resto; un CISO, un compliance officer o un auditor
+          esterno ottiene ora l'accesso in lettura senza il potere di modificare ciò che sta verificando.
         </p>
 
         <figure>
@@ -413,11 +429,13 @@
         <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
         <div class="outcome">
           <span lang="en">A chronological, filterable and cryptographically verifiable record: <em>who</em> scanned <em>what</em>,
-            <em>when</em>, with <em>which method</em>, and <em>what was found</em> — exportable as evidence. Editors see
-            only results inside their own cone; viewers cannot open the page at all.</span>
+            <em>when</em>, with <em>which method</em>, and <em>what was found</em> — exportable as evidence. Auditors see
+            the whole ledger read-only; editors see only results inside their own cone; viewers and stakeholders cannot
+            open the page at all.</span>
           <span lang="it">Un registro cronologico, filtrabile e verificabile crittograficamente: <em>chi</em> ha scansionato
             <em>cosa</em>, <em>quando</em>, con <em>quale metodo</em> e <em>cosa è stato trovato</em> — esportabile come
-            evidenza. Gli editor vedono solo i risultati del proprio cono; i viewer non possono aprire la pagina.</span>
+            evidenza. Gli auditor vedono l'intero registro in sola lettura; gli editor vedono solo i risultati del
+            proprio cono; viewer e stakeholder non possono aprire la pagina.</span>
         </div>
       </section>
 

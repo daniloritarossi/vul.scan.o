@@ -50,6 +50,7 @@
         <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
         <ol class="sub">
           <li><a href="#what"><span lang="en">What the app does</span><span lang="it">Cosa fa l'app</span></a></li>
+          <li><a href="#audience"><span lang="en">Who it is for</span><span lang="it">A chi è destinato</span></a></li>
           <li><a href="#howto"><span lang="en">How to read this manual</span><span lang="it">Come leggere il manuale</span></a></li>
           <li><a href="#concepts"><span lang="en">Core concepts</span><span lang="it">Concetti chiave</span></a></li>
           <li><a href="#pipeline"><span lang="en">Data pipeline</span><span lang="it">Flusso dei dati</span></a></li>
@@ -134,6 +135,127 @@
         </div>
       </section>
 
+      <!-- ================================================= AUDIENCE -->
+      <section class="block" id="audience">
+        <h2><span lang="en">Who it is for</span><span lang="it">A chi è destinato</span></h2>
+
+        <h3><span lang="en">Page Overview</span><span lang="it">Panoramica</span></h3>
+        <p lang="en">
+          The product is built around a small number of <strong>people</strong>, and each of them maps to exactly one of
+          the six roles described in <a href="10-admin.html#roles">Users &amp; Groups</a>. Roles describe
+          <strong>capabilities, not job titles</strong>: several personas legitimately share one role, and that is
+          deliberate — three near-identical roles would only drift apart over time. Find yourself in the table, then
+          read the chapters listed in the last column first.
+        </p>
+        <p lang="it">
+          Il prodotto è costruito attorno a un numero ristretto di <strong>persone</strong>, e ognuna ricade
+          esattamente su uno dei sei ruoli descritti in <a href="10-admin.html#roles">Utenti e gruppi</a>. I ruoli
+          descrivono <strong>capacità, non organigrammi</strong>: più figure condividono legittimamente lo stesso
+          ruolo, ed è una scelta voluta — tre ruoli quasi identici finirebbero solo per divergere nel tempo. Trovati
+          nella tabella, poi leggi per primi i capitoli indicati nell'ultima colonna.
+        </p>
+
+        <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Persona</span><span lang="it">Figura</span></th>
+                <th><span lang="en">Role</span><span lang="it">Ruolo</span></th>
+                <th><span lang="en">What they come here to do</span><span lang="it">Perché usa il prodotto</span></th>
+                <th><span lang="en">Start with</span><span lang="it">Parti da</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en"><strong>CISO / CSO</strong></span><span lang="it"><strong>CISO / CSO</strong></span></td>
+                <td><span class="badge b-audit">auditor</span></td>
+                <td><span lang="en">Reads the posture figure and its trend, then pulls the signed evidence when someone asks for proof. Never changes state.</span><span lang="it">Legge il dato di postura e la sua tendenza, poi estrae l'evidenza firmata quando qualcuno chiede una prova. Non modifica mai lo stato.</span></td>
+                <td><a href="03-dashboard.html">03</a> · <a href="06-risk.html">06</a> · <a href="09-audit.html">09</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Compliance officer, external auditor</strong></span><span lang="it"><strong>Compliance officer, auditor esterno</strong></span></td>
+                <td><span class="badge b-audit">auditor</span></td>
+                <td><span lang="en">Answers “how many criticals were open on 31 March, and prove it”: point-in-time evidence, hash-chain verification, NIS2 art. 21(2) and OWASP mapping.</span><span lang="it">Risponde a «quante critiche erano aperte al 31 marzo, e dimostralo»: evidenza point-in-time, verifica della catena di hash, mappatura NIS2 art. 21(2) e OWASP.</span></td>
+                <td><a href="09-audit.html">09</a> · <a href="12-reference.html">12</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Vulnerability management lead, security manager</strong></span><span lang="it"><strong>Responsabile vulnerability management, security manager</strong></span></td>
+                <td><span class="badge b-acc">manager</span></td>
+                <td><span lang="en">Prioritises with EPSS/KEV plus asset business context, owns the SLAs, hands work out by assigning visibility cones, opens tickets.</span><span lang="it">Prioritizza con EPSS/KEV più il contesto business degli asset, presidia gli SLA, distribuisce il lavoro assegnando i coni di visibilità, apre i ticket.</span></td>
+                <td><a href="06-risk.html">06</a> · <a href="07-findings.html">07</a> · <a href="10-admin.html">10</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Security / vulnerability analyst</strong></span><span lang="it"><strong>Analista di sicurezza / vulnerability analyst</strong></span></td>
+                <td><span class="badge b-ok">editor</span></td>
+                <td><span lang="en">The daily operator: triages findings, runs scans, imports Trivy/Grype/Nuclei/Semgrep reports, applies the multi-source fix plan. Sees only their assigned assets.</span><span lang="it">L'operatore quotidiano: fa triage dei finding, lancia scansioni, importa report Trivy/Grype/Nuclei/Semgrep, applica il piano di fix multi-sorgente. Vede solo gli asset che gli sono assegnati.</span></td>
+                <td><a href="07-findings.html">07</a> · <a href="05-posture.html">05</a> · <a href="03-dashboard.html">03</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>DevSecOps / AppSec engineer</strong></span><span lang="it"><strong>DevSecOps / AppSec engineer</strong></span></td>
+                <td><span class="badge b-ok">editor</span></td>
+                <td><span lang="en">Exports CycloneDX 1.5 / SPDX 2.3 for the pipeline, imports SAST and secret-scanning output, pushes findings to GitHub Issues or Jira.</span><span lang="it">Esporta CycloneDX 1.5 / SPDX 2.3 per la pipeline, importa gli output SAST e di secret scanning, spinge i finding su GitHub Issues o Jira.</span></td>
+                <td><a href="08-sbom.html">08</a> · <a href="07-findings.html">07</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Pentester, authorized external tester</strong></span><span lang="it"><strong>Pentester, tester esterno autorizzato</strong></span></td>
+                <td><span class="badge b-ok">editor</span> / <span class="badge b-acc">manager</span></td>
+                <td><span lang="en">The active side: network scans, free-text software identification without a CVE, OSINT enrichment — strictly on assets they are authorized to test.</span><span lang="it">Il lato attivo: scansioni di rete, identificazione del software da testo libero senza CVE, arricchimento OSINT — rigorosamente sugli asset per cui è autorizzato.</span></td>
+                <td><a href="03-dashboard.html">03</a> · <a href="05-posture.html">05</a> · <a href="04-assets.html">04</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Platform / IT administrator</strong></span><span lang="it"><strong>Amministratore di piattaforma / IT</strong></span></td>
+                <td><span class="badge b-err">admin</span></td>
+                <td><span lang="en">Installs it and keeps it running: accounts and groups, SMTP, AI provider, ticketing credentials, the Supabase stack. Does no security work.</span><span lang="it">Lo installa e lo tiene in piedi: account e gruppi, SMTP, provider AI, credenziali di ticketing, stack Supabase. Non fa lavoro di sicurezza.</span></td>
+                <td><a href="10-admin.html">10</a> · <a href="11-settings.html">11</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>System or asset owner, department head</strong></span><span lang="it"><strong>Owner di sistema o di asset, capo reparto</strong></span></td>
+                <td><span class="badge b-warn">stakeholder</span></td>
+                <td><span lang="en">Non-security: sees the patch status of <em>their own</em> hosts and what to do about it — read-only, and only inside their cone.</span><span lang="it">Non-security: vede lo stato delle patch dei <em>propri</em> host e cosa farci — in sola lettura, e solo dentro il proprio cono.</span></td>
+                <td><a href="03-dashboard.html">03</a> · <a href="07-findings.html">07</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>Board observer, executive stakeholder</strong></span><span lang="it"><strong>Osservatore di direzione</strong></span></td>
+                <td><span class="badge">viewer</span></td>
+                <td><span lang="en">Fleet-wide numbers, read-only, no audit ledger — the ledger names people.</span><span lang="it">Numeri sull'intero parco macchine, sola lettura, niente registro di audit — il registro fa nomi di persone.</span></td>
+                <td><a href="03-dashboard.html">03</a> · <a href="06-risk.html">06</a></td>
+              </tr>
+              <tr>
+                <td><span lang="en"><strong>MSSP / consultancy</strong></span><span lang="it"><strong>MSSP / società di consulenza</strong></span></td>
+                <td><span class="badge b-err">admin</span> + <span lang="en">groups</span><span lang="it">gruppi</span></td>
+                <td><span lang="en">One instance, several clients kept apart by asset assignments; the signed evidence report is the deliverable.</span><span lang="it">Un'unica istanza, più clienti tenuti separati dalle assegnazioni degli asset; il report di evidenza firmato è il deliverable.</span></td>
+                <td><a href="10-admin.html">10</a> · <a href="09-audit.html">09</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span lang="en"><strong>Who it is not for.</strong> There is no SOC L1 or incident-responder persona: the
+            product has no alerting, no webhooks, no SIEM integration and no real-time detection. It is an
+            <strong>ASPM / vulnerability management</strong> tool — it tells you what is exposed and whether it improved
+            since last month, not that something is happening right now.</span>
+          <span lang="it"><strong>A chi non è destinato.</strong> Non esiste una figura da SOC L1 o incident responder:
+            il prodotto non ha alerting, né webhook, né integrazione SIEM, né detection in tempo reale. È uno strumento
+            di <strong>ASPM / vulnerability management</strong> — dice cosa è esposto e se è migliorato rispetto al mese
+            scorso, non che sta succedendo qualcosa adesso.</span>
+        </div>
+
+        <div class="warn">
+          <span lang="en"><strong>One responsibility worth assigning explicitly.</strong> The contextual risk score is
+            driven by <em>environment</em>, <em>internet facing</em> and <em>criticality</em> on each asset, and nobody
+            owns those fields by default. Left at <em>criticality 3</em>, contextual prioritisation degrades to plain
+            CVSS ordering. Decide early who fills them in — usually the manager, with input from the stakeholder who
+            owns the system.</span>
+          <span lang="it"><strong>Una responsabilità da assegnare esplicitamente.</strong> Il punteggio di rischio
+            contestuale dipende da <em>environment</em>, <em>internet facing</em> e <em>criticality</em> di ogni asset, e
+            per default nessuno è responsabile di quei campi. Lasciati a <em>criticality 3</em>, la prioritizzazione
+            contestuale degrada a un semplice ordinamento per CVSS. Decidi da subito chi li compila — di norma il
+            manager, con l'apporto dello stakeholder che possiede il sistema.</span>
+        </div>
+      </section>
+
       <!-- ================================================= HOWTO -->
       <section class="block" id="howto">
         <h2><span lang="en">How to read this manual</span><span lang="it">Come leggere questo manuale</span></h2>
@@ -194,7 +316,8 @@
           </li>
           <li>
             <span class="badge b-err">admin</span> <span class="badge b-warn">manager</span>
-            <span class="badge b-ok">editor</span> <span class="badge">viewer</span>
+            <span class="badge b-ok">editor</span> <span class="badge b-audit">auditor</span> <span class="badge">viewer</span>
+            <span class="badge">stakeholder</span>
             <span lang="en">— the roles allowed to use a feature. Authorization is enforced <strong>server-side on every endpoint</strong>; the UI only hides what your role cannot use.</span>
             <span lang="it">— i ruoli abilitati a usare la funzionalità. L'autorizzazione è applicata <strong>lato server su ogni endpoint</strong>; l'interfaccia si limita a nascondere ciò che il tuo ruolo non può usare.</span>
           </li>
@@ -277,10 +400,18 @@
                 <td><a href="06-risk.html">/risk</a></td>
               </tr>
               <tr>
+                <td><span lang="en"><strong>Roles</strong></span><span lang="it"><strong>Ruoli</strong></span></td>
+                <td>
+                  <span lang="en">Six of them. <em>admin</em> owns configuration and accounts; <em>manager</em> runs the fleet but cannot write config; <em>editor</em> works inside a visibility cone; <em>auditor</em> writes nothing but is the only read-only role that can open the audit ledger and export signed evidence; <em>viewer</em> reads the current state of the whole fleet and nothing else; <em>stakeholder</em> reads the current state of its own cone only. Roles describe <strong>capabilities, not job titles</strong> — a CISO, a compliance officer and an external auditor all map to <em>auditor</em>.</span>
+                  <span lang="it">Sono sei. <em>admin</em> possiede configurazione e account; <em>manager</em> gestisce il parco macchine ma non scrive la configurazione; <em>editor</em> opera dentro un cono di visibilità; <em>auditor</em> non scrive nulla ma è l'unico ruolo di sola lettura che può aprire il registro di audit ed esportare l'evidenza firmata; <em>viewer</em> legge lo stato corrente dell'intero parco macchine e basta; <em>stakeholder</em> legge lo stato corrente del solo cono che gli è assegnato. I ruoli descrivono <strong>capacità, non organigrammi</strong> — CISO, compliance officer e auditor esterno ricadono tutti su <em>auditor</em>.</span>
+                </td>
+                <td><a href="10-admin.html">/admin</a></td>
+              </tr>
+              <tr>
                 <td><span lang="en"><strong>Visibility cone</strong></span><span lang="it"><strong>Cono di visibilità</strong></span></td>
                 <td>
-                  <span lang="en">The subset of assets a user may see. Admin, manager and viewer see everything; an <em>editor</em> sees only the assets assigned to them or to one of their groups. Aggregates are <strong>recomputed</strong> inside the cone, never merely masked.</span>
-                  <span lang="it">Il sottoinsieme di asset che un utente può vedere. Admin, manager e viewer vedono tutto; un <em>editor</em> vede solo gli asset assegnati a lui o a un suo gruppo. Gli aggregati sono <strong>ricalcolati</strong> dentro il cono, mai semplicemente mascherati.</span>
+                  <span lang="en">The subset of assets a user may see. Admin, manager, auditor and viewer see everything; an <em>editor</em> and a <em>stakeholder</em> see only the assets assigned to them or to one of their groups — the editor writes inside that cone, the stakeholder only reads it. Aggregates are <strong>recomputed</strong> inside the cone, never merely masked.</span>
+                  <span lang="it">Il sottoinsieme di asset che un utente può vedere. Admin, manager, auditor e viewer vedono tutto; un <em>editor</em> e uno <em>stakeholder</em> vedono solo gli asset assegnati a loro o a un loro gruppo — l'editor scrive dentro quel cono, lo stakeholder lo legge soltanto. Gli aggregati sono <strong>ricalcolati</strong> dentro il cono, mai semplicemente mascherati.</span>
                 </td>
                 <td><a href="10-admin.html">/admin</a>, <a href="04-assets.html">/assets</a></td>
               </tr>

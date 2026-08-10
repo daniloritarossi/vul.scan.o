@@ -9,7 +9,27 @@ Ruoli:
              assegnazioni asset -> utente/gruppo e vede l'audit completo.
   editor  -> opera SOLO sugli asset assegnati a lui o a uno dei suoi gruppi
              (il "cono di visibilita'").
+  auditor -> sola lettura sull'intera flotta PIU' il registro di audit e
+             l'evidenza point-in-time firmata. Nessuna scrittura di alcun
+             tipo. Ruolo pensato per CISO, compliance officer e auditor
+             esterno: leggono le prove, non modificano lo stato.
   viewer  -> sola lettura (niente scansioni, niente export SBOM, niente audit).
+  stakeholder -> come 'viewer' ma SCOPED: sola lettura sui soli asset
+             assegnati a lui o a uno dei suoi gruppi. Ruolo pensato per il
+             system/asset owner non-security (il capo reparto che deve vedere
+             lo stato dei propri server) e per lo stakeholder di linea.
+
+Scrittura e visibilita' sono due assi indipendenti: 'editor' e' l'unico ruolo
+scoped che scrive, 'stakeholder' l'unico scoped che non scrive. Senza
+quest'ultimo, dare a un asset owner la sola lettura sui suoi host obbligava a
+scegliere tra 'viewer' (legge tutta la flotta) ed 'editor' (vede solo i suoi
+asset ma li puo' modificare e ci puo' lanciare scansioni).
+
+Perche' 'auditor' e non un allargamento di 'viewer': il registro di audit
+espone 'actor_name', cioe' attivita' attribuibile a una persona identificata.
+E' una classe di sensibilita' diversa dai conteggi di vulnerabilita', e va
+concessa esplicitamente invece di comparire retroattivamente su tutti gli
+account viewer gia' esistenti.
 
 Password: PBKDF2-HMAC-SHA256 con salt casuale (stdlib, nessuna dipendenza).
 Sessione: cookie HttpOnly con token firmato HMAC-SHA256
@@ -41,9 +61,14 @@ SESSION_TTL = 12 * 3600          # 12 ore
 _PBKDF2_ITERATIONS = 200_000
 _SECRET_FILE = Path(__file__).parent / ".vfa_auth_secret"
 
-ROLES = ("admin", "manager", "editor", "viewer")
+ROLES = ("admin", "manager", "editor", "auditor", "viewer", "stakeholder")
 # Ruoli che vedono TUTTI gli asset (nessun filtro di scope).
-UNSCOPED_ROLES = ("admin", "manager", "viewer")
+# Chi NON e' qui dentro e' "scoped": vede solo gli asset assegnati a lui o a un
+# suo gruppo (editor = scoped in scrittura, stakeholder = scoped in lettura).
+UNSCOPED_ROLES = ("admin", "manager", "auditor", "viewer")
+# Ruoli di sola lettura: nessuna scrittura, credenziali degli asset oscurate.
+# 'auditor' legge in piu' il registro di audit (vedi _audit_reader in app.py).
+READONLY_ROLES = ("auditor", "viewer", "stakeholder")
 
 
 # ---------------------------------------------------------------------------
@@ -208,8 +233,17 @@ class CurrentUser:
 
     @property
     def scoped(self) -> bool:
-        """True se l'utente vede solo gli asset assegnati (ruolo editor)."""
+        """True se l'utente vede solo gli asset assegnati (editor, stakeholder)."""
         return self.role not in UNSCOPED_ROLES
+
+    @property
+    def readonly(self) -> bool:
+        """True per i ruoli senza scrittura (auditor, viewer, stakeholder).
+
+        Usato per oscurare le credenziali degli asset: chi non puo' operare
+        sull'host non ha motivo di vedere con quale account vi si accede.
+        """
+        return self.role in READONLY_ROLES
 
     def to_dict(self) -> dict:
         return {"id": self.id, "username": self.username, "role": self.role,
@@ -287,8 +321,8 @@ def require_roles(*roles):
 def visible_asset_ids(user: CurrentUser) -> Optional[set]:
     """
     Insieme degli asset id nel cono di visibilita' dell'utente.
-    None = nessun filtro (admin/manager/viewer vedono tutto).
-    Set vuoto = editor senza alcuna assegnazione.
+    None = nessun filtro (admin/manager/auditor/viewer vedono tutto).
+    Set vuoto = utente scoped (editor/stakeholder) senza alcuna assegnazione.
     """
     if not user.scoped:
         return None

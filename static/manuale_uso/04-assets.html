@@ -247,7 +247,7 @@
               <tr>
                 <td><strong>USERNAME</strong></td>
                 <td><span lang="en">The SSH account, or a dash.</span><span lang="it">L'account SSH, oppure un trattino.</span></td>
-                <td><span lang="en"><strong>Redacted for the viewer role</strong> — viewers see the asset but not who logs into it.</span><span lang="it"><strong>Oscurata per il ruolo viewer</strong> — i viewer vedono l'asset ma non chi vi accede.</span></td>
+                <td><span lang="en"><strong>Redacted for the read-only roles</strong> (auditor, viewer, stakeholder) — they see the asset but not who logs into it. None of them can operate on the host, so none of them needs the account name.</span><span lang="it"><strong>Oscurata per i ruoli di sola lettura</strong> (auditor, viewer, stakeholder) — vedono l'asset ma non chi vi accede. Nessuno di loro può operare sull'host, quindi nessuno di loro ha bisogno del nome dell'account.</span></td>
               </tr>
               <tr>
                 <td><strong>PASSWORD</strong></td>
@@ -472,11 +472,11 @@
             mostra l'interfaccia.</span>
         </div>
         <div class="note">
-          <span lang="en">An <strong>unassigned (orphan) asset</strong> is visible to administrators, managers and viewers only —
-            no editor sees it. Auditing for orphans periodically is a good habit: they are the assets nobody owns.</span>
-          <span lang="it">Un <strong>asset non assegnato (orfano)</strong> è visibile solo ad amministratori, manager e viewer —
-            nessun editor lo vede. Verificare periodicamente gli orfani è una buona abitudine: sono gli asset di cui
-            nessuno è responsabile.</span>
+          <span lang="en">An <strong>unassigned (orphan) asset</strong> is visible to administrators, managers, auditors and viewers
+            only — no editor and no stakeholder sees it. Auditing for orphans periodically is a good habit: they are the assets nobody owns.</span>
+          <span lang="it">Un <strong>asset non assegnato (orfano)</strong> è visibile solo ad amministratori, manager, auditor e
+            viewer — nessun editor e nessuno stakeholder lo vede. Verificare periodicamente gli orfani è una buona abitudine: sono gli asset di
+            cui nessuno è responsabile.</span>
         </div>
       </section>
 
