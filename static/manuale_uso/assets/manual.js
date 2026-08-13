@@ -23,9 +23,19 @@
     });
   }
 
+  // ?lang= / ?theme= hanno la precedenza sullo stato salvato: sono il modo in
+  // cui l'applicazione apre il manuale nella lingua e nel tema in cui l'utente
+  // sta gia' navigando (il manuale e' su un proprio localStorage e altrimenti
+  // si aprirebbe sempre coi propri default). setLang/setTheme li persistono,
+  // quindi la scelta resta valida navigando fra i capitoli senza parametri.
+  var qs = new URLSearchParams(location.search);
+  var qLang = qs.get('lang'), qTheme = qs.get('theme');
+
   var lang = 'en', theme = 'dark';
   try { lang = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) { }
   try { theme = localStorage.getItem(THEME_KEY) || 'dark'; } catch (e) { }
+  if (qLang === 'en' || qLang === 'it') lang = qLang;
+  if (qTheme === 'dark' || qTheme === 'light') theme = qTheme;
   setLang(lang);
   setTheme(theme);
 

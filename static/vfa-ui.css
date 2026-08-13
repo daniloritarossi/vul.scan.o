@@ -235,6 +235,16 @@
   100% { background-position: 0 50%; }
 }
 
+/* ── Tooltip (hover + focus) ──────────────────────────────────────────────────
+   Le singole pagine definivano questa coppia di regole nel proprio <style>.
+   Serve anche alla topbar, che e' condivisa da tutte le pagine: qui e' scritta
+   una volta sola. Il .tip-pop resta invisibile ma nel DOM, cosi' resta
+   raggiungibile da aria-describedby anche quando non e' mostrato.
+   :focus-within copre la navigazione da tastiera (WCAG 1.4.13). */
+.tip-wrap .tip-pop { opacity: 0; }
+.tip-wrap:hover .tip-pop,
+.tip-wrap:focus-within .tip-pop { opacity: 1; }
+
 /* ── Reduced motion: honour the OS setting globally (WCAG 2.3.3) ──────────── */
 @media (prefers-reduced-motion: reduce) {
   *,

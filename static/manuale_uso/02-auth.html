@@ -206,6 +206,19 @@
           <p lang="it"><strong>Errore:</strong> resti su <code>/login</code> con la riga di errore compilata; i campi non
             vengono svuotati, così puoi correggere un refuso senza riscrivere tutto.</p>
         </div>
+
+        <div class="note">
+          <span lang="en"><b>Every sign-in is recorded</b> — successful or not — in the activity ledger, together with
+            the source address: see <a href="09-audit.html#activity">Audit → Activity</a>. The error message on screen
+            stays the same whatever the cause, so it cannot be used to discover which usernames exist; the ledger,
+            readable only by the audit roles, distinguishes a wrong password from an unknown username. The password you
+            typed is never stored.</span>
+          <span lang="it"><b>Ogni accesso viene registrato</b> — riuscito o no — nel registro attività, insieme
+            all'indirizzo di provenienza: vedi <a href="09-audit.html#activity">Audit → Activity</a>. Il messaggio di
+            errore a schermo resta identico qualunque sia la causa, così non può essere usato per scoprire quali
+            username esistono; il registro, leggibile solo dai ruoli di audit, distingue una password errata da uno
+            username inesistente. La password digitata non viene mai salvata.</span>
+        </div>
       </section>
 
       <!-- ============================================ FORGOT -->
@@ -539,7 +552,7 @@
   </div>
 
   <div id="lightbox"><img src="" alt="" /></div>
-  <script src="assets/manual.js"></script>
+  <script src="assets/manual.js?v=2"></script>
 </body>
 
 </html>

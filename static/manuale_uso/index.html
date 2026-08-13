@@ -542,10 +542,18 @@
                 <td><span lang="en">database level</span><span lang="it">livello database</span></td>
               </tr>
               <tr>
+                <td><span lang="en"><strong>Activity ledger — who did what</strong></span><span lang="it"><strong>Registro attività — chi ha fatto cosa</strong></span></td>
+                <td>
+                  <span lang="en">The chains above cover <em>scanning</em>. This one covers the application itself: sign-ins and failed sign-ins, refused requests, users created and roles granted, group membership, asset assignments, configuration writes and data exports — one new row per action, chained like the others. Secret values are stored as <code>[redacted]</code>: the ledger says <em>that</em> a key changed, never its value.</span>
+                  <span lang="it">Le catene qui sopra coprono le <em>scansioni</em>. Questa copre l'applicativo stesso: accessi e accessi falliti, richieste rifiutate, utenti creati e ruoli assegnati, membership dei gruppi, assegnazioni degli asset, scritture di configurazione ed export di dati — una riga nuova per azione, concatenata come le altre. I valori segreti sono salvati come <code>[redacted]</code>: il registro dice <em>che</em> una chiave è cambiata, mai con quale valore.</span>
+                </td>
+                <td><code>GET /api/audit/events</code></td>
+              </tr>
+              <tr>
                 <td><span lang="en"><strong>Signed evidence report</strong></span><span lang="it"><strong>Report di evidenza firmato</strong></span></td>
                 <td>
-                  <span lang="en">The deliverable, in one call: counts at both dates, the remediation delta, and the verification result of <em>all three</em> chains, signed with the instance secret. JSON, CSV or printable HTML.</span>
-                  <span lang="it">Il documento da consegnare, in una sola chiamata: conteggi alle due date, delta di remediation ed esito della verifica di <em>tutte e tre</em> le catene, firmato col segreto dell'istanza. JSON, CSV o HTML stampabile.</span>
+                  <span lang="en">The deliverable, in one call: counts at both dates, the remediation delta, and the verification result of <em>all four</em> chains (scans, finding events, posture runs, activity), signed with the instance secret. JSON, CSV or printable HTML.</span>
+                  <span lang="it">Il documento da consegnare, in una sola chiamata: conteggi alle due date, delta di remediation ed esito della verifica di <em>tutte e quattro</em> le catene (scansioni, eventi finding, run di postura, attività), firmato col segreto dell'istanza. JSON, CSV o HTML stampabile.</span>
                 </td>
                 <td><code>GET /api/audit/evidence</code></td>
               </tr>
@@ -744,7 +752,7 @@
           <a class="card" href="09-audit.html">
             <div class="t">09 <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></div>
             <div class="r">/audit</div>
-            <div class="d"><span lang="en">Tamper-evident scan history, integrity verification, actor facets, export.</span><span lang="it">Storico scansioni a prova di manomissione, verifica integrità, faccette per attore, export.</span></div>
+            <div class="d"><span lang="en">Tamper-evident scan history and activity ledger (who did what), integrity verification, actor facets, export.</span><span lang="it">Storico scansioni a prova di manomissione e registro attività (chi ha fatto cosa), verifica integrità, faccette per attore, export.</span></div>
           </a>
           <a class="card" href="10-admin.html">
             <div class="t">10 <span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></div>
@@ -775,7 +783,7 @@
   </div>
 
   <div id="lightbox"><img src="" alt="" /></div>
-  <script src="assets/manual.js"></script>
+  <script src="assets/manual.js?v=2"></script>
 </body>
 
 </html>

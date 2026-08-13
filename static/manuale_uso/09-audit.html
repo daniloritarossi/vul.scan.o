@@ -54,6 +54,7 @@
               <li><a href="#kpi">KPI</a></li>
               <li><a href="#filters"><span lang="en">Filters &amp; search</span><span lang="it">Filtri e ricerca</span></a></li>
               <li><a href="#entries"><span lang="en">Scan entries</span><span lang="it">Voci di scansione</span></a></li>
+              <li><a href="#activity"><span lang="en">Activity — who did what</span><span lang="it">Attività — chi ha fatto cosa</span></a></li>
               <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
             </ol>
           </nav>
@@ -63,13 +64,19 @@
         <div class="kicker">09 · <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span> <span class="route">/audit</span></div>
         <h1><span lang="en">Audit Ledger</span><span lang="it">Registro di audit</span></h1>
         <p lang="en">
-          The history of every scan the application has run, most recent first, protected by a tamper-evident hash
-          chain. This is the page you open when someone asks you to <em>prove</em> what was scanned, when, and by whom.
+          Two ledgers, two tabs. <b>SCANS</b> is the history of every scan the application has run, most recent first.
+          <b>ACTIVITY</b> is the history of everything <em>else</em> — who signed in, who was denied, who changed a
+          role, a configuration key or an assignment, who exported data. Both are protected by a tamper-evident hash
+          chain. This is the page you open when someone asks you to <em>prove</em> what was scanned, when, by whom —
+          and what that person did around it.
         </p>
         <p lang="it">
-          Lo storico di ogni scansione eseguita dall'applicazione, dalla più recente, protetto da una catena di hash a
-          prova di manomissione. È la pagina che apri quando qualcuno ti chiede di <em>dimostrare</em> cosa è stato
-          scansionato, quando e da chi.
+          Due registri, due schede. <b>SCANS</b> è lo storico di ogni scansione eseguita dall'applicazione, dalla più
+          recente. <b>ACTIVITY</b> è lo storico di tutto il <em>resto</em> — chi ha effettuato l'accesso, a chi è stato
+          negato, chi ha cambiato un ruolo, una chiave di configurazione o un'assegnazione, chi ha esportato dati.
+          Entrambi sono protetti da una catena di hash a prova di manomissione. È la pagina che apri quando qualcuno ti
+          chiede di <em>dimostrare</em> cosa è stato scansionato, quando, da chi — e cosa quella persona ha fatto
+          attorno a quell'operazione.
         </p>
       </header>
 
@@ -411,6 +418,167 @@
         </div>
       </section>
 
+      <!-- ======================================= ACTIVITY -->
+      <section class="block" id="activity">
+        <h2><span lang="en">Activity — who did what</span><span lang="it">Attività — chi ha fatto cosa</span>
+          <span class="roles">admin · manager · auditor (<span lang="en">all</span><span lang="it">tutto</span>) · editor (<span lang="en">own activity only</span><span lang="it">solo la propria attività</span>) · <span lang="en">viewer and stakeholder denied</span><span lang="it">viewer e stakeholder negati</span></span>
+        </h2>
+
+        <p lang="en">
+          The <b>ACTIVITY</b> tab answers the question the scan history cannot: <em>who did what, to what, and from
+            where.</em> Until it existed, an administrator could create an account, grant themselves a role, read the
+          whole fleet and export it, and this page would have shown nothing at all — the ledger covered scanning, not
+          the administration of the application. Every relevant action is now a <strong>new row</strong>, never
+          modified, chained to the previous one exactly like a scan entry.
+        </p>
+        <p lang="it">
+          La scheda <b>ACTIVITY</b> risponde alla domanda a cui lo storico scansioni non può rispondere: <em>chi ha
+            fatto cosa, su cosa e da dove.</em> Finché non è esistita, un amministratore poteva creare un account,
+          assegnarsi un ruolo, leggere l'intera flotta ed esportarla, e questa pagina non avrebbe mostrato nulla — il
+          registro copriva le scansioni, non l'amministrazione dell'applicativo. Ogni azione rilevante è ora una
+          <strong>riga nuova</strong>, mai modificata, concatenata alla precedente esattamente come una voce di
+          scansione.
+        </p>
+
+        <h3><span lang="en">What gets recorded</span><span lang="it">Cosa viene registrato</span></h3>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Category</span><span lang="it">Categoria</span></th>
+                <th><span lang="en">Actions</span><span lang="it">Azioni</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-acc">auth</span></td>
+                <td><span lang="en">Sign-in, <strong>successful and failed</strong>, sign-out, password change, reset request and completion, account activation.</span><span lang="it">Accesso, <strong>riuscito e fallito</strong>, uscita, cambio password, richiesta e completamento del reset, attivazione account.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">authz</span></td>
+                <td><span lang="en">Every refused request (403), with the endpoint and the reason — role or visibility cone.</span><span lang="it">Ogni richiesta rifiutata (403), con l'endpoint e il motivo — ruolo o cono di visibilità.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">user</span> · <span class="badge b-acc">group</span></td>
+                <td><span lang="en">User created, invited, deleted; password reset forced by an admin; <strong>role change with the previous and the new role</strong>; group created or deleted; membership changed, as who joined and who left.</span><span lang="it">Utente creato, invitato, eliminato; reset password forzato da un admin; <strong>cambio ruolo con il ruolo precedente e quello nuovo</strong>; gruppo creato o eliminato; membership modificata, con chi è entrato e chi è uscito.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">assignment</span></td>
+                <td><span lang="en">Asset assigned to a user or a group, with the cone before and after — granting visibility over data is recorded as such.</span><span lang="it">Asset assegnato a un utente o a un gruppo, con il cono prima e dopo — concedere visibilità su dei dati viene registrato come tale.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">asset</span></td>
+                <td><span lang="en">Created, updated (only the fields that actually changed), enabled or disabled, business context changed, deleted.</span><span lang="it">Creato, modificato (solo i campi realmente cambiati), abilitato o disabilitato, contesto business modificato, eliminato.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">config</span></td>
+                <td><span lang="en">Configuration write, with the changed keys and their before/after values. <strong>Secrets are never stored</strong> — see below.</span><span lang="it">Scrittura di configurazione, con le chiavi cambiate e i valori prima/dopo. <strong>I segreti non vengono mai salvati</strong> — vedi sotto.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-ok">export</span></td>
+                <td><span lang="en">SBOM export (format, run, scope) and signed evidence export (dates, format, scope) — data leaving the application.</span><span lang="it">Export SBOM (formato, run, ambito) ed export dell'evidenza firmata (date, formato, ambito) — dati che escono dall'applicazione.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">finding</span></td>
+                <td><span lang="en">Status transitions (who accepted which risk, and with what note) and remediation tickets opened on GitHub/Jira.</span><span lang="it">Transizioni di stato (chi ha accettato quale rischio, e con quale nota) e ticket di remediation aperti su GitHub/Jira.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">scan</span> · <span class="badge b-acc">posture</span> · <span class="badge b-acc">ingest</span></td>
+                <td><span lang="en">Scan launched, local scanner run, posture run started and completed, external report imported.</span><span lang="it">Scansione avviata, scanner locale eseguito, run di postura avviata e conclusa, report esterno importato.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">Reading a row</span><span lang="it">Leggere una riga</span></h3>
+        <p lang="en">
+          Each row shows <b>WHEN</b> (relative, absolute on hover), <b>ACTOR</b> with their role, the
+          <b>CATEGORY</b> colour chip, the exact <b>ACTION</b> identifier, the <b>TARGET</b> the action was performed
+          on, the <b>OUTCOME</b> (<span class="badge b-ok">success</span>, <span class="badge b-warn">failure</span>,
+          <span class="badge b-err">denied</span>), the source <b>IP</b> and a <b>DETAIL</b> field. The detail is
+          structured data — click it to expand the full record: the previous and new role, the configuration keys
+          touched, the reason a login failed.
+        </p>
+        <p lang="it">
+          Ogni riga mostra <b>WHEN</b> (relativo, assoluto al passaggio del mouse), <b>ACTOR</b> con il suo ruolo, il
+          chip colorato della <b>CATEGORY</b>, l'identificativo esatto dell'<b>ACTION</b>, il <b>TARGET</b> su cui
+          l'azione è stata eseguita, l'<b>OUTCOME</b> (<span class="badge b-ok">success</span>,
+          <span class="badge b-warn">failure</span>, <span class="badge b-err">denied</span>), l'<b>IP</b> di
+          provenienza e un campo <b>DETAIL</b>. Il dettaglio è un dato strutturato — cliccalo per espandere il record
+          completo: il ruolo precedente e quello nuovo, le chiavi di configurazione toccate, il motivo per cui un
+          accesso è fallito.
+        </p>
+        <p lang="en">
+          Three KPI tiles sit above the table: <b>RECORDED ACTIONS</b>, <b>FAILED ATTEMPTS</b> (failed logins, wrong
+          current password, rejected operations) and <b>DENIED BY RBAC</b>. The last two are the ones worth watching:
+          a spike in either is the signal this ledger exists for. The tab has its own integrity badge, its own
+          filters — category, action, outcome, actor, date range and free-text search across actor, target and
+          detail — and its own CSV/XLS export of the filtered page.
+        </p>
+        <p lang="it">
+          Sopra la tabella ci sono tre riquadri KPI: <b>RECORDED ACTIONS</b>, <b>FAILED ATTEMPTS</b> (accessi falliti,
+          password attuale errata, operazioni rifiutate) e <b>DENIED BY RBAC</b>. Gli ultimi due sono quelli da
+          tenere d'occhio: un picco su uno dei due è il segnale per cui questo registro esiste. La scheda ha un proprio
+          badge di integrità, propri filtri — categoria, azione, esito, attore, intervallo di date e ricerca libera su
+          attore, bersaglio e dettaglio — e un proprio export CSV/XLS della pagina filtrata.
+        </p>
+
+        <h3><span lang="en">Two things the ledger does on purpose</span><span lang="it">Due scelte volute del registro</span></h3>
+        <p lang="en">
+          <strong>A failed login says more here than it does on screen.</strong> The login page answers <em>“invalid
+            credentials”</em> whatever the cause, so that nobody can use it to find out which usernames exist. The
+          ledger instead distinguishes <code>bad_password</code> (a real account, wrong password),
+          <code>unknown_user</code> (a username that does not exist) and <code>inactive</code>. To an auditor a
+          credential attack and an account-enumeration sweep must not look the same. The password that was attempted is
+          never stored.
+        </p>
+        <p lang="it">
+          <strong>Un accesso fallito dice qui più di quanto dica a schermo.</strong> La pagina di login risponde
+          <em>«credenziali non valide»</em> qualunque sia la causa, così che nessuno possa usarla per scoprire quali
+          username esistono. Il registro distingue invece <code>bad_password</code> (account reale, password errata),
+          <code>unknown_user</code> (username inesistente) e <code>inactive</code>. Per un auditor un attacco alle
+          credenziali e una scansione di enumerazione degli account non devono apparire uguali. La password tentata non
+          viene mai salvata.
+        </p>
+        <p lang="en">
+          <strong>Secrets never enter the ledger.</strong> Values under keys such as <code>password</code>,
+          <code>api_key</code>, <code>*_token</code> or <code>*_secret</code> are written as <code>[redacted]</code>:
+          the record states <em>that</em> an API key was rewritten, never its value. The ledger is readable by every
+          auditor and travels inside exports, so it must not become a place where credentials leak.
+        </p>
+        <p lang="it">
+          <strong>I segreti non entrano nel registro.</strong> I valori sotto chiavi come <code>password</code>,
+          <code>api_key</code>, <code>*_token</code> o <code>*_secret</code> vengono scritti come
+          <code>[redacted]</code>: il record dice <em>che</em> una chiave API è stata riscritta, mai con quale valore.
+          Il registro è leggibile da ogni auditor e viaggia dentro gli export, quindi non deve diventare il posto da
+          cui trapelano le credenziali.
+        </p>
+
+        <h3><span lang="en">Who can read it</span><span lang="it">Chi può leggerlo</span></h3>
+        <p lang="en">
+          Administrators, managers and auditors read the whole activity ledger. An <em>editor</em> sees
+          <strong>only their own</strong> actions, and the tab says so explicitly: scan results can be filtered by
+          asset cone, but administrative activity has no cone to filter by, so the only defensible scope is the
+          person's own. Viewers and stakeholders cannot open the page at all.
+        </p>
+        <p lang="it">
+          Amministratori, manager e auditor leggono l'intero registro attività. Un <em>editor</em> vede
+          <strong>solo le proprie</strong> azioni, e la scheda lo dichiara esplicitamente: i risultati di scansione si
+          possono filtrare per cono di asset, ma l'attività amministrativa non ha un cono su cui filtrare, quindi
+          l'unico ambito difendibile è quello della persona stessa. Viewer e stakeholder non possono aprire la pagina.
+        </p>
+
+        <div class="note">
+          <span lang="en"><b>If the database is down</b>, the ledger write is skipped rather than blocking the
+            operation the user asked for: your work never fails because of an audit write. The gap is visible —
+            the integrity badge reads <span class="badge b-warn">INTEGRITY N/A</span> — and is not hidden.</span>
+          <span lang="it"><b>Se il database non è raggiungibile</b>, la scrittura nel registro viene saltata invece di
+            bloccare l'operazione richiesta dall'utente: il tuo lavoro non fallisce mai a causa di una scrittura di
+            audit. Il buco è visibile — il badge di integrità indica <span class="badge b-warn">INTEGRITY N/A</span> —
+            e non viene nascosto.</span>
+        </div>
+      </section>
+
       <!-- ======================================= HOWTO -->
       <section class="block" id="howto">
         <h2><span lang="en">Procedures and expected outcomes</span><span lang="it">Procedure e risultati attesi</span></h2>
@@ -426,6 +594,16 @@
           <li><span lang="en">Export <span class="badge b-acc">CSV</span> or <span class="badge b-acc">XLS</span> to hand the material over.</span><span lang="it">Esporta in <span class="badge b-acc">CSV</span> o <span class="badge b-acc">XLS</span> per consegnare il materiale.</span></li>
         </ol>
 
+        <h3><span lang="en">How It Works — “who touched this account?”</span><span lang="it">Come funziona — «chi ha toccato questo account?»</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Open <strong>Audit</strong> and switch to the <strong>ACTIVITY</strong> tab. Read its integrity badge first, for the same reason as on the scan tab.</span><span lang="it">Apri <strong>Audit</strong> e passa alla scheda <strong>ACTIVITY</strong>. Leggi per prima cosa il suo badge di integrità, per lo stesso motivo valido nella scheda scansioni.</span></li>
+          <li><span lang="en">Type the username into the <strong>SEARCH</strong> box: it matches the actor, the target and the detail, so it catches both what that person did and what was done to their account.</span><span lang="it">Digita lo username nella casella <strong>SEARCH</strong>: cerca su attore, bersaglio e dettaglio, quindi intercetta sia ciò che quella persona ha fatto sia ciò che è stato fatto al suo account.</span></li>
+          <li><span lang="en">Narrow with <strong>CATEGORY</strong> = <em>user</em> for role changes and password resets, or <em>auth</em> for sign-ins.</span><span lang="it">Restringi con <strong>CATEGORY</strong> = <em>user</em> per cambi ruolo e reset password, oppure <em>auth</em> per gli accessi.</span></li>
+          <li><span lang="en">Set <strong>OUTCOME</strong> to <em>failure</em> or <em>denied</em> to isolate failed sign-ins and refused requests.</span><span lang="it">Imposta <strong>OUTCOME</strong> su <em>failure</em> o <em>denied</em> per isolare accessi falliti e richieste rifiutate.</span></li>
+          <li><span lang="en">Click a <b>DETAIL</b> cell to expand the full record — the previous role, the new role, the reason a login was refused.</span><span lang="it">Clicca una cella <b>DETAIL</b> per espandere il record completo — il ruolo precedente, quello nuovo, il motivo per cui un accesso è stato rifiutato.</span></li>
+          <li><span lang="en">Export <span class="badge b-acc">CSV</span> or <span class="badge b-acc">XLS</span>: the export includes each row's hash, so the recipient can tie the file back to the verified chain.</span><span lang="it">Esporta in <span class="badge b-acc">CSV</span> o <span class="badge b-acc">XLS</span>: l'export include l'hash di ogni riga, così chi lo riceve può ricondurre il file alla catena verificata.</span></li>
+        </ol>
+
         <h3><span lang="en">Expected Outcome</span><span lang="it">Risultato atteso</span></h3>
         <div class="outcome">
           <span lang="en">A chronological, filterable and cryptographically verifiable record: <em>who</em> scanned <em>what</em>,
@@ -436,6 +614,14 @@
             <em>cosa</em>, <em>quando</em>, con <em>quale metodo</em> e <em>cosa è stato trovato</em> — esportabile come
             evidenza. Gli auditor vedono l'intero registro in sola lettura; gli editor vedono solo i risultati del
             proprio cono; viewer e stakeholder non possono aprire la pagina.</span>
+        </div>
+        <div class="outcome">
+          <span lang="en">And, on the second tab, the same for the application itself: every sign-in, refusal, role
+            change, assignment, configuration write and export attributed to a named person, with the source address,
+            in a ledger that cannot be rewritten.</span>
+          <span lang="it">E, nella seconda scheda, lo stesso per l'applicativo: ogni accesso, rifiuto, cambio ruolo,
+            assegnazione, scrittura di configurazione ed export attribuito a una persona con nome e cognome, con
+            l'indirizzo di provenienza, in un registro che non può essere riscritto.</span>
         </div>
       </section>
 
@@ -453,7 +639,7 @@
   </div>
 
   <div id="lightbox"><img src="" alt="" /></div>
-  <script src="assets/manual.js"></script>
+  <script src="assets/manual.js?v=2"></script>
 </body>
 
 </html>

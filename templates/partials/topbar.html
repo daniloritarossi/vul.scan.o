@@ -5,7 +5,7 @@ Expects one of:
 <!-- Skip-to-content link: primo elemento focusabile (WCAG 2.4.1 Bypass Blocks). -->
 <a href="#main" class="skip-link" data-i18n="a11y.skip">Skip to content</a>
 <!-- Shared UI primitives: focus-visible, toast unificato, reduced-motion. -->
-<link rel="stylesheet" href="/static/vfa-ui.css" />
+<link rel="stylesheet" href="/static/vfa-ui.css?v=2" />
 <script src="/static/vfa-ui.js?v=2" defer></script>
 <!-- Dark theme (opt-in): default light. Palette flips via CSS variables in the
      compiled tailwind.css. Restore the class before paint to avoid a flash. -->
@@ -67,6 +67,21 @@ Expects one of:
       <kbd
         class="font-code-sm text-[10px] text-slate-400 border border-slate-300 rounded px-1 hidden md:inline">⌘K</kbd>
     </button>
+    <!-- Manuale d'uso: si apre in una scheda nuova (il lavoro in corso nella
+         pagina non va perso), nella lingua e nel tema di navigazione correnti.
+         L'href e' composto a runtime dallo script in fondo al partial. -->
+    <a id="manualLink" href="/static/manuale_uso/index.html" target="_blank" rel="noopener noreferrer"
+      data-i18n-al="manual.aria" aria-label="User manual — opens in a new tab"
+      aria-describedby="manualTip"
+      class="tip-wrap relative flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-cyan-600 transition-colors">
+      <span class="material-symbols-outlined text-[18px]" aria-hidden="true">menu_book</span>
+      <span id="manualTip" role="tooltip"
+        class="tip-pop pointer-events-none absolute top-full right-0 mt-2 w-60 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal text-left opacity-0 transition-opacity duration-200 z-[60] shadow-xl">
+        <b class="block font-label-caps text-[10px] text-cyan-300 mb-1" data-i18n="manual.tip_title">USER MANUAL</b>
+        <span data-i18n="manual.tip_desc">Full guide to every page, role and API — opens in a new tab, in the language
+          you are browsing in.</span>
+      </span>
+    </a>
     <div class="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
       <button data-lang-btn="en" class="px-2 py-1 rounded-md font-label-caps text-[10px] transition-colors">EN</button>
       <button data-lang-btn="it" class="px-2 py-1 rounded-md font-label-caps text-[10px] transition-colors">IT</button>
@@ -210,6 +225,33 @@ Expects one of:
     }
     // Ri-etichetta al cambio lingua (aria-label/title tradotti).
     window.addEventListener('langchange', function () { apply(stored()); });
+  })();
+</script>
+<script>
+  // Link al manuale d'uso. Il manuale e' bilingue e a doppio tema, ma tiene lo
+  // stato in un proprio localStorage: senza parametri si aprirebbe in inglese e
+  // in scuro a chi sta navigando in italiano e in chiaro. L'href viene quindi
+  // ricalcolato a ogni cambio di lingua o tema.
+  (function () {
+    var link = document.getElementById('manualLink');
+    if (!link) return;
+    function currentLang() {
+      try { return localStorage.getItem('lang') || 'en'; } catch (e) { return 'en'; }
+    }
+    function currentTheme() {
+      // Il manuale conosce solo light/dark: 'system' va risolto qui, dove la
+      // media query e' gia' stata valutata sul documento corrente.
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+    function sync() {
+      var lang = currentLang() === 'it' ? 'it' : 'en';
+      link.setAttribute('href',
+        '/static/manuale_uso/index.html?lang=' + lang + '&theme=' + currentTheme());
+      link.setAttribute('hreflang', lang);
+    }
+    sync();
+    window.addEventListener('langchange', sync);
+    window.addEventListener('themechange', sync);
   })();
 </script>
 <script>

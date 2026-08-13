@@ -31,6 +31,8 @@ Backend **FastAPI** · Frontend **HTML + Tailwind** (CDN) · real-time results v
 
 > ⚠️ **Responsible use.** Only run scans or logins against assets you own or are explicitly authorized to test. Scanning third-party systems without permission is illegal.
 
+📖 **User manual** — a bilingual (EN/IT) guide with one chapter per page, the role matrix, the API reference and the formulas: `static/manuale_uso/index.html`, served by the running app at `/static/manuale_uso/index.html`. The book icon in the top bar, next to the search trigger, opens it in a new tab in the language and theme you are currently browsing in.
+
 ![Home](static/screens/home5.png)
 ![Home](static/screens/home6.png)
 ![Home](static/screens/home7.png)
@@ -727,7 +729,7 @@ endpoints and would otherwise pollute the ledger.
 
 **Signed evidence report** — `GET /api/audit/evidence` produces the deliverable
 in one call: counts at both dates, the remediation delta, and the verification
-result of *all three* chains, HMAC-SHA256 signed with the instance secret.
+result of *all four* chains (scans, finding events, posture runs, activity), HMAC-SHA256 signed with the instance secret.
 
 ```bash
 # Machine-readable, spreadsheet, and printable (browser → PDF)

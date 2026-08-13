@@ -357,6 +357,9 @@
       'theme.dark': 'Dark',
       'theme.system': 'System',
       // command palette (Ctrl/Cmd + K)
+      'manual.aria': 'User manual — opens in a new tab',
+      'manual.tip_title': 'USER MANUAL',
+      'manual.tip_desc': 'Full guide to every page, role and API — opens in a new tab, in the language you are browsing in.',
       'cmdk.btn': 'Search',
       'cmdk.ph': 'Jump to a page or action…',
       'cmdk.none': 'No results',
@@ -1021,6 +1024,9 @@
       'theme.dark': 'Scuro',
       'theme.system': 'Sistema',
       // command palette (Ctrl/Cmd + K)
+      'manual.aria': 'Manuale d\'uso — si apre in una nuova scheda',
+      'manual.tip_title': 'MANUALE D\'USO',
+      'manual.tip_desc': 'Guida completa a ogni pagina, ruolo e API — si apre in una nuova scheda, nella lingua in cui stai navigando.',
       'cmdk.btn': 'Cerca',
       'cmdk.ph': 'Vai a una pagina o azione…',
       'cmdk.none': 'Nessun risultato',

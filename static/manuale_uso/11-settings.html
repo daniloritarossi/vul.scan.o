@@ -90,6 +90,19 @@
           utile quando più installazioni condividono lo stesso host.
         </p>
 
+        <div class="note">
+          <span lang="en"><b>Each save is recorded</b> in the activity ledger — only the keys that actually changed,
+            with their previous and new value, plus who saved and from where: see
+            <a href="09-audit.html#activity">Audit → Activity</a>. <b>Secret values are never stored</b>: API keys,
+            tokens and the SMTP password appear as <code>[redacted]</code>. The ledger states <em>that</em> a
+            credential was rewritten — which is the fact an audit needs — never its value.</span>
+          <span lang="it"><b>Ogni salvataggio viene registrato</b> nel registro attività — solo le chiavi realmente
+            cambiate, con il valore precedente e quello nuovo, più chi ha salvato e da dove: vedi
+            <a href="09-audit.html#activity">Audit → Activity</a>. <b>I valori segreti non vengono mai salvati</b>:
+            chiavi API, token e password SMTP compaiono come <code>[redacted]</code>. Il registro dice <em>che</em> una
+            credenziale è stata riscritta — il fatto che serve a un audit — mai con quale valore.</span>
+        </div>
+
         <figure>
           <img src="img/settings-page.webp" alt="Settings page" loading="lazy" />
           <figcaption>
@@ -402,7 +415,7 @@
   </div>
 
   <div id="lightbox"><img src="" alt="" /></div>
-  <script src="assets/manual.js"></script>
+  <script src="assets/manual.js?v=2"></script>
 </body>
 
 </html>

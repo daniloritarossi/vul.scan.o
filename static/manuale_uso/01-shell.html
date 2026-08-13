@@ -111,10 +111,11 @@
           <img src="img/shell-topbar.webp" alt="Top app bar" loading="lazy" />
           <figcaption>
             <span lang="en"><b>The complete top bar</b> — logo and wordmark, breadcrumb or status chip, then on the right:
-              user chip with role pill, logout, command palette trigger, language switch, theme toggle.</span>
+              user chip with role pill, logout, command palette trigger, user manual, language switch, theme
+              toggle.</span>
             <span lang="it"><b>La barra superiore completa</b> — logo e wordmark, breadcrumb o chip di stato, poi a destra:
-              chip utente con pillola del ruolo, logout, apertura della command palette, cambio lingua, toggle
-              tema.</span>
+              chip utente con pillola del ruolo, logout, apertura della command palette, manuale d'uso, cambio lingua,
+              toggle tema.</span>
           </figcaption>
         </figure>
 
@@ -182,7 +183,56 @@
           <code>/login</code>. Le sessioni sono cookie HttpOnly firmati con HMAC-SHA256 e durano 12 ore.
         </p>
 
-        <h4><span class="n">3</span><span lang="en">Language and theme</span><span lang="it">Lingua e tema</span></h4>
+        <h4><span class="n">3</span><span lang="en">User manual</span><span lang="it">Manuale d'uso</span></h4>
+        <figure class="narrow">
+          <img src="img/shell-manual-tip.webp" alt="Manual icon in the top bar with its tooltip open" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The manual icon</b> — right of the search trigger; hover or keyboard focus reveals the
+              description.</span>
+            <span lang="it"><b>L'icona del manuale</b> — a destra del pulsante di ricerca; il passaggio del mouse o il
+              focus da tastiera mostra la descrizione.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">
+          The book icon (<code>menu_book</code>), immediately to the right of the search trigger, opens this manual
+          <strong>in a new tab</strong> — you never lose a scan in progress, a filter set or a half-written form by
+          consulting the documentation. Hovering or focusing it shows a tooltip with the title and a one-line
+          description; the same text is exposed to screen readers through <code>aria-label</code> and
+          <code>aria-describedby</code>, and the tooltip is reachable by keyboard, not only by mouse.
+        </p>
+        <p lang="it">
+          L'icona a forma di libro (<code>menu_book</code>), subito a destra del pulsante di ricerca, apre questo
+          manuale <strong>in una nuova scheda</strong> — consultare la documentazione non ti fa mai perdere una
+          scansione in corso, un set di filtri o un modulo compilato a metà. Passandoci sopra o raggiungendola da
+          tastiera compare un tooltip con titolo e descrizione; lo stesso testo è esposto agli screen reader tramite
+          <code>aria-label</code> e <code>aria-describedby</code>, e il tooltip è raggiungibile da tastiera, non solo
+          col mouse.
+        </p>
+        <p lang="en">
+          The link <strong>carries your current language and theme across</strong>: it is built at runtime as
+          <code>?lang=it&amp;theme=dark</code> (or whatever you are using) and rebuilt whenever you switch either. The
+          manual keeps its own preferences in its own <code>localStorage</code>, so without those parameters it would
+          open in English and dark for someone browsing the application in Italian and light. Once opened, the values
+          are stored on the manual side too, so moving between chapters keeps them without any parameter in the URL.
+        </p>
+        <p lang="it">
+          Il link <strong>porta con sé lingua e tema correnti</strong>: viene costruito a runtime come
+          <code>?lang=it&amp;theme=dark</code> (o quello che stai usando) e ricostruito ogni volta che cambi l'uno o
+          l'altro. Il manuale tiene le proprie preferenze in un proprio <code>localStorage</code>, quindi senza quei
+          parametri si aprirebbe in inglese e in scuro a chi sta usando l'applicazione in italiano e in chiaro. Una
+          volta aperto i valori vengono salvati anche lato manuale, così spostandosi fra i capitoli restano validi
+          senza alcun parametro nell'URL.
+        </p>
+        <div class="tip">
+          <span lang="en">Every chapter of the manual mirrors one page of the application, in the same order as the
+            navigation drawer. Opening the manual and jumping to the chapter with the same number as the page you are
+            on is usually the fastest route to an answer.</span>
+          <span lang="it">Ogni capitolo del manuale rispecchia una pagina dell'applicazione, nello stesso ordine del
+            drawer di navigazione. Aprire il manuale e saltare al capitolo con lo stesso numero della pagina in cui ti
+            trovi è di solito la via più rapida a una risposta.</span>
+        </div>
+
+        <h4><span class="n">4</span><span lang="en">Language and theme</span><span lang="it">Lingua e tema</span></h4>
         <figure class="narrow">
           <img src="img/shell-lang-theme.webp" alt="Language switch and theme toggle" loading="lazy" />
           <figcaption>
@@ -223,7 +273,7 @@
             interfaccia appare più chiara delle immagini è solo l'impostazione del tema — non manca nulla.</span>
         </div>
 
-        <h4><span class="n">4</span><span lang="en">Update banner</span><span lang="it">Banner aggiornamenti</span></h4>
+        <h4><span class="n">5</span><span lang="en">Update banner</span><span lang="it">Banner aggiornamenti</span></h4>
         <p lang="en">
           On every page load the shell calls <code>GET /api/version/check</code>, which compares the running git tag
           against the latest GitHub release (result cached six hours server-side). If a newer version exists, a dark pill
@@ -523,7 +573,7 @@
   </div>
 
   <div id="lightbox"><img src="" alt="" /></div>
-  <script src="assets/manual.js"></script>
+  <script src="assets/manual.js?v=2"></script>
 </body>
 
 </html>
