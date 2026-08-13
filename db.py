@@ -912,6 +912,189 @@ def close_stale_posture_findings(asset_ip: str, seen_fps: list,
 
 
 # ---------------------------------------------------------------------------
+# REGISTRO ATTIVITA' (audit_events): chi ha fatto cosa, su cosa, quando.
+#
+# I registri precedenti coprono l'attivita' di SCANSIONE. Questo copre tutto il
+# resto — accessi, accessi falliti, cambi ruolo, amministrazione utenti e
+# gruppi, assegnazioni, configurazione, export — cioe' le domande che un audit
+# pone per prime e a cui prima l'applicativo non sapeva rispondere.
+# Stessa costruzione degli altri registri: append-only + catena hash.
+# ---------------------------------------------------------------------------
+
+# Campi immutabili di un evento che entrano nella catena hash. 'detail' e'
+# incluso: e' li' che vivono i valori dell'azione (ruolo prima/dopo, chiavi di
+# configurazione toccate) ed e' esattamente cio' che avrebbe senso ritoccare.
+_AEVENT_HASH_FIELDS = ("category", "action", "outcome", "actor_id", "actor_name",
+                       "actor_role", "target_type", "target_id", "target_label",
+                       "detail", "src_ip", "event_ts")
+
+# Chiavi il cui VALORE non entra mai nel registro. Il registro e' leggibile da
+# tutti gli auditor e viaggia negli export: deve dire che una password e' stata
+# cambiata o che una chiave API e' stata riscritta, mai con quale valore.
+#
+# Match ESATTO sul nome della chiave, non "contiene": con la sottostringa,
+# 'must_change_password' (un flag booleano) veniva oscurato come se fosse una
+# credenziale, e il registro perdeva informazione senza proteggere nulla.
+_REDACT_KEYS = frozenset((
+    "password", "old_password", "new_password", "password_hash", "token",
+    "api_key", "claude_api_key", "serper_api_key", "github_token",
+    "jira_api_token", "secret", "activation_link", "reset_link",
+))
+# Suffissi per le chiavi non previste (integrazioni future): un '<x>_token' o
+# un '<x>_api_key' e' sempre una credenziale. '_password' NON e' qui apposta:
+# lo prende il match esatto, senza travolgere i flag che finiscono cosi'.
+_REDACT_SUFFIXES = ("_token", "_api_key", "_secret")
+_REDACTED = "[redacted]"
+
+
+def _redact(value, key: str = ""):
+    """
+    Copia di 'value' con i valori sensibili sostituiti da '[redacted]'.
+    Ricorsiva: i dettagli di configurazione arrivano annidati per sezione.
+    """
+    kl = (key or "").lower()
+    if kl in _REDACT_KEYS or kl.endswith(_REDACT_SUFFIXES):
+        return _REDACTED if value not in (None, "", [], {}) else value
+    if isinstance(value, dict):
+        return {k: _redact(v, k) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact(v, key) for v in value]
+    return value
+
+
+def _aevent_hash(payload: dict, prev_hash: str) -> str:
+    """sha256(prev_hash | campi immutabili dell'evento canonicalizzati)."""
+    return hashlib.sha256(
+        (str(prev_hash or "") + "|" + _canon(payload, _AEVENT_HASH_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _last_aevent_hash(client) -> str:
+    """row_hash dell'ultimo evento di attivita'. '' se il registro e' vuoto."""
+    try:
+        resp = (client.table("audit_events").select("row_hash")
+                .order("id", desc=True).limit(1).execute())
+        if resp.data:
+            return resp.data[0].get("row_hash") or ""
+    except Exception as exc:
+        logger.warning("_last_aevent_hash fallita: %s", exc)
+    return ""
+
+
+def log_audit_event(action: str, category: str = "", outcome: str = "success",
+                    actor: Optional[dict] = None, target: Optional[dict] = None,
+                    detail: Optional[dict] = None,
+                    request_meta: Optional[dict] = None) -> bool:
+    """
+    Appende un evento di attivita' al registro, concatenato in hash.
+
+    action    'auth.login', 'user.role_change', ... (prefisso = categoria se
+              'category' non e' passata esplicitamente)
+    outcome   success | failure | denied
+    actor     {id, name, role} — assente per le azioni pre-autenticazione
+              (un login fallito non ha un attore autenticato).
+    target    {type, id, label} — l'oggetto dell'azione.
+    detail    contesto strutturato; i valori sensibili sono redatti qui dentro.
+    request_meta {ip, user_agent}
+
+    Best-effort come il resto della persistenza (True se scritto): un evento
+    non registrabile non deve MAI far fallire l'operazione dell'utente. La
+    conseguenza — un buco nel registro quando il DB e' giu' — e' dichiarata
+    nella pagina di audit invece di essere nascosta.
+    """
+    client = _get_client()
+    if client is None:
+        return False
+    actor = actor or {}
+    target = target or {}
+    meta = request_meta or {}
+    row = {
+        "event_ts": _utc_iso(),
+        "category": category or (action.split(".")[0] if "." in action else "other"),
+        "action": action,
+        "outcome": outcome or "success",
+        "actor_id": actor.get("id"),
+        "actor_name": actor.get("name"),
+        "actor_role": actor.get("role"),
+        "target_type": target.get("type"),
+        # target_id e' testo: gli id di questo applicativo sono numerici, ma un
+        # bersaglio puo' anche essere una sezione di configurazione o un IP.
+        "target_id": None if target.get("id") is None else str(target.get("id")),
+        "target_label": target.get("label"),
+        "detail": _redact(detail or {}),
+        "src_ip": meta.get("ip"),
+        "user_agent": (meta.get("user_agent") or "")[:300] or None,
+    }
+    prev = _last_aevent_hash(client)
+    row["prev_hash"] = prev
+    row["row_hash"] = _aevent_hash(row, prev)
+    try:
+        client.table("audit_events").insert(row).execute()
+        return True
+    except Exception as exc:
+        logger.warning("log_audit_event fallita (%s): %s", action, exc)
+        return False
+
+
+def fetch_audit_events(limit: int = 5000, date_from: Optional[str] = None,
+                       date_to: Optional[str] = None,
+                       actor_id: Optional[int] = None):
+    """
+    Eventi di attivita' dal piu' recente. I filtri di data sono applicati lato
+    DB su event_ts (testo UTC a formato fisso: ordine lessicografico =
+    cronologico). 'actor_id' limita al singolo attore (usato per i ruoli
+    scoped). None se il DB non e' raggiungibile.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        q = client.table("audit_events").select("*")
+        if date_from:
+            q = q.gte("event_ts", date_from)
+        if date_to:
+            q = q.lte("event_ts", date_to)
+        if actor_id is not None:
+            q = q.eq("actor_id", actor_id)
+        resp = q.order("id", desc=True).limit(limit).execute()
+        return resp.data or []
+    except Exception as exc:
+        logger.warning("fetch_audit_events fallita: %s", exc)
+        return None
+
+
+def verify_events_chain() -> Optional[dict]:
+    """
+    Ricalcola la catena hash del registro attivita'.
+    Ritorna {total, verified, broken:[id...], ok}, None se il DB non risponde.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("audit_events")
+                .select("id,category,action,outcome,actor_id,actor_name,actor_role,"
+                        "target_type,target_id,target_label,detail,src_ip,event_ts,"
+                        "prev_hash,row_hash")
+                .order("id").execute())
+    except Exception as exc:
+        logger.warning("verify_events_chain fallita: %s", exc)
+        return None
+    rows = resp.data or []
+    broken, verified, prev = [], 0, ""
+    for r in rows:
+        expect = _aevent_hash(r, r.get("prev_hash") or "")
+        linked = (r.get("prev_hash") or "") == prev
+        if r.get("row_hash") == expect and linked:
+            verified += 1
+        else:
+            broken.append(r["id"])
+        prev = r.get("row_hash") or ""
+    return {"total": len(rows), "verified": verified,
+            "broken": broken, "ok": not broken}
+
+
+# ---------------------------------------------------------------------------
 # RBAC / CONO DI VISIBILITA' (users, groups, user_groups, asset_assignments)
 # ---------------------------------------------------------------------------
 

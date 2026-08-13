@@ -180,7 +180,20 @@ async def _auth_required_handler(request: Request, exc: AuthRequired):
 
 @app.exception_handler(Forbidden)
 async def _forbidden_handler(request: Request, exc: Forbidden):
-    """Ruolo/scope insufficiente: 403 per le API, home per le pagine."""
+    """Ruolo/scope insufficiente: 403 per le API, home per le pagine.
+
+    Ogni rifiuto finisce nel registro attivita': i tentativi di accesso NEGATI
+    sono meta' del valore di un audit di autorizzazione — dicono chi ha provato
+    a uscire dal proprio ruolo o dal proprio cono di visibilita'.
+    """
+    try:
+        denied_user = get_current_user(request)
+    except Exception:
+        denied_user = None
+    _audit("authz.denied", request, denied_user, outcome="denied",
+           target={"type": "endpoint", "id": request.url.path,
+                   "label": f"{request.method} {request.url.path}"},
+           detail={"reason": exc.detail})
     if request.url.path.startswith("/api/"):
         return JSONResponse({"error": exc.detail}, status_code=403)
     return RedirectResponse("/", status_code=303)
@@ -226,6 +239,37 @@ def _require_ip_in_scope(user: CurrentUser, ip: str) -> None:
         raise Forbidden("Asset fuori dal tuo cono di visibilita'")
 
 
+def _req_meta(request: Request | None) -> dict:
+    """Provenienza della richiesta per il registro attivita' (ip + user agent).
+    Dietro reverse proxy l'IP del client e' in X-Forwarded-For; il primo valore
+    e' quello dell'origine."""
+    if request is None:
+        return {}
+    fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    ip = fwd or (request.client.host if request.client else "")
+    return {"ip": ip or None, "user_agent": request.headers.get("user-agent") or ""}
+
+
+def _audit(action: str, request: Request | None = None,
+           user: CurrentUser | None = None, outcome: str = "success",
+           target: dict | None = None, detail: dict | None = None,
+           actor: dict | None = None) -> None:
+    """
+    Registra un'azione nel registro attivita' (chi/cosa/su cosa/da dove).
+
+    Scrittura best-effort: il registro non deve mai far fallire l'operazione
+    dell'utente. 'actor' esplicito serve alle azioni senza sessione (login
+    fallito, attivazione via token), dove l'attore non e' l'utente corrente.
+    """
+    if actor is None and user is not None:
+        actor = {"id": user.id, "name": user.username, "role": user.role}
+    try:
+        db.log_audit_event(action, outcome=outcome, actor=actor, target=target,
+                           detail=detail, request_meta=_req_meta(request))
+    except Exception as exc:                      # difesa in profondita'
+        logger.warning("audit '%s' non registrato: %s", action, exc)
+
+
 def _filter_posture_run(run: dict, ips) -> dict:
     """Copia della run di postura limitata agli asset con ip nel set indicato."""
     if not run or ips is None:
@@ -258,7 +302,21 @@ async def api_login(request: Request):
     if (not row or not row.get("password_hash")
             or not row.get("is_active", True)
             or not verify_password(password, row["password_hash"])):
+        # Il registro invece DISTINGUE il motivo: la risposta HTTP non deve
+        # rivelare se l'utente esiste, ma un audit di sicurezza deve poter
+        # separare "password sbagliata su account reale" (possibile attacco a
+        # credenziali) da "username inesistente" (enumerazione).
+        reason = ("unknown_user" if not row
+                  else "inactive" if not row.get("is_active", True)
+                  or not row.get("password_hash") else "bad_password")
+        _audit("auth.login", request, outcome="failure",
+               actor={"id": (row or {}).get("id"), "name": username or None,
+                      "role": (row or {}).get("role")},
+               detail={"username": username, "reason": reason})
         return JSONResponse({"error": "Credenziali non valide"}, status_code=401)
+    _audit("auth.login", request,
+           actor={"id": row["id"], "name": row["username"], "role": row["role"]},
+           detail={"must_change_password": bool(row.get("must_change_password"))})
     resp = JSONResponse({"ok": True, "username": row["username"], "role": row["role"],
                          "must_change_password": bool(row.get("must_change_password"))})
     _set_session_cookie(resp, row["id"])
@@ -266,8 +324,17 @@ async def api_login(request: Request):
 
 
 @app.get("/logout")
-def logout():
+def logout(request: Request):
     """Chiude la sessione e torna alla login."""
+    # L'utente e' risolto dal cookie senza dependency: /logout deve funzionare
+    # anche con una sessione ormai invalida (in quel caso non c'e' nulla da
+    # registrare, la sessione era gia' chiusa).
+    try:
+        user = get_current_user(request)
+    except Exception:
+        user = None
+    if user is not None:
+        _audit("auth.logout", request, user)
     resp = RedirectResponse("/login", status_code=303)
     resp.delete_cookie(SESSION_COOKIE)
     return resp
@@ -333,11 +400,23 @@ async def api_activate(request: Request):
     if user_row is None:
         user_row = consume_onetime_token(token, "reset")
     if user_row is None:
+        _audit("auth.token_redeem", request, outcome="failure",
+               detail={"reason": "invalid_or_expired"})
         return JSONResponse({"error": "Token non valido o scaduto"}, status_code=400)
     if not set_user_password(user_row["id"], password):
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
     if verified and user_row.get("email") and not user_row.get("email_verified_at"):
         db.update_user(user_row["id"], {"email_verified_at": "now()"})
+    # Attivazione e reset scrivono entrambi la password ma sono due fatti
+    # diversi per un audit: il primo apre un account, il secondo ne
+    # ricredenzializza uno esistente.
+    _audit("auth.account_activate" if verified else "auth.password_reset_complete",
+           request,
+           actor={"id": user_row["id"], "name": user_row["username"],
+                  "role": user_row.get("role")},
+           target={"type": "user", "id": user_row["id"],
+                   "label": user_row["username"]},
+           detail={"email_verified": bool(verified and user_row.get("email"))})
     return {"ok": True, "username": user_row["username"]}
 
 
@@ -369,12 +448,17 @@ async def api_change_password(request: Request,
         return JSONResponse({"error": err}, status_code=400)
     row = db.fetch_user(user.id)
     if not row or not verify_password(old_pw, row.get("password_hash") or ""):
+        _audit("auth.password_change", request, user, outcome="failure",
+               detail={"reason": "wrong_current_password"})
         return JSONResponse({"error": "Password attuale errata"}, status_code=400)
     if old_pw == new_pw:
         return JSONResponse({"error": "La nuova password deve essere diversa"},
                             status_code=400)
     if not set_user_password(user.id, new_pw):
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
+    _audit("auth.password_change", request, user,
+           target={"type": "user", "id": user.id, "label": user.username},
+           detail={"forced": bool(user.must_change_password)})
     # Nuovo cookie: quello corrente e' invalidato da password_changed_at.
     resp = JSONResponse({"ok": True})
     _set_session_cookie(resp, user.id)
@@ -395,6 +479,12 @@ async def api_forgot(request: Request):
     generic = {"ok": True,
                "message": "Se l'email corrisponde a un account, riceverai un link di reset."}
     if not email or not smtp_enabled():
+        # Registrato comunque: un flusso di reset non partito perche' SMTP e'
+        # spento e' un'informazione utile quando l'utente dice "non mi arriva
+        # niente" — e resta la traccia del tentativo.
+        _audit("auth.password_reset_request", request, outcome="failure",
+               detail={"email": email or None,
+                       "reason": "smtp_disabled" if email else "missing_email"})
         return generic
     row = db.fetch_user_by_email(email)
     if row and row.get("is_active"):
@@ -404,6 +494,12 @@ async def api_forgot(request: Request):
                 send_reset(email, row["username"], token)
             except MailError as exc:
                 logger.warning("send_reset fallita: %s", exc)
+    # La RISPOSTA e' identica in ogni caso (no enumeration), il registro no:
+    # 'matched' distingue un reset legittimo da un sondaggio di indirizzi.
+    _audit("auth.password_reset_request", request,
+           actor={"id": (row or {}).get("id"), "name": (row or {}).get("username"),
+                  "role": (row or {}).get("role")},
+           detail={"email": email, "matched": bool(row and row.get("is_active"))})
     return generic
 
 
@@ -473,7 +569,8 @@ def api_sbom(run_id: int | None = None,
 
 
 @app.get("/api/sbom/export")
-def api_sbom_export(format: str = "cyclonedx", run_id: int | None = None,
+def api_sbom_export(request: Request, format: str = "cyclonedx",
+                    run_id: int | None = None,
                     user: CurrentUser = Depends(_exporter)):
     """
     Esporta la SBOM in formato standard.
@@ -491,6 +588,13 @@ def api_sbom_export(format: str = "cyclonedx", run_id: int | None = None,
         fname = "sbom.cdx.json"
     else:
         return JSONResponse({"error": f"formato non supportato: {format}"}, status_code=400)
+    # L'export porta fuori l'inventario software completo: e' un'uscita di dati
+    # e come tale va registrata (formato, run e ampiezza dello scope).
+    _audit("export.sbom", request, user,
+           target={"type": "posture_run", "id": (run or {}).get("id")},
+           detail={"format": fmt,
+                   "assets": len((run or {}).get("posture_assets") or []),
+                   "scoped": visible_asset_ips(user) is not None})
     return JSONResponse(doc, headers={
         "Content-Disposition": f'attachment; filename="{fname}"',
     })
@@ -665,6 +769,13 @@ async def api_findings_import(request: Request, tool: str = "auto",
     if not upsert_findings(rows):
         return JSONResponse({"error": "Persistenza fallita"}, status_code=503)
     log_finding_events(lifecycle_events(rows, existing_by_fp, _actor(user)))
+    # Un'ingestione INTRODUCE finding nel sistema: senza traccia, un batch
+    # caricato da una pipeline e uno caricato a mano sono indistinguibili.
+    _audit("ingest.import", request, user,
+           target={"type": "report", "label": detected},
+           detail={"tool": detected, "parsed": len(normalized),
+                   "asset_ip": asset_ip or None,
+                   "skipped_out_of_scope": skipped_out_of_scope, **stats})
     return {"ok": True, "tool": detected, "parsed": len(normalized),
             "skipped_out_of_scope": skipped_out_of_scope, **stats}
 
@@ -677,26 +788,38 @@ async def api_findings_status(finding_id: int, request: Request,
     Stati validi: open | triaged | accepted | fixed.
     Editor: solo su finding di asset nel proprio cono di visibilita'.
     """
+    # Letto per tutti i ruoli (non solo scoped): serve lo stato di partenza per
+    # il registro attivita', che l'UPDATE sta per sovrascrivere.
+    f = fetch_finding(finding_id)
     if user.scoped:
-        f = fetch_finding(finding_id)
         if f is None:
             return JSONResponse({"error": "Invalid id or DB unreachable"},
                                 status_code=404)
         _require_ip_in_scope(user, f.get("asset_ip") or "")
     body = await request.json()
     status = (body.get("status") or "").strip().lower()
+    note = (body.get("note") or "").strip()
     if status not in STATUSES:
         return JSONResponse(
             {"error": f"Stato non valido: {status}", "valid": list(STATUSES)},
             status_code=400)
-    if not set_finding_status(finding_id, status, (body.get("note") or "").strip(),
-                              actor=_actor(user)):
+    if not set_finding_status(finding_id, status, note, actor=_actor(user)):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=404)
+    # Doppia registrazione voluta: 'finding_events' regge la ricostruzione
+    # point-in-time dei conteggi, questo registro risponde a "chi ha accettato
+    # quel rischio, da che postazione e quando" senza incrociare due tabelle.
+    _audit("finding.status_change", request, user,
+           target={"type": "finding", "id": finding_id,
+                   "label": (f or {}).get("title")},
+           detail={"from": (f or {}).get("status"), "to": status,
+                   "severity": (f or {}).get("severity"),
+                   "asset_ip": (f or {}).get("asset_ip"), "note": note})
     return {"ok": True, "status": status}
 
 
 @app.post("/api/findings/{finding_id}/ticket")
-def api_findings_ticket(finding_id: int, user: CurrentUser = Depends(_writer)):
+def api_findings_ticket(finding_id: int, request: Request,
+                        user: CurrentUser = Depends(_writer)):
     """
     Crea un ticket di remediation (GitHub Issue / Jira) per il finding e ne
     salva il riferimento. Provider e credenziali in config.json ('ticketing').
@@ -715,6 +838,12 @@ def api_findings_ticket(finding_id: int, user: CurrentUser = Depends(_writer)):
     except TicketError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
     set_finding_ticket(finding_id, ticket["ref"], ticket["url"])
+    # L'apertura del ticket manda titolo e dettagli del finding a un sistema
+    # ESTERNO (GitHub/Jira): e' un'uscita di dati verso terzi.
+    _audit("finding.ticket_create", request, user,
+           target={"type": "finding", "id": finding_id, "label": f.get("title")},
+           detail={"ref": ticket.get("ref"), "url": ticket.get("url"),
+                   "provider": (load_config().get("ticketing") or {}).get("provider")})
     return {"ok": True, "already": False, **ticket}
 
 
@@ -767,6 +896,13 @@ async def api_findings_scan_local(request: Request,
     if not upsert_findings(rows):
         return JSONResponse({"error": "Persistenza fallita"}, status_code=503)
     log_finding_events(lifecycle_events(rows, existing_by_fp, _actor(user)))
+    # 'target' e' un path o un riferimento immagine scelto dal chiamante: far
+    # eseguire uno scanner locale al server e' un'operazione privilegiata e il
+    # bersaglio e' il dato che conta.
+    _audit("scan.local", request, user,
+           target={"type": "local_target", "label": target},
+           detail={"type": scan_type, "tool": tool, "target": target,
+                   "asset_ip": asset_ip or None, "parsed": len(normalized), **stats})
     return {"ok": True, "tool": tool, "parsed": len(normalized), **stats}
 
 
@@ -846,6 +982,7 @@ async def api_settings_post(request: Request,
 
     # Aggiorna solo le sezioni/chiavi ricevute; non sovrascrivere le chiavi
     # API se il client invia il placeholder "••••••••".
+    changed: dict = {}
     for section, values in body.items():
         if section not in cfg:
             continue
@@ -857,9 +994,19 @@ async def api_settings_post(request: Request,
             # Preserva il valore originale se il frontend invia placeholder.
             if isinstance(val, str) and "••••" in val:
                 continue
+            if cfg[section][key] != val:
+                changed.setdefault(section, {})[key] = {
+                    "from": cfg[section][key], "to": val}
             cfg[section][key] = val
 
     save_config(cfg)
+    # Solo le chiavi realmente cambiate, col prima/dopo. I valori sensibili
+    # (chiavi API, password SMTP) sono redatti da db.log_audit_event: il
+    # registro dice CHE la chiave e' stata riscritta, mai con quale valore.
+    _audit("config.update", request, user,
+           target={"type": "config", "id": ",".join(sorted(changed)) or None,
+                   "label": ", ".join(sorted(changed)) or "no change"},
+           detail={"sections": sorted(changed), "changed": changed})
     # Le fonti tengono in cache risposte e indici: dopo un cambio di chiave,
     # timeout o finestra le voci vecchie sarebbero calcolate su impostazioni
     # che non valgono piu'.
@@ -888,7 +1035,7 @@ def api_ollama_models(user: CurrentUser = Depends(_admin_manager)):
 
 
 @app.get("/api/posture/scan")
-def api_posture_scan(ips: str | None = None,
+def api_posture_scan(request: Request, ips: str | None = None,
                      user: CurrentUser = Depends(_writer)):
     """
     Avvio MANUALE della Full Posture: per ogni asset raccoglie l'inventario
@@ -918,6 +1065,9 @@ def api_posture_scan(ips: str | None = None,
             yield _sse("error", {"message": "No asset selected."})
             return
         run_id = create_posture_run(_actor(user))
+        _audit("posture.scan_start", request, user,
+               target={"type": "posture_run", "id": run_id},
+               detail={"assets": len(assets), "selected_ips": sorted(selected) or None})
         yield _sse("run", {"run_id": run_id, "total_assets": len(assets)})
 
         n = pkgs = vuln = vulns = score_sum = 0
@@ -939,6 +1089,8 @@ def api_posture_scan(ips: str | None = None,
         totals = {"assets_scanned": n, "total_packages": pkgs,
                   "total_vulnerable": vuln, "total_vulns": vulns, "avg_score": avg}
         finalize_posture_run(run_id, totals)
+        _audit("posture.scan_complete", request, user,
+               target={"type": "posture_run", "id": run_id}, detail=totals)
         yield _sse("done", {"run_id": run_id, **totals})
 
     return StreamingResponse(stream(), media_type="text/event-stream")
@@ -1069,6 +1221,11 @@ async def api_assets_context(index: int, request: Request,
         return JSONResponse({"error": "No context fields"}, status_code=400)
     if not update_asset_fields(index, row):
         return JSONResponse({"error": "Invalid index or DB unreachable"}, status_code=404)
+    # Il contesto business pesa sulla prioritizzazione del rischio: abbassare
+    # la criticita' di un asset ne abbassa il rischio calcolato senza toccare
+    # una sola vulnerabilita'.
+    _audit("asset.context_change", request, user,
+           target={"type": "asset", "id": index}, detail=row)
     return {"ok": True, **row}
 
 
@@ -1194,6 +1351,101 @@ def api_audit(
             "sources": sources, "actors": actors}
 
 
+def _event_search(rows: list, q: str) -> list:
+    """Ricerca full-text su azione, attore, bersaglio e dettaglio dell'evento."""
+    ql = (q or "").strip().lower()
+    if not ql:
+        return rows
+    out = []
+    for e in rows:
+        hay = " ".join(str(x) for x in [
+            e.get("action"), e.get("category"), e.get("outcome"),
+            e.get("actor_name"), e.get("actor_role"), e.get("target_type"),
+            e.get("target_id"), e.get("target_label"), e.get("src_ip"),
+            json.dumps(e.get("detail") or {}, default=str),
+        ] if x).lower()
+        if ql in hay:
+            out.append(e)
+    return out
+
+
+def _event_kpis(rows: list) -> dict:
+    """Aggregati sul set filtrato: volume, esiti e attori distinti."""
+    failures = sum(1 for e in rows if (e.get("outcome") or "") == "failure")
+    denied = sum(1 for e in rows if (e.get("outcome") or "") == "denied")
+    actors = len({e.get("actor_name") for e in rows if e.get("actor_name")})
+    last = max((e.get("event_ts") or "" for e in rows), default="") or None
+    return {"events": len(rows), "failures": failures, "denied": denied,
+            "actors": actors, "last_event": last}
+
+
+@app.get("/api/audit/events")
+def api_audit_events(
+    user: CurrentUser = Depends(_audit_reader),
+    page: int = 0, page_size: int = 25,
+    date_from: str | None = None, date_to: str | None = None,
+    category: str | None = None, action: str | None = None,
+    outcome: str | None = None, actor: str | None = None,
+    q: str | None = None,
+):
+    """
+    Registro delle ATTIVITA': accessi, autorizzazioni negate, amministrazione
+    utenti e gruppi, assegnazioni, configurazione, export, scansioni.
+    E' il registro che risponde a "chi ha fatto cosa", complementare allo
+    storico scansioni di /api/audit.
+
+    Admin, manager e auditor: tutti gli eventi. Editor: SOLO i propri — il
+    registro attribuisce attivita' a persone identificate, e un ruolo scoped
+    non deve leggere l'attivita' amministrativa altrui (stessa ragione per cui
+    'stakeholder' e 'viewer' restano fuori del tutto).
+
+    Filtri: date_from/date_to (lato DB), category, action, outcome, actor, q.
+    Paginazione: page/page_size (page_size=0 = tutto).
+    """
+    rows = db.fetch_audit_events(
+        date_from=date_from, date_to=date_to,
+        actor_id=user.id if user.scoped else None)
+    if rows is None:
+        return JSONResponse({"error": "Supabase unreachable", "events": []},
+                            status_code=503)
+    # Opzioni dei menu dal set in-scope COMPLETO (prima dei filtri), cosi' non
+    # si svuotano quando un filtro e' attivo.
+    categories = sorted({(e.get("category") or "").strip() for e in rows if e.get("category")})
+    actions = sorted({(e.get("action") or "").strip() for e in rows if e.get("action")})
+    actors = sorted({(e.get("actor_name") or "").strip() for e in rows if e.get("actor_name")})
+    if category:
+        rows = [e for e in rows if (e.get("category") or "") == category]
+    if action:
+        rows = [e for e in rows if (e.get("action") or "") == action]
+    if outcome:
+        rows = [e for e in rows if (e.get("outcome") or "") == outcome]
+    if actor:
+        rows = [e for e in rows if (e.get("actor_name") or "").lower() == actor.lower()]
+    if q:
+        rows = _event_search(rows, q)
+    kpis = _event_kpis(rows)
+    total = len(rows)
+    if page_size and page_size > 0:
+        start = max(page, 0) * page_size
+        rows = rows[start:start + page_size]
+    return {"events": rows, "total": total, "page": page, "page_size": page_size,
+            "kpis": kpis, "categories": categories, "actions": actions,
+            "actors": actors, "scoped": user.scoped}
+
+
+@app.get("/api/audit/events/verify")
+def api_audit_events_verify(user: CurrentUser = Depends(_audit_reader)):
+    """
+    Verifica la catena hash del registro attivita': dice se una riga di
+    "chi ha fatto cosa" e' stata alterata o rimossa dopo la scrittura.
+    503 se il DB non e' raggiungibile.
+    """
+    res = db.verify_events_chain()
+    if res is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    return res
+
+
 @app.get("/api/audit/verify")
 def api_audit_verify(user: CurrentUser = Depends(_audit_reader)):
     """
@@ -1238,8 +1490,8 @@ EVIDENCE_FORMATS = ("json", "csv", "html")
 
 
 @app.get("/api/audit/evidence")
-def api_audit_evidence(date: str | None = None, since: str | None = None,
-                       format: str = "json",
+def api_audit_evidence(request: Request, date: str | None = None,
+                       since: str | None = None, format: str = "json",
                        user: CurrentUser = Depends(_audit_reader)):
     """
     Report di evidenza FIRMATO da consegnare a un audit esterno.
@@ -1276,10 +1528,20 @@ def api_audit_evidence(date: str | None = None, since: str | None = None,
         state=res["state"], before=res["before"], delta=res["delta"],
         chains={"scans": verify_audit_chain(),
                 "finding_events": verify_findings_chain(),
-                "posture_runs": verify_posture_chain()},
+                "posture_runs": verify_posture_chain(),
+                # Il registro attivita' e' parte della prova: un report che
+                # certifica i conteggi ma tace sull'integrita' del "chi ha
+                # fatto cosa" copre solo meta' della domanda d'audit.
+                "audit_events": db.verify_events_chain()},
         actor=user.username, scope=res["scope"],
     )
     evidence.sign(report, _hmac_secret())
+    # L'evidenza firmata e' il deliverable d'audit per eccellenza: chi l'ha
+    # generata, per quali date e in che formato entra nel registro.
+    _audit("export.evidence", request, user,
+           target={"type": "report", "id": report.get("generated_at")},
+           detail={"format": fmt, "date": date, "since": since,
+                   "scope": res["scope"]})
 
     stamp = (report["generated_at"] or "")[:10]
     if fmt == "json":
@@ -1604,11 +1866,26 @@ async def api_assets_create(request: Request,
     ))
     if new_id is None:
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
+    _audit("asset.create", request, user,
+           target={"type": "asset", "id": new_id, "label": ip},
+           detail={"os_type": os_type,
+                   "os_major_version": (body.get("os_major_version") or "").strip() or None,
+                   "enabled": bool(body.get("enabled", True)),
+                   "credentials_set": bool(plain_pw)})
     if user.scoped:
+        # L'auto-assegnazione e' una concessione di visibilita' fatta
+        # dall'applicativo, non dall'utente: senza traccia sembrerebbe che
+        # l'editor abbia sempre avuto quell'asset nel proprio cono.
         if assign_group is not None:
             db.add_asset_assignment(new_id, group_id=int(assign_group))
+            _audit("assignment.auto", request, user,
+                   target={"type": "asset", "id": new_id, "label": ip},
+                   detail={"group_id": int(assign_group), "reason": "creator_scope"})
         else:
             db.add_asset_assignment(new_id, user_id=user.id)
+            _audit("assignment.auto", request, user,
+                   target={"type": "asset", "id": new_id, "label": ip},
+                   detail={"user_id": user.id, "reason": "creator_scope"})
     return {"ok": True, "index": new_id}
 
 
@@ -1629,8 +1906,17 @@ async def api_assets_assignments(index: int, request: Request,
         return JSONResponse({"error": str(exc)}, status_code=503)
     if current is None:
         return JSONResponse({"error": "Invalid index"}, status_code=404)
+    prev = [a for a in (db.fetch_all_assignments() or []) if a["asset_id"] == index]
     if not db.set_asset_assignments(index, user_ids, group_ids):
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
+    # Assegnare un asset ALLARGA il cono di visibilita' di qualcuno: e' una
+    # concessione di accesso a dati, e come tale va registrata col prima/dopo.
+    _audit("assignment.set", request, user,
+           target={"type": "asset", "id": index, "label": current.ip},
+           detail={"from": {"user_ids": sorted(a["user_id"] for a in prev if a.get("user_id")),
+                            "group_ids": sorted(a["group_id"] for a in prev if a.get("group_id"))},
+                   "to": {"user_ids": sorted(int(u) for u in user_ids),
+                          "group_ids": sorted(int(g) for g in group_ids)}})
     return {"ok": True, "user_ids": user_ids, "group_ids": group_ids}
 
 
@@ -1679,6 +1965,27 @@ async def api_assets_update(index: int, request: Request,
     ))
     if not ok:
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
+    # Campi cambiati, non il record intero: il registro deve dire cosa e'
+    # cambiato. La password non compare mai — solo il fatto che e' stata
+    # riscritta (la credenziale di accesso a un host e' un fatto d'audit).
+    changed = {}
+    if ip != current.ip:
+        changed["ip"] = {"from": current.ip, "to": ip}
+    new_user = (body.get("username") or "").strip()
+    if new_user != (current.username or ""):
+        changed["username"] = {"from": current.username, "to": new_user}
+    if os_type != (current.os_type or ""):
+        changed["os_type"] = {"from": current.os_type, "to": os_type}
+    new_osv = (body.get("os_major_version") or "").strip()
+    if new_osv != (current.os_major_version or ""):
+        changed["os_major_version"] = {"from": current.os_major_version, "to": new_osv}
+    if enabled != current.enabled:
+        changed["enabled"] = {"from": current.enabled, "to": enabled}
+    if plain_pw:
+        changed["credentials_rotated"] = True
+    _audit("asset.update", request, user,
+           target={"type": "asset", "id": index, "label": ip},
+           detail={"changed": changed})
     return {"ok": True}
 
 
@@ -1692,16 +1999,30 @@ async def api_assets_toggle(index: int, request: Request,
     enabled = bool(body.get("enabled", True))
     if not set_asset_enabled(index, enabled):
         return JSONResponse({"error": "Invalid index"}, status_code=404)
+    # Disabilitare un asset lo toglie da TUTTE le scansioni successive: e' il
+    # modo piu' silenzioso di far sparire un host dai conteggi di sicurezza.
+    _audit("asset.enabled_change", request, user,
+           target={"type": "asset", "id": index},
+           detail={"enabled": enabled})
     return {"ok": True, "enabled": enabled}
 
 
 @app.delete("/api/assets/{index}")
-def api_assets_delete(index: int, user: CurrentUser = Depends(_writer)):
+def api_assets_delete(index: int, request: Request,
+                      user: CurrentUser = Depends(_writer)):
     """Elimina l'asset indicato (index = id Supabase).
     Editor: solo asset del proprio cono di visibilita'."""
     _require_asset_in_scope(user, index)
+    try:
+        before = get_asset(index, ASSETS_FILE)
+    except AssetStoreError:
+        before = None
     if not delete_asset(index):
         return JSONResponse({"error": "Invalid index"}, status_code=404)
+    _audit("asset.delete", request, user,
+           target={"type": "asset", "id": index,
+                   "label": getattr(before, "ip", None)},
+           detail={"os_type": getattr(before, "os_type", None)})
     return {"ok": True}
 
 
@@ -1779,8 +2100,15 @@ async def api_users_create(request: Request,
         row.update({"password_hash": None, "is_active": False})
     new_id = db.insert_user(row)
     if new_id is None:
+        _audit("user.create", request, user, outcome="failure",
+               target={"type": "user", "label": username},
+               detail={"role": role, "reason": "duplicate_or_db_unreachable"})
         return JSONResponse({"error": "Creazione fallita (username/email duplicati o DB non raggiungibile)"},
                             status_code=409)
+    _audit("user.create", request, user,
+           target={"type": "user", "id": new_id, "label": username},
+           detail={"role": role, "email": email or None,
+                   "activation": "password" if password else "invite"})
     out = {"ok": True, "id": new_id}
     if not password:
         invite = _send_invite({"id": new_id, "username": username, "email": email})
@@ -1791,7 +2119,8 @@ async def api_users_create(request: Request,
 
 
 @app.post("/api/users/{user_id}/invite")
-def api_users_reinvite(user_id: int, user: CurrentUser = Depends(_admin_only)):
+def api_users_reinvite(user_id: int, request: Request,
+                       user: CurrentUser = Depends(_admin_only)):
     """Reinvia l'invito di attivazione (brucia i token precedenti). Solo admin."""
     target = db.fetch_user(user_id)
     if not target:
@@ -1801,11 +2130,15 @@ def api_users_reinvite(user_id: int, user: CurrentUser = Depends(_admin_only)):
     invite = _send_invite(target)
     if "error" in invite:
         return JSONResponse(invite, status_code=503)
+    _audit("user.invite", request, user,
+           target={"type": "user", "id": user_id, "label": target.get("username")},
+           detail={"sent": bool(invite.get("sent")), "email": target.get("email")})
     return {"ok": True, **invite}
 
 
 @app.post("/api/users/{user_id}/reset")
-def api_users_reset(user_id: int, user: CurrentUser = Depends(_admin_only)):
+def api_users_reset(user_id: int, request: Request,
+                    user: CurrentUser = Depends(_admin_only)):
     """
     Invia un link di reset password all'utente (l'admin non conosce mai la
     password altrui). Solo admin.
@@ -1820,6 +2153,12 @@ def api_users_reset(user_id: int, user: CurrentUser = Depends(_admin_only)):
     if token is None:
         return JSONResponse({"error": "Supabase non raggiungibile"}, status_code=503)
     link = activation_link(token)
+    # Un admin che forza il reset della password di un altro account e' una
+    # delle azioni piu' sensibili dell'applicativo: registrata sempre, prima
+    # dell'esito della consegna (il token e' gia' stato emesso).
+    _audit("user.password_reset", request, user,
+           target={"type": "user", "id": user_id, "label": target.get("username")},
+           detail={"email": target.get("email")})
     if smtp_enabled() and target.get("email"):
         try:
             send_reset(target["email"], target["username"], token)
@@ -1852,21 +2191,40 @@ async def api_users_update(user_id: int, request: Request,
         row["is_active"] = True
     if not row:
         return JSONResponse({"error": "Niente da aggiornare"}, status_code=400)
+    # Stato PRECEDENTE letto prima dell'UPDATE: senza il ruolo di partenza il
+    # registro direbbe solo "ora e' admin", non "e' stato promosso da viewer".
+    before = db.fetch_user(user_id)
     # L'ultimo admin non puo' auto-degradarsi: lockout garantito.
     if row.get("role") and row["role"] != "admin":
-        target = db.fetch_user(user_id)
-        if target and target["role"] == "admin":
+        if before and before["role"] == "admin":
             admins = [u for u in (db.fetch_users() or []) if u["role"] == "admin"]
             if len(admins) <= 1:
+                _audit("user.role_change", request, user, outcome="failure",
+                       target={"type": "user", "id": user_id,
+                               "label": (before or {}).get("username")},
+                       detail={"from": before["role"], "to": row["role"],
+                               "reason": "last_admin"})
                 return JSONResponse({"error": "Impossibile rimuovere l'ultimo admin"},
                                     status_code=400)
     if not db.update_user(user_id, row):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=404)
+    tgt = {"type": "user", "id": user_id, "label": (before or {}).get("username")}
+    # Due azioni distinte in una sola rotta: il cambio di ruolo e' un evento di
+    # autorizzazione, la password impostata dall'admin e' un evento di
+    # credenziali. Registrarle insieme renderebbe incercabile la prima.
+    if row.get("role"):
+        _audit("user.role_change", request, user, target=tgt,
+               detail={"from": (before or {}).get("role"), "to": row["role"],
+                       "self": user_id == user.id})
+    if row.get("password_hash"):
+        _audit("user.password_set", request, user, target=tgt,
+               detail={"must_change_password": True})
     return {"ok": True}
 
 
 @app.delete("/api/users/{user_id}")
-def api_users_delete(user_id: int, user: CurrentUser = Depends(_admin_only)):
+def api_users_delete(user_id: int, request: Request,
+                     user: CurrentUser = Depends(_admin_only)):
     """Elimina un utente (assegnazioni e membership cascano). Solo admin."""
     if user_id == user.id:
         return JSONResponse({"error": "Non puoi eliminare il tuo stesso utente"},
@@ -1879,6 +2237,13 @@ def api_users_delete(user_id: int, user: CurrentUser = Depends(_admin_only)):
                                 status_code=400)
     if not db.delete_user(user_id):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=404)
+    # La riga utente sparisce: senza queste due informazioni nel registro,
+    # ruolo ed email dell'account cancellato non sono piu' ricostruibili.
+    _audit("user.delete", request, user,
+           target={"type": "user", "id": user_id,
+                   "label": (target or {}).get("username")},
+           detail={"role": (target or {}).get("role"),
+                   "email": (target or {}).get("email")})
     return {"ok": True}
 
 
@@ -1911,14 +2276,26 @@ async def api_groups_create(request: Request,
     if new_id is None:
         return JSONResponse({"error": "Creazione fallita (nome duplicato o DB non raggiungibile)"},
                             status_code=409)
+    _audit("group.create", request, user,
+           target={"type": "group", "id": new_id, "label": name},
+           detail={"name": name})
     return {"ok": True, "id": new_id}
 
 
 @app.delete("/api/groups/{group_id}")
-def api_groups_delete(group_id: int, user: CurrentUser = Depends(_admin_only)):
+def api_groups_delete(group_id: int, request: Request,
+                      user: CurrentUser = Depends(_admin_only)):
     """Elimina un gruppo (membership e assegnazioni cascano). Solo admin."""
+    # Il gruppo porta con se' membership e assegnazioni: il registro conserva
+    # cosa e' stato revocato insieme al gruppo (cascata invisibile altrimenti).
+    before = next((g for g in (db.fetch_groups() or []) if g["id"] == group_id), None)
     if not db.delete_group(group_id):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=404)
+    _audit("group.delete", request, user,
+           target={"type": "group", "id": group_id,
+                   "label": (before or {}).get("name")},
+           detail={"members": [m["user_id"]
+                               for m in ((before or {}).get("user_groups") or [])]})
     return {"ok": True}
 
 
@@ -1927,8 +2304,22 @@ async def api_groups_members(group_id: int, request: Request,
                              user: CurrentUser = Depends(_admin_only)):
     """Sostituisce la membership del gruppo. Body: {user_ids: [..]}. Solo admin."""
     body = await request.json()
-    if not db.set_group_members(group_id, body.get("user_ids") or []):
+    user_ids = body.get("user_ids") or []
+    groups = db.fetch_groups() or []
+    before = next((g for g in groups if g["id"] == group_id), None)
+    prev_ids = sorted(m["user_id"] for m in ((before or {}).get("user_groups") or []))
+    if not db.set_group_members(group_id, user_ids):
         return JSONResponse({"error": "Invalid id or DB unreachable"}, status_code=503)
+    # La membership determina il cono di visibilita': va registrata come delta
+    # (chi e' entrato, chi e' uscito), non come stato finale — e' l'ingresso in
+    # un gruppo il fatto che un audit contesta.
+    now_ids = sorted(int(u) for u in user_ids)
+    _audit("group.members_set", request, user,
+           target={"type": "group", "id": group_id,
+                   "label": (before or {}).get("name")},
+           detail={"from": prev_ids, "to": now_ids,
+                   "added": sorted(set(now_ids) - set(prev_ids)),
+                   "removed": sorted(set(prev_ids) - set(now_ids))})
     return {"ok": True}
 
 
@@ -1950,8 +2341,9 @@ async def api_identify(request: Request,
 
 
 @app.get("/api/scan")
-def api_scan(description: str, use_osint: bool = True, lang: str = "en",
-             deep: bool = False, user: CurrentUser = Depends(_writer)):
+def api_scan(request: Request, description: str, use_osint: bool = True,
+             lang: str = "en", deep: bool = False,
+             user: CurrentUser = Depends(_writer)):
     """
     Esegue la scansione e trasmette i risultati in streaming (SSE).
     Ogni messaggio 'data:' e' un JSON con l'esito di un singolo asset.
@@ -2019,6 +2411,14 @@ def api_scan(description: str, use_osint: bool = True, lang: str = "en",
                       "affected_source": affected_source},
             actor={"id": user.id, "name": user.username},
         )
+        # Il ledger 'scans' resta la fonte del DETTAGLIO di scansione; qui
+        # entra la sola riga di attivita', cosi' la timeline "chi ha fatto
+        # cosa" e' completa senza dover leggere due registri.
+        _audit("scan.run", request, user,
+               target={"type": "scan", "id": scan_id, "label": target.product},
+               detail={"description": (description or "")[:200],
+                       "product": target.product, "version": target.version or None,
+                       "assets": len(assets), "use_osint": bool(use_osint)})
 
         # 3. Scansione asset per asset (risultati in tempo reale), con
         #    arricchimento CVE (OSV) sulla versione realmente rilevata.

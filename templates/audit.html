@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=39" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=40" />
   <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -121,7 +121,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=27"></script>
+  <script src="/static/i18n.js?v=29"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -218,13 +218,14 @@
                 <span data-i18n="audit.integrity_checking">CHECKING…</span>
               </span>
             </div>
-            <p class="font-code-sm text-code-sm text-slate-500 mt-1" data-i18n="audit.subtitle">Scan results history
+            <p id="auditSubtitle" class="font-code-sm text-code-sm text-slate-500 mt-1" data-i18n="audit.subtitle">Scan results history
               stored on <span class="text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">Supabase</span> · most recent
               first</p>
           </div>
           <div class="flex items-center gap-3">
-            <!-- Expandable search -->
-            <div class="search-wrap flex items-center bg-white border border-slate-200 rounded-full shadow-sm overflow-hidden">
+            <!-- Expandable search (storico scansioni; il registro attivita' ha
+                 il proprio campo di ricerca nella sua barra filtri) -->
+            <div id="searchWrap" class="search-wrap flex items-center bg-white border border-slate-200 rounded-full shadow-sm overflow-hidden">
               <button id="searchToggle" type="button" aria-label="Search"
                 class="flex items-center justify-center w-10 h-10 text-slate-500 hover:text-cyan-600 transition-colors shrink-0">
                 <span class="material-symbols-outlined text-[20px]">search</span>
@@ -244,6 +245,22 @@
           </div>
         </div>
 
+        <!-- Due registri, due domande diverse: "cosa e' stato scansionato" e
+             "chi ha fatto cosa". Stessa pagina, schede separate. -->
+        <div role="tablist" aria-label="Audit views" class="flex items-center gap-1 border-b border-slate-200">
+          <button id="tabScans" role="tab" aria-selected="true" aria-controls="panelScans"
+            class="tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 border-cyan-500 text-cyan-700 inline-flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">history</span>
+            <span data-i18n="audit.tab_scans">SCANS</span>
+          </button>
+          <button id="tabEvents" role="tab" aria-selected="false" aria-controls="panelEvents"
+            class="tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-700 inline-flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">manage_accounts</span>
+            <span data-i18n="audit.tab_events">ACTIVITY</span>
+          </button>
+        </div>
+
+        <div id="panelScans" role="tabpanel" aria-labelledby="tabScans" class="space-y-8">
         <!-- KPI strip -->
         <section class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <div class="neural-panel p-5 rounded-2xl relative">
@@ -362,6 +379,118 @@
             data-i18n="audit.loading">Loading history…</div>
         </section>
         <div id="auditPager"></div>
+        </div><!-- /panelScans -->
+
+        <!-- ================= ACTIVITY (audit_events) ================= -->
+        <div id="panelEvents" role="tabpanel" aria-labelledby="tabEvents" class="space-y-8 hidden">
+          <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2" data-i18n="audit.ev_kpi_events">RECORDED ACTIONS</h3>
+              <span id="evKpiTotal" class="font-display-lg text-display-lg text-slate-900">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2 flex items-center gap-1.5">
+                <span data-i18n="audit.ev_kpi_failures">FAILED ATTEMPTS</span>
+                <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" data-i18n-al="audit.ev_kpi_failures_t" aria-label="What is this?">
+                  <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600" style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
+                  <span class="tip-pop pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl" data-i18n="audit.ev_kpi_failures_t">Failed logins, wrong current password, rejected operations.</span>
+                </span>
+              </h3>
+              <span id="evKpiFailures" class="font-display-lg text-display-lg text-amber-600">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-rose-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2 flex items-center gap-1.5">
+                <span data-i18n="audit.ev_kpi_denied">DENIED BY RBAC</span>
+                <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" data-i18n-al="audit.ev_kpi_denied_t" aria-label="What is this?">
+                  <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600" style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
+                  <span class="tip-pop pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl" data-i18n="audit.ev_kpi_denied_t">Requests refused because the role or the visibility cone did not allow them.</span>
+                </span>
+              </h3>
+              <span id="evKpiDenied" class="font-display-lg text-display-lg text-error">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-fuchsia-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2" data-i18n="audit.ev_kpi_last">LAST ACTION</h3>
+              <span id="evKpiLast" class="font-code-lg text-code-lg text-slate-900">—</span>
+            </div>
+          </section>
+
+          <!-- Filter bar -->
+          <section class="neural-panel rounded-2xl p-4 flex flex-wrap items-end gap-3">
+            <div class="flex flex-col gap-1">
+              <label for="evCategory" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.ev_f_category">CATEGORY</label>
+              <select id="evCategory" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="evAction" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.ev_f_action">ACTION</label>
+              <select id="evAction" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="evOutcome" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_outcome">OUTCOME</label>
+              <select id="evOutcome" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+                <option value="success" data-i18n="audit.ev_out_success">success</option>
+                <option value="failure" data-i18n="audit.ev_out_failure">failure</option>
+                <option value="denied" data-i18n="audit.ev_out_denied">denied</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="evActor" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_actor">ACTOR</label>
+              <select id="evActor" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="evFrom" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_from">FROM</label>
+              <input id="evFrom" type="date" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="evTo" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_to">TO</label>
+              <input id="evTo" type="date" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700" />
+            </div>
+            <div class="flex flex-col gap-1 grow min-w-[200px]">
+              <label for="evSearch" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.ev_f_search">SEARCH</label>
+              <input id="evSearch" type="text" data-i18n-ph="audit.ev_search_ph" placeholder="Search actor, target, detail…"
+                class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 placeholder:text-slate-400" />
+            </div>
+            <button id="evClear" class="font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">filter_alt_off</span><span data-i18n="audit.f_clear">CLEAR</span>
+            </button>
+          </section>
+
+          <div class="sticky top-0 z-20 flex items-center justify-between flex-wrap gap-3 -mb-2 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span id="evStatus" role="status" aria-live="polite" class="font-label-caps text-[10px] text-slate-500">—</span>
+              <span id="evIntegrityBadge" role="status" aria-live="polite"
+                class="inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+                <span class="material-symbols-outlined text-[14px]">shield</span>
+                <span data-i18n="audit.integrity_checking">CHECKING…</span>
+              </span>
+              <span id="evScopeNote" class="hidden font-label-caps text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full"
+                data-i18n="audit.ev_scoped">YOUR OWN ACTIVITY ONLY</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="evExportCSV"
+                class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"><span
+                  class="material-symbols-outlined text-[14px]">download</span>CSV</button>
+              <button id="evExportXLS"
+                class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"><span
+                  class="material-symbols-outlined text-[14px]">table_view</span>XLS</button>
+            </div>
+          </div>
+
+          <section id="evList" class="neural-panel rounded-2xl overflow-hidden">
+            <div class="p-10 text-center font-code-sm text-code-sm text-slate-500" data-i18n="audit.loading">Loading history…</div>
+          </section>
+          <div id="evPager"></div>
+        </div><!-- /panelEvents -->
       </div>
     </main>
   </div>
@@ -694,7 +823,11 @@
         off: ['cloud_off', 'audit.integrity_off', 'text-slate-500 bg-slate-50 border-slate-200'],
       };
       const [icon, key, cls] = map[kind] || map.off;
-      b.className = 'inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border ' + cls;
+      // 'hidden' e' gestito dalle schede: riscrivere className senza
+      // preservarlo faceva ricomparire il badge del ledger scansioni sopra il
+      // registro attivita', che ha gia' il proprio.
+      const hidden = b.classList.contains('hidden') ? ' hidden' : '';
+      b.className = 'inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border ' + cls + hidden;
       b.innerHTML = `<span class="material-symbols-outlined text-[14px]">${icon}</span><span>${t(key, n != null ? { n } : undefined)}</span>`;
     }
     async function loadIntegrity() {
@@ -771,7 +904,11 @@
         : t('audit.show_less');
     });
 
-    $('reload').addEventListener('click', load);
+    // Ricarica solo la scheda attiva (la seconda e' registrata piu' in basso,
+    // insieme al resto del registro attivita').
+    $('reload').addEventListener('click', () => {
+      if ($('tabScans').getAttribute('aria-selected') !== 'false') load();
+    });
 
     // Collapse / copy-link / inner-sort: delega sulla lista.
     list.addEventListener('click', (e) => {
@@ -869,6 +1006,261 @@
     window.addEventListener('hashchange', maybeDeepLink);
 
     load();
+
+    // =====================================================================
+    // REGISTRO ATTIVITA' (/api/audit/events) — scheda "ACTIVITY".
+    // Stato e rendering separati da quelli dello storico scansioni: i due
+    // registri rispondono a domande diverse e non condividono filtri.
+    // =====================================================================
+    const ev = {
+      state: { page: 0, page_size: 25, q: '', category: '', action: '', outcome: '', actor: '', date_from: '', date_to: '' },
+      last: null, integrity: null, loaded: false,
+    };
+
+    // Colore per categoria: la lettura tipica e' "scorri e trova l'anomalia",
+    // e il colore fa il primo filtro prima ancora del testo.
+    const EV_CAT = {
+      auth: 'text-cyan-700 bg-cyan-50 border-cyan-200',
+      authz: 'text-rose-700 bg-rose-50 border-rose-200',
+      user: 'text-violet-700 bg-violet-50 border-violet-200',
+      group: 'text-violet-700 bg-violet-50 border-violet-200',
+      assignment: 'text-indigo-700 bg-indigo-50 border-indigo-200',
+      asset: 'text-blue-700 bg-blue-50 border-blue-200',
+      config: 'text-amber-700 bg-amber-50 border-amber-200',
+      export: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+      finding: 'text-teal-700 bg-teal-50 border-teal-200',
+      scan: 'text-slate-700 bg-slate-100 border-slate-200',
+      posture: 'text-slate-700 bg-slate-100 border-slate-200',
+      ingest: 'text-slate-700 bg-slate-100 border-slate-200',
+    };
+    const EV_OUTCOME = {
+      success: ['check_circle', 'text-emerald-700 bg-emerald-50 border-emerald-200'],
+      failure: ['error', 'text-amber-700 bg-amber-50 border-amber-200'],
+      denied: ['block', 'text-rose-700 bg-rose-50 border-rose-200'],
+    };
+
+    function evCatChip(c) {
+      const cls = EV_CAT[c] || 'text-slate-600 bg-slate-50 border-slate-200';
+      return `<span class="px-2 py-0.5 border ${cls} font-label-caps text-[10px] rounded-full">${esc(c || '—')}</span>`;
+    }
+    function evOutcomeChip(o) {
+      const [icon, cls] = EV_OUTCOME[o] || ['help', 'text-slate-600 bg-slate-50 border-slate-200'];
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 border ${cls} font-label-caps text-[10px] rounded-full">`
+        + `<span class="material-symbols-outlined text-[12px]">${icon}</span>${esc(t('audit.ev_out_' + o) || o)}</span>`;
+    }
+    function evTarget(e) {
+      const label = e.target_label || e.target_id;
+      if (!e.target_type && !label) return '<span class="text-slate-300">—</span>';
+      return `<span class="font-code-sm text-[11px] text-slate-700">${esc(label || '')}</span>`
+        + (e.target_type ? `<span class="font-label-caps text-[10px] text-slate-400 ml-1">${esc(e.target_type)}</span>` : '');
+    }
+    // Il dettaglio e' JSON strutturato: reso su una riga, espandibile. Le
+    // chiavi sensibili arrivano gia' redatte dal server.
+    function evDetail(e) {
+      const d = e.detail || {};
+      const keys = Object.keys(d);
+      if (!keys.length) return '<span class="text-slate-300">—</span>';
+      const full = JSON.stringify(d, null, 1);
+      const oneline = JSON.stringify(d);
+      const short = oneline.length > 90 ? oneline.slice(0, 90) + '…' : oneline;
+      return `<details class="group"><summary class="cursor-pointer font-code-sm text-[11px] text-slate-500 hover:text-slate-700 list-none">${esc(short)}</summary>`
+        + `<pre class="mt-1 whitespace-pre-wrap break-all font-code-sm text-[10px] text-slate-600 bg-slate-50 border border-slate-100 rounded p-2">${esc(full)}</pre></details>`;
+    }
+    function evRow(e) {
+      const broken = ev.integrity && ev.integrity.brokenSet.has(e.id);
+      const actor = e.actor_name
+        ? `<span class="font-code-sm text-code-sm text-slate-900">${esc(e.actor_name)}</span>`
+        + (e.actor_role ? `<span class="font-label-caps text-[10px] text-slate-400 ml-1">${esc(e.actor_role)}</span>` : '')
+        : `<span class="font-label-caps text-[10px] text-slate-400">${t('audit.ev_anonymous')}</span>`;
+      return `
+      <tr class="hover:bg-white/60 transition-colors ${broken ? 'bg-rose-50/60' : ''}">
+        <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(t('audit.ev_th_when'))}">
+          <span class="font-code-sm text-[11px] text-slate-600" title="${esc(fmtDate(e.event_ts))}">${esc(fmtRel(e.event_ts))}</span>
+          ${broken ? `<span class="ml-1 material-symbols-outlined text-[14px] text-rose-600 align-middle" title="${esc(t('audit.tampered_t'))}">gpp_bad</span>` : ''}
+        </td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.ev_th_actor'))}">${actor}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.ev_th_category'))}">${evCatChip(e.category)}</td>
+        <td class="px-4 py-3 font-code-sm text-code-sm text-slate-900" data-label="${esc(t('audit.ev_th_action'))}">${esc(e.action || '')}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.ev_th_target'))}">${evTarget(e)}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.ev_th_outcome'))}">${evOutcomeChip(e.outcome)}</td>
+        <td class="px-4 py-3 font-code-sm text-[11px] text-slate-500" data-label="IP">${esc(e.src_ip || '—')}</td>
+        <td class="px-4 py-3" data-label="${esc(t('audit.ev_th_detail'))}">${evDetail(e)}</td>
+      </tr>`;
+    }
+
+    function evAnyFilter() {
+      const s = ev.state;
+      return !!(s.q || s.category || s.action || s.outcome || s.actor || s.date_from || s.date_to);
+    }
+
+    function evRenderTable(rows) {
+      const box = $('evList');
+      if (!rows || !rows.length) {
+        box.innerHTML = `<div class="p-10 text-center">
+          <span class="material-symbols-outlined text-4xl text-slate-300">${evAnyFilter() ? 'search_off' : 'manage_accounts'}</span>
+          <p class="font-code-sm text-code-sm text-slate-500 mt-3">${evAnyFilter() ? t('audit.no_match') : t('audit.ev_empty')}</p>
+        </div>`;
+        return;
+      }
+      box.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-left border-collapse vfa-responsive-table">
+        <thead><tr class="border-b border-slate-200/70 bg-white/40">
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_when')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_actor')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_category')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_action')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_target')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">${t('audit.ev_th_outcome')}</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3 whitespace-nowrap">IP</th>
+          <th class="font-label-caps text-label-caps text-slate-500 px-4 py-3">${t('audit.ev_th_detail')}</th>
+        </tr></thead>
+        <tbody class="divide-y divide-slate-100/70">${rows.map(evRow).join('')}</tbody>
+      </table></div>`;
+    }
+
+    function evRenderAll(data) {
+      const k = data.kpis || {};
+      $('evKpiTotal').textContent = (k.events || 0).toLocaleString();
+      $('evKpiFailures').textContent = (k.failures || 0).toLocaleString();
+      $('evKpiDenied').textContent = (k.denied || 0).toLocaleString();
+      const lastEl = $('evKpiLast');
+      lastEl.textContent = fmtRel(k.last_event);
+      lastEl.title = fmtDate(k.last_event);
+      fillSelect($('evCategory'), data.categories || [], ev.state.category);
+      fillSelect($('evAction'), data.actions || [], ev.state.action);
+      fillSelect($('evActor'), data.actors || [], ev.state.actor);
+      $('evScopeNote').classList.toggle('hidden', !data.scoped);
+      $('evStatus').textContent = t('audit.ev_status', { n: (data.total || 0).toLocaleString() })
+        + (evAnyFilter() ? ' · ' + t('audit.filtered') : '');
+      evRenderTable(data.events || []);
+      renderPaginator('evPager', data.total || 0, ev.state.page, ev.state.page_size, (p, sz) => {
+        ev.state.page = p; if (typeof sz === 'number') ev.state.page_size = sz;
+        evLoad(); window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    function evSetIntegrityBadge(kind, n) {
+      const b = $('evIntegrityBadge'); if (!b) return;
+      const map = {
+        ok: ['shield_lock', 'audit.integrity_ok', 'text-emerald-600 bg-emerald-50 border-emerald-200'],
+        tampered: ['gpp_bad', 'audit.integrity_tampered', 'text-rose-600 bg-rose-50 border-rose-200'],
+        none: ['shield', 'audit.integrity_none', 'text-slate-500 bg-slate-50 border-slate-200'],
+        off: ['cloud_off', 'audit.integrity_off', 'text-slate-500 bg-slate-50 border-slate-200'],
+      };
+      const [icon, key, cls] = map[kind] || map.off;
+      b.className = 'inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border ' + cls;
+      b.innerHTML = `<span class="material-symbols-outlined text-[14px]">${icon}</span><span>${t(key, n != null ? { n } : undefined)}</span>`;
+    }
+
+    async function evLoadIntegrity() {
+      let res;
+      try { const r = await fetch('/api/audit/events/verify'); res = await r.json(); if (!r.ok) throw 0; }
+      catch (e) { ev.integrity = null; evSetIntegrityBadge('off'); return; }
+      ev.integrity = { ok: res.ok, brokenSet: new Set(res.broken || []) };
+      if (!res.total) evSetIntegrityBadge('none');
+      else if (!res.ok) evSetIntegrityBadge('tampered', (res.broken || []).length);
+      else evSetIntegrityBadge('ok', res.verified);
+      if (ev.last) evRenderTable(ev.last.events || []);   // ricolora le righe rotte
+    }
+
+    function evBuildParams() {
+      const p = new URLSearchParams();
+      p.set('page', ev.state.page); p.set('page_size', ev.state.page_size);
+      for (const k of ['q', 'category', 'action', 'outcome', 'actor', 'date_from', 'date_to'])
+        if (ev.state[k]) p.set(k, ev.state[k]);
+      return p;
+    }
+
+    async function evLoad() {
+      const box = $('evList');
+      box.setAttribute('aria-busy', 'true');
+      box.innerHTML = `<div class="p-10 text-center font-code-sm text-code-sm text-slate-500">${t('audit.loading')}</div>`;
+      let resp;
+      try { resp = await fetch('/api/audit/events?' + evBuildParams().toString()); }
+      catch (e) {
+        box.innerHTML = `<div class="p-10 text-center"><span class="material-symbols-outlined text-4xl text-rose-400">cloud_off</span>
+          <p class="font-code-sm text-code-sm text-rose-600 mt-3">${esc(t('audit.err_network'))}</p></div>`;
+        return;
+      }
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        box.innerHTML = `<div class="p-10 text-center"><span class="material-symbols-outlined text-4xl text-rose-400">cloud_off</span>
+          <p class="font-code-sm text-code-sm text-rose-600 mt-3">${esc(t('audit.err_unreachable'))}</p></div>`;
+        $('evPager').innerHTML = '';
+        return;
+      }
+      ev.last = data;
+      ev.loaded = true;
+      evRenderAll(data);
+      box.removeAttribute('aria-busy');
+      evLoadIntegrity();
+    }
+
+    // --- Filtri ---
+    const evOnFilter = () => { ev.state.page = 0; evLoad(); };
+    $('evCategory').addEventListener('change', e => { ev.state.category = e.target.value; evOnFilter(); });
+    $('evAction').addEventListener('change', e => { ev.state.action = e.target.value; evOnFilter(); });
+    $('evOutcome').addEventListener('change', e => { ev.state.outcome = e.target.value; evOnFilter(); });
+    $('evActor').addEventListener('change', e => { ev.state.actor = e.target.value; evOnFilter(); });
+    $('evFrom').addEventListener('change', e => { ev.state.date_from = e.target.value || ''; evOnFilter(); });
+    // event_ts e' testo UTC a formato fisso: il confronto lessicografico basta,
+    // ma il limite superiore deve coprire l'intera giornata scelta.
+    $('evTo').addEventListener('change', e => { ev.state.date_to = e.target.value ? e.target.value + 'T23:59:59' : ''; evOnFilter(); });
+    $('evSearch').addEventListener('input', debounce(() => { ev.state.q = $('evSearch').value.trim(); ev.state.page = 0; evLoad(); }, 250));
+    $('evClear').addEventListener('click', () => {
+      Object.assign(ev.state, { page: 0, q: '', category: '', action: '', outcome: '', actor: '', date_from: '', date_to: '' });
+      ['evCategory', 'evAction', 'evOutcome', 'evActor'].forEach(id => { $(id).value = ''; });
+      $('evFrom').value = ''; $('evTo').value = ''; $('evSearch').value = '';
+      evLoad();
+    });
+
+    // --- Export: la pagina corrente, gia' filtrata ---
+    function _buildEventRows() {
+      return ((ev.last && ev.last.events) || []).map(e => ({
+        ID: e.id, Timestamp: e.event_ts, Actor: e.actor_name || '', Role: e.actor_role || '',
+        Category: e.category || '', Action: e.action || '', Outcome: e.outcome || '',
+        Target_Type: e.target_type || '', Target_ID: e.target_id || '', Target: e.target_label || '',
+        Source_IP: e.src_ip || '', Detail: JSON.stringify(e.detail || {}),
+        Row_Hash: e.row_hash || '',
+      }));
+    }
+    $('evExportCSV').addEventListener('click', () => exportCSV(_buildEventRows(), 'audit_activity.csv'));
+    $('evExportXLS').addEventListener('click', () => exportXLS(_buildEventRows(), 'audit_activity.xlsx'));
+
+    // --- Schede ---
+    function selectTab(which) {
+      const scans = which === 'scans';
+      $('panelScans').classList.toggle('hidden', !scans);
+      $('panelEvents').classList.toggle('hidden', scans);
+      $('tabScans').setAttribute('aria-selected', scans ? 'true' : 'false');
+      $('tabEvents').setAttribute('aria-selected', scans ? 'false' : 'true');
+      $('tabScans').className = 'tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 inline-flex items-center gap-1.5 '
+        + (scans ? 'border-cyan-500 text-cyan-700' : 'border-transparent text-slate-500 hover:text-slate-700');
+      $('tabEvents').className = 'tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 inline-flex items-center gap-1.5 '
+        + (scans ? 'border-transparent text-slate-500 hover:text-slate-700' : 'border-cyan-500 text-cyan-700');
+      // La ricerca in testata filtra lo storico scansioni: fuori scheda sarebbe
+      // un campo che non fa nulla.
+      $('searchWrap').classList.toggle('hidden', !scans);
+      // L'integrity badge in testata riguarda il ledger scansioni.
+      $('integrityBadge').classList.toggle('hidden', !scans);
+      // Il sottotitolo descrive il registro mostrato, non la pagina.
+      const sub = $('auditSubtitle');
+      const subKey = scans ? 'audit.subtitle' : 'audit.ev_subtitle';
+      sub.setAttribute('data-i18n', subKey);      // il cambio lingua lo ritraduce
+      sub.innerHTML = t(subKey);
+      if (!scans && !ev.loaded) evLoad();
+    }
+    $('tabScans').addEventListener('click', () => { selectTab('scans'); history.replaceState(null, '', location.pathname); });
+    $('tabEvents').addEventListener('click', () => { selectTab('events'); history.replaceState(null, '', '#activity'); });
+
+    // Il reload della testata agisce sulla scheda attiva.
+    $('reload').addEventListener('click', () => {
+      if ($('tabEvents').getAttribute('aria-selected') === 'true') evLoad();
+    });
+
+    window.addEventListener('langchange', () => { if (ev.last) evRenderAll(ev.last); });
+
+    // Deep-link: /audit#activity apre direttamente il registro attivita'.
+    if ((location.hash || '') === '#activity') selectTab('events');
   </script>
 </body>
 

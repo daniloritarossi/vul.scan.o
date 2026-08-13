@@ -345,6 +345,53 @@ CREATE TABLE IF NOT EXISTS public.finding_events (
 CREATE INDEX IF NOT EXISTS idx_finding_events_fp ON public.finding_events(fingerprint);
 CREATE INDEX IF NOT EXISTS idx_finding_events_ts ON public.finding_events(event_ts);
 
+-- 8-bis) REGISTRO DELLE ATTIVITA' (chi ha fatto cosa, su cosa, quando).
+--    Le catene precedenti coprono l'ATTIVITA' DI SCANSIONE: quando e' stata
+--    lanciata una scansione, con che esito, e come e' cambiato lo stato di un
+--    finding. NON coprono nulla dell'amministrazione dell'applicativo: un
+--    accesso, un accesso fallito, la creazione di un utente, un cambio di
+--    ruolo, l'assegnazione di un asset, una modifica di configurazione o un
+--    export di dati non lasciavano NESSUNA traccia. Un admin poteva crearsi un
+--    account, darsi un ruolo, esportare l'inventario completo e il registro
+--    non mostrava niente.
+--
+--    Qui ogni azione rilevante e' una riga nuova, mai modificata, concatenata
+--    in hash come gli altri registri.
+--      category   -> auth | authz | user | group | assignment | asset |
+--                    config | export | finding | scan | posture | ingest
+--      action     -> identificatore stabile e granulare ('auth.login',
+--                    'user.role_change', 'config.update', ...)
+--      outcome    -> success | failure | denied
+--      target_*   -> oggetto dell'azione (tipo, id, etichetta leggibile)
+--      detail     -> contesto strutturato dell'azione. MAI segreti: password,
+--                    hash, token e chiavi API non ci arrivano (vedi
+--                    db.log_audit_event, che redige i valori sensibili).
+--      src_ip / user_agent -> provenienza della richiesta (attribuzione)
+CREATE TABLE IF NOT EXISTS public.audit_events (
+  id           bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  at           timestamptz NOT NULL DEFAULT now(),
+  event_ts     text NOT NULL,
+  category     text NOT NULL,
+  action       text NOT NULL,
+  outcome      text NOT NULL DEFAULT 'success',
+  actor_id     bigint,
+  actor_name   text,
+  actor_role   text,
+  target_type  text,
+  target_id    text,
+  target_label text,
+  detail       jsonb NOT NULL DEFAULT '{}'::jsonb,
+  src_ip       text,
+  user_agent   text,
+  prev_hash    text,
+  row_hash     text
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_events_ts       ON public.audit_events(event_ts);
+CREATE INDEX IF NOT EXISTS idx_audit_events_action   ON public.audit_events(action);
+CREATE INDEX IF NOT EXISTS idx_audit_events_category ON public.audit_events(category);
+CREATE INDEX IF NOT EXISTS idx_audit_events_actor    ON public.audit_events(actor_id);
+
 -- Hash FINALE della scansione: copre i campi MUTABILI (version + cve_count +
 -- cve_ids) che update_scan_summary riscrive a fine scansione e che row_hash,
 -- calcolato all'insert, non puo' coprire. E' ancorato a row_hash, quindi il
@@ -463,6 +510,7 @@ DROP TRIGGER IF EXISTS trg_posture_assets_immutable     ON public.posture_assets
 DROP TRIGGER IF EXISTS trg_posture_findings_immutable   ON public.posture_findings;
 DROP TRIGGER IF EXISTS trg_posture_components_immutable ON public.posture_components;
 DROP TRIGGER IF EXISTS trg_finding_events_immutable     ON public.finding_events;
+DROP TRIGGER IF EXISTS trg_audit_events_immutable       ON public.audit_events;
 
 CREATE TRIGGER trg_scans_append_only
   BEFORE UPDATE OR DELETE ON public.scans
@@ -485,17 +533,29 @@ CREATE TRIGGER trg_posture_components_immutable
 CREATE TRIGGER trg_finding_events_immutable
   BEFORE UPDATE OR DELETE ON public.finding_events
   FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+CREATE TRIGGER trg_audit_events_immutable
+  BEFORE UPDATE OR DELETE ON public.audit_events
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
 
 -- Valvola di sfogo per la suite di test, che esercita gli endpoint reali e
 -- quindi scrive nel registro. Puo' cancellare SOLO le righe con marcatore di
 -- test '_ftest_': non e' un bypass generico del registro.
 CREATE OR REPLACE FUNCTION public.purge_test_ledger() RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
-DECLARE removed integer;
+DECLARE removed integer; removed_ae integer;
 BEGIN
   DELETE FROM public.finding_events WHERE fingerprint LIKE '\_ftest\_%';
   GET DIAGNOSTICS removed = ROW_COUNT;
-  RETURN removed;
+  -- Il registro attivita' si riempie a ogni login/CRUD della suite: stessa
+  -- valvola, stesso marcatore. Una riga e' "di test" se l'attore, il bersaglio
+  -- o lo username tentato portano il prefisso '_ftest_'.
+  DELETE FROM public.audit_events
+   WHERE actor_name          LIKE '\_ftest\_%'
+      OR target_label        LIKE '\_ftest\_%'
+      OR detail->>'username' LIKE '\_ftest\_%'
+      OR detail->>'name'     LIKE '\_ftest\_%';
+  GET DIAGNOSTICS removed_ae = ROW_COUNT;
+  RETURN removed + removed_ae;
 END;
 $$;
 
@@ -508,17 +568,19 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
 -- concesso e' meglio di un permesso revocato da un'eccezione.
 REVOKE UPDATE, DELETE, TRUNCATE ON
   public.scans, public.scan_results, public.posture_runs, public.posture_assets,
-  public.posture_findings, public.posture_components, public.finding_events
+  public.posture_findings, public.posture_components, public.finding_events,
+  public.audit_events
   FROM anon, authenticated;
 REVOKE DELETE, TRUNCATE ON
   public.scans, public.scan_results, public.posture_runs, public.posture_assets,
-  public.posture_findings, public.posture_components, public.finding_events
+  public.posture_findings, public.posture_components, public.finding_events,
+  public.audit_events
   FROM service_role;
 -- service_role conserva UPDATE solo dove l'app deve davvero scrivere il
 -- risultato finale (scans, posture_runs); i trigger delimitano cosa puo' toccare.
 REVOKE UPDATE ON
   public.scan_results, public.posture_assets, public.posture_findings,
-  public.posture_components, public.finding_events
+  public.posture_components, public.finding_events, public.audit_events
   FROM service_role;
 
 REVOKE ALL ON FUNCTION public.purge_test_ledger() FROM PUBLIC;

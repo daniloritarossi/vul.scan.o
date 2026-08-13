@@ -73,6 +73,15 @@ def role_user_ids(client):
     yield ids
     for uid in ids.values():
         db.delete_user(uid)
+    # Ogni login, 403, CRUD e teardown della suite scrive nel registro
+    # attivita' append-only: va ripulito qui, dove il finalizer e' l'ULTIMO a
+    # scattare (le fixture che dipendono da questa si chiudono prima, e
+    # anch'esse producono eventi). Come per finding_events la DELETE diretta e'
+    # negata: si passa dalla funzione dedicata, che tocca solo le righe
+    # marcate '_ftest_'.
+    client_db = db._get_client()
+    if client_db is not None:
+        client_db.rpc("purge_test_ledger").execute()
 
 
 def _login(username: str) -> TestClient:

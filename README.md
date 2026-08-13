@@ -758,6 +758,66 @@ report covers only their visibility cone, and says so in its `scope` field.
 > shared-secret MAC, not a third-party-verifiable digital signature, and there is
 > no external timestamping authority.
 
+### 4-quinquies · Activity ledger — who did what (`audit_events`)
+
+Everything above records **scanning** activity. It says nothing about the
+administration of the application itself: a login, a failed login, a user
+created, a role granted, an asset assigned, a configuration key rewritten or an
+inventory exported left no trace at all. An admin could create an account, grant
+themselves a role, read the whole fleet and export it, and the audit ledger would
+show nothing. `audit_events` closes that gap: one **new row** per relevant
+action, never modified, chained with `prev_hash`/`row_hash` like the other
+ledgers, readable at `/audit` → **ACTIVITY** or `GET /api/audit/events`.
+
+| Category | Actions recorded |
+|----------|------------------|
+| `auth` | `login` (success **and** failure, with reason), `logout`, `password_change`, `password_reset_request`, `password_reset_complete`, `account_activate`, `token_redeem` (failed) |
+| `authz` | `denied` — every 403, with the endpoint and the reason (role or visibility cone) |
+| `user` | `create`, `invite`, `password_reset` (admin-forced), `password_set`, `role_change` (from → to), `delete` (with the role and email of the account that no longer exists) |
+| `group` | `create`, `delete` (with the membership that cascaded away), `members_set` (from/to/added/removed) |
+| `assignment` | `set` (visibility cone granted or revoked, before/after), `auto` (asset auto-assigned to its creator) |
+| `asset` | `create`, `update` (only the changed fields), `enabled_change`, `context_change`, `delete` |
+| `config` | `update` — the changed keys with before/after; **secret values are redacted** |
+| `export` | `sbom` (format, run, scope), `evidence` (dates, format, scope) |
+| `finding` | `status_change` (from → to, severity, host, note), `ticket_create` (data leaving to GitHub/Jira) |
+| `scan` / `posture` / `ingest` | `scan.run`, `scan.local`, `posture.scan_start`, `posture.scan_complete`, `ingest.import` |
+
+Each row carries the actor (`actor_id`/`actor_name`/`actor_role`), the target,
+the outcome (`success` / `failure` / `denied`), the source IP and user agent, and
+a structured `detail`. Two deliberate design points:
+
+- **The HTTP response and the ledger say different things.** A failed login
+  answers *"invalid credentials"* whatever the cause (no user enumeration), while
+  the ledger distinguishes `bad_password` from `unknown_user` from `inactive` —
+  a credential attack and an account-enumeration sweep must not look identical to
+  an auditor. Same for `auth.password_reset_request`, which records whether the
+  address matched.
+- **Secrets never enter the ledger.** Values under keys such as `password`,
+  `api_key`, `*_token`, `*_secret` are stored as `[redacted]`: the ledger states
+  *that* a key was rewritten, never its value. The match is on the exact key
+  name, so plain flags like `must_change_password` stay readable.
+
+```bash
+# Who changed what, most recent first
+curl 'http://localhost:8000/api/audit/events'
+# Only denied attempts, one actor, one date range
+curl 'http://localhost:8000/api/audit/events?outcome=denied&actor=alice&date_from=2026-08-01'
+# Has anyone rewritten the activity ledger?
+curl 'http://localhost:8000/api/audit/events/verify'
+```
+
+RBAC: `admin`, `manager` and `auditor` read everything; `editor` sees **only its
+own** activity (the ledger attributes actions to identified people, so a scoped
+role does not get to read other people's administrative activity); `viewer` and
+`stakeholder` get 403. The table is append-only at the database level like the
+others, and its chain verdict is included in the signed evidence report — a
+report certifying the counts but silent on the integrity of *who did what* only
+covers half of the audit question.
+
+> **Known limit.** Ledger writes are best-effort: if Supabase is unreachable the
+> user's operation still succeeds and the event is lost rather than blocking the
+> application. The gap is visible (`INTEGRITY N/A` in the UI), not hidden.
+
 ### 5 · Asset management (`/assets`)
 
 Full CRUD with:
@@ -930,8 +990,9 @@ Schema:
 - `posture_runs` / `posture_assets` / `posture_findings` / `posture_components` — Full Posture (SCA) + SBOM; `posture_runs` carries the same audit chain as `scans` (actor, `prev_hash`/`row_hash`, `final_hash` over the run totals)
 - `findings` — unified findings: fingerprint (dedup), source, severity, cve\_ids, cwe\_ids, status, SLA, reopen/observation counters, ticket\_ref/ticket\_url
 - `finding_events` — **append-only** lifecycle ledger (one row per transition: actor, from/to status, `event_ts`, hash chain); the source of point-in-time audit evidence, since `findings` is updated in place
+- `audit_events` — **append-only** activity ledger (one row per action: category, action, outcome, actor, target, redacted `detail`, source IP, hash chain); answers "who did what" for authentication, authorisation, user/group administration, assignments, configuration and exports
 
-The ledger tables (`scans`, `scan_results`, `posture_*`, `finding_events`) are
+The ledger tables (`scans`, `scan_results`, `posture_*`, `finding_events`, `audit_events`) are
 **append-only at database level**: `BEFORE UPDATE OR DELETE` triggers reject
 rewrites and deletions, and the matching privileges are revoked from the roles
 the application uses. Only the one legitimate end-of-run write is allowed, and
@@ -1061,6 +1122,8 @@ omitted for scoped roles for the same reason.
 | `GET /api/audit/verify`, `/api/audit/findings-verify`, `/api/audit/posture-verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 | `GET /api/audit/evidence` (signed report) | full | full | cone only, stated in `scope` | **full** | 403 | 403 |
 | `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
+| `GET /api/audit/events` (activity ledger) | **all** | **all** | own activity only | **all** | 403 | 403 |
+| `GET /api/audit/events/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 
 Notes:
 
@@ -1075,6 +1138,10 @@ Notes:
   `/api/audit*` and `/api/findings/as-of`; `_writer` (`admin`, `manager`,
   `editor`) stays on the routes that actually change state. Adding a role to
   one no longer silently grants the other.
+- **The activity ledger narrows `editor` further**: it is inside `_audit_reader`,
+  but `GET /api/audit/events` returns only the events whose actor is the editor
+  themselves. Scan results are filtered by asset cone; administrative activity
+  has no cone to filter by, so the only defensible scope is "your own".
 - **`auditor` gets SBOM export but not scans**: a CycloneDX/SPDX file is
   read-only data and a normal audit deliverable, while a scan authenticates
   against hosts.
