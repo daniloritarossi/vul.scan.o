@@ -524,5 +524,32 @@ REVOKE UPDATE ON
 REVOKE ALL ON FUNCTION public.purge_test_ledger() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.purge_test_ledger() TO service_role;
 
--- 11) Ricarica la cache schema di PostgREST.
+-- 11) Row Level Security su TUTTE le tabelle di public.
+--     Ogni tabella in 'public' e' pubblicata da PostgREST su /rest/v1 e la
+--     chiave anon e' pubblica per definizione: senza RLS chiunque raggiunga il
+--     gateway legge (e scrive) qualsiasi riga, password_hash compreso.
+--
+--     RLS attiva SENZA policy = nega tutto ai ruoli normali. L'app non cambia:
+--     db.py usa solo la service_role key e 'service_role' ha BYPASSRLS; Studio
+--     passa da postgres-meta come utente 'postgres', anch'esso BYPASSRLS e
+--     proprietario delle tabelle. Niente FORCE ROW LEVEL SECURITY, proprio
+--     perche' il proprietario deve continuare a vedere tutto.
+--
+--     Il blocco e' idempotente e va tenuto in fondo al file: setup.sh riapplica
+--     lo schema a ogni avvio, quindi copre sia le installazioni nuove sia
+--     quelle gia' esistenti, incluse eventuali tabelle aggiunte in seguito
+--     (una tabella nuova nasce sempre con RLS spenta).
+DO $$
+DECLARE t text;
+BEGIN
+  FOR t IN
+    SELECT tablename FROM pg_tables
+    WHERE schemaname = 'public' AND NOT rowsecurity
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+    RAISE NOTICE 'RLS abilitata su public.%', t;
+  END LOOP;
+END $$;
+
+-- 12) Ricarica la cache schema di PostgREST.
 NOTIFY pgrst, 'reload schema';

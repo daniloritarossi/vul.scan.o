@@ -36,6 +36,22 @@ echo "==> ricarico cache PostgREST"
 docker compose exec -T db psql -U postgres -d postgres \
   -c "NOTIFY pgrst, 'reload schema';" >/dev/null
 
+# Lo schema abilita RLS ovunque (sezione 11), ma se qualcuno la disattiva a mano
+# o aggiunge una tabella fuori dallo schema, PostgREST la espone in chiaro alla
+# chiave anon. Qui la verifica e' bloccante: meglio non avviare che avviare
+# aperti.
+echo "==> verifico RLS su tutte le tabelle di public"
+_no_rls=$(docker compose exec -T db psql -tAqX -U postgres -d postgres \
+  -c "SELECT coalesce(string_agg(tablename, ', ' ORDER BY tablename), '')
+        FROM pg_tables WHERE schemaname = 'public' AND NOT rowsecurity;" | tr -d '\r')
+if [ -n "$_no_rls" ]; then
+  echo "ERRORE: RLS non attiva su: ${_no_rls}" >&2
+  echo "       Riapplica volumes/db/init/01-schema.sql oppure abilitala a mano:" >&2
+  echo "       ALTER TABLE public.<tabella> ENABLE ROW LEVEL SECURITY;" >&2
+  exit 1
+fi
+echo "    RLS attiva su tutte le tabelle di public."
+
 cat <<'EOF'
 
 ==> FATTO.

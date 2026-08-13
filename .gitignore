@@ -33,3 +33,7 @@ node_modules/
 .vfa_auth_secret
 assets.txt.migrated
 assets.txt
+
+# ── AI role testing: MAI committare ──
+role_test_report_v1.0.56-beta.xlsx
+.~lock.role_test_report_v1.0.56-beta.xlsx#
