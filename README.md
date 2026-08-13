@@ -185,18 +185,35 @@ On first run (no `config.json`) the wizard asks for:
 
 ### Application updates
 
-The app checks GitHub for a newer tag than the local version (the one shown
-bottom-left in the sidebar):
+The app compares the installed version (the one shown bottom-left in the
+sidebar) with the latest **published GitHub release**:
+
+- **Releases, not tags.** A tag can exist without a release — work that is
+  tagged but not published — and offering it as an update sends people to a
+  version nobody released. Only published, non-draft releases count. The
+  `/releases/latest` endpoint is deliberately *not* used: it excludes
+  pre-releases, and this project publishes only `-beta` ones, so it would
+  answer 404 and hide every update.
+- **The comparison is numeric.** Two versions being different does not mean the
+  remote one is newer: a development checkout can sit *ahead* of the latest
+  release, and a string comparison used to present that as an update — i.e. a
+  downgrade. If the local version cannot be parsed at all, nothing is claimed.
+- **Which version am I running?** The git tag when a `.git` checkout exists;
+  otherwise `.vfa_version`, written by `start.sh` whenever it applies a release
+  tarball. Only when neither is available does the version read `dev`, and in
+  that case no update banner is shown — an installation that cannot know its
+  own version must not be told it is out of date forever.
 
 - **In the UI** — a discreet, dismissible banner appears at the bottom-left of
-  every page when a newer tag exists on GitHub ("New version vX available —
-  update with ./start.sh update"). The check runs server-side
+  every page when a newer release exists ("New version vX available — update
+  with ./start.sh update"), linking straight to that release and flagging it as
+  a pre-release when it is one. The check runs server-side
   (`GET /api/version/check`) and is cached for 6 hours; dismissing the banner
   hides it until the *next* version. Repo overridable with the
   `VFA_GITHUB_REPO` env var.
 - **From the CLI** — `./start.sh update` → "Controlla aggiornamenti
-  applicazione (GitHub)": compares the local git tag with the latest GitHub
-  tag and, on confirmation, downloads the sources:
+  applicazione (GitHub)": compares the installed version with the latest
+  published release and, on confirmation, downloads the sources:
   - with a `.git` checkout: `git fetch --tags` + `git checkout <tag>`
     (aborts if there are uncommitted local changes);
   - without git: downloads the release tarball and applies it with `rsync`,
@@ -233,8 +250,11 @@ Notes:
   `git diff` is dirty — commit or stash your changes first, then retry.
 - **Rollback (git installs)**: every release is a tag, so
   `git checkout <previous-tag>` followed by `./start.sh` brings you back.
+- **`.vfa_version`** records which release a tarball install is running. It
+  describes *that copy*, not the repository, so it is git-ignored; delete it and
+  a non-git install goes back to reporting `dev`.
 - Users are notified in the web UI too: a dismissible banner at the
-  bottom-left appears on every page when a newer version exists.
+  bottom-left appears on every page when a newer release exists.
 
 ### `update` menu
 

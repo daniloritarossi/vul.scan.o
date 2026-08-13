@@ -656,25 +656,40 @@ BATEOF
 GITHUB_REPO="${VFA_GITHUB_REPO:-daniloritarossi/vul.scan.o}"
 
 _local_version() {
-  # Tag base locale: 'v1.0.11-alfa-3-gabc' -> 'v1.0.11-alfa'. 'dev' se niente git.
-  git describe --tags --always 2>/dev/null | sed -E 's/-[0-9]+-g[0-9a-f]+$//' || printf 'dev'
+  # Tag base locale: 'v1.0.11-alfa-3-gabc' -> 'v1.0.11-alfa'.
+  # Senza git (installazione da zip/tarball) si legge .vfa_version, scritto da
+  # _download_update; 'dev' solo se non si sa davvero nulla.
+  local _v
+  _v=$(git describe --tags --always 2>/dev/null | sed -E 's/-[0-9]+-g[0-9a-f]+$//')
+  if [ -z "$_v" ] && [ -f .vfa_version ]; then
+    _v=$(tr -d '[:space:]' < .vfa_version)
+  fi
+  printf '%s' "${_v:-dev}"
 }
 
 _latest_version() {
-  # Tag piu' recente su GitHub (ordinato per versione). Vuoto se irraggiungibile.
+  # Ultima RELEASE pubblicata su GitHub. Vuoto se irraggiungibile o se non ne
+  # esiste nessuna.
+  #
+  # Si guardano le release, non i tag: un tag puo' esistere senza release e
+  # proporlo come aggiornamento manderebbe l'utente su una versione che nessuno
+  # ha pubblicato. Non si usa /releases/latest perche' ESCLUDE le prerelease, e
+  # qui si pubblicano solo '-beta': risponderebbe 404 nascondendo tutto.
   curl -fsS --max-time 8 \
     -H 'Accept: application/vnd.github+json' \
-    "https://api.github.com/repos/${GITHUB_REPO}/tags?per_page=30" 2>/dev/null \
+    "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=30" 2>/dev/null \
   | python3 -c "
 import json, re, sys
 try:
-    tags = [t['name'] for t in json.load(sys.stdin)]
+    rels = json.load(sys.stdin)
 except Exception:
     sys.exit(0)
 def ver(t):
-    m = re.match(r'v?(\d+)\.(\d+)(?:\.(\d+))?', t)
+    m = re.match(r'v?(\d+)\.(\d+)(?:\.(\d+))?', t or '')
     return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)) if m else None
-parsed = [(ver(t), t) for t in tags if ver(t)]
+# draft escluse (non pubbliche); a parita' di versione, stabile > prerelease.
+parsed = [((ver(r.get('tag_name')), 0 if r.get('prerelease') else 1), r.get('tag_name'))
+          for r in rels if not r.get('draft') and ver(r.get('tag_name'))]
 if parsed:
     print(max(parsed)[1])
 "
@@ -718,8 +733,27 @@ _download_update() {
       --exclude '*.log' --exclude '*.pid' \
       "$_srcdir/" ./ || { rm -rf "$_tmp"; return 1; }
     rm -rf "$_tmp"
+    # Il tarball non porta la storia git: senza questo file l'installazione non
+    # saprebbe piu' quale versione sta eseguendo e il check aggiornamenti
+    # resterebbe cieco per sempre.
+    printf '%s\n' "$_tag" > .vfa_version
   fi
   return 0
+}
+
+_version_newer() {
+  # 0 (vero) se $2 e' numericamente piu' recente di $1. Confronto numerico, non
+  # fra stringhe: due versioni diverse non implicano che la remota sia piu'
+  # nuova (un repo di sviluppo puo' stare AVANTI all'ultima release, e proporre
+  # il "downgrade" come aggiornamento sarebbe sbagliato).
+  python3 - "$1" "$2" <<'PY'
+import re, sys
+def ver(t):
+    m = re.match(r'v?(\d+)\.(\d+)(?:\.(\d+))?', t or '')
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)) if m else None
+cur, new = ver(sys.argv[1]), ver(sys.argv[2])
+sys.exit(0 if (cur and new and new > cur) else 1)
+PY
 }
 
 _check_app_update() {
@@ -730,15 +764,24 @@ _check_app_update() {
   printf '  Checking GitHub (%s)...\n' "$GITHUB_REPO" >&2
   _new=$(_latest_version)
   if [ -z "$_new" ]; then
-    printf '  GitHub unreachable or no tags found.\n' >&2
+    printf '  GitHub unreachable or no published release found.\n' >&2
     return
   fi
-  printf '  Latest version  : %s\n' "$_new" >&2
+  printf '  Latest release  : %s\n' "$_new" >&2
   if [ "$_new" = "$_cur" ]; then
-    printf '\n  ✓ You are already on the latest version.\n' >&2
+    printf '\n  ✓ You are already on the latest release.\n' >&2
     return
   fi
-  printf '\n  New version available: %s -> %s\n' "$_cur" "$_new" >&2
+  if ! _version_newer "$_cur" "$_new"; then
+    if [ "$_cur" = "dev" ]; then
+      printf '\n  Local version unknown (no git tag, no .vfa_version):\n' >&2
+      printf '  cannot tell whether %s is newer. Nothing done.\n' "$_new" >&2
+    else
+      printf '\n  ✓ Local version %s is ahead of the latest release (%s).\n' "$_cur" "$_new" >&2
+    fi
+    return
+  fi
+  printf '\n  New release available: %s -> %s\n' "$_cur" "$_new" >&2
   local _ok
   _ok=$(_ask "Download and install now? (y/n)" "y")
   case "$_ok" in

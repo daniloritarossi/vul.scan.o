@@ -29,6 +29,11 @@ docker-test-machine-windows
 # fallback when npm is unavailable) so it is intentionally NOT ignored.
 node_modules/
 
+# ── Stato locale dell'installazione ──
+# Versione installata, scritta da start.sh sugli aggiornamenti da tarball:
+# descrive QUESTA copia, non il contenuto del repository.
+.vfa_version
+
 # ── Segreti runtime: MAI committare ──
 .vfa_auth_secret
 assets.txt.migrated

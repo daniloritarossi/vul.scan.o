@@ -480,6 +480,7 @@
       // version update banner
       'ver.available': 'New version {v} available',
       'ver.hint': 'update with ./start.sh update',
+      'ver.prerelease': 'PRE-RELEASE',
       // findings page
       'find.crumb': 'Findings',
       'find.header': 'Unified Findings',
@@ -1147,6 +1148,7 @@
       // banner aggiornamento versione
       'ver.available': 'Nuova versione {v} disponibile',
       'ver.hint': 'aggiorna con ./start.sh update',
+      'ver.prerelease': 'PRE-RELEASE',
       // findings page
       'find.crumb': 'Finding',
       'find.header': 'Finding Unificati',

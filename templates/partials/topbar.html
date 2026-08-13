@@ -284,8 +284,9 @@ Expects one of:
     });
 
     // Check aggiornamenti: banner discreto in basso a sinistra se su GitHub
-    // esiste un tag piu' recente della versione locale. Dismissibile per
-    // versione (localStorage), cache lato server (6h).
+    // esiste una RELEASE piu' recente di quella installata (un tag senza
+    // release non e' un aggiornamento disponibile). Dismissibile per versione
+    // (localStorage), cache lato server (6h).
     fetch('/api/version/check').then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) {
         if (!v || !v.update_available) return;
@@ -297,10 +298,15 @@ Expects one of:
         // bottom-24 on mobile clears the floating bottom-nav dock; bottom-4 on desktop.
         el.className = 'fixed bottom-24 md:bottom-4 left-4 right-4 md:right-auto z-50 flex items-center gap-2 ' +
           'bg-slate-900 text-slate-100 rounded-xl shadow-2xl border border-slate-700/50 pl-3 pr-1.5 py-2 font-code-sm text-[12px]';
+        var relUrl = v.latest_url || (v.repo_url + '/releases');
         el.innerHTML =
           '<span class="material-symbols-outlined text-[16px] text-cyan-400">system_update_alt</span>' +
           '<span>' + (window.t ? t('ver.available', { v: v.latest }) : 'New version ' + v.latest + ' available') + '</span>' +
-          '<a href="' + v.repo_url + '/releases" target="_blank" rel="noopener" ' +
+          // Le release di questo progetto sono prerelease: dirlo evita che
+          // qualcuno aggiorni un'istanza di produzione credendola stabile.
+          (v.prerelease ? '<span class="ml-1 px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 ' +
+            'font-label-caps text-[9px]">' + (window.t ? t('ver.prerelease') : 'PRE-RELEASE') + '</span>' : '') +
+          '<a href="' + relUrl + '" target="_blank" rel="noopener noreferrer" ' +
           'class="text-cyan-400 hover:text-cyan-300 underline decoration-dotted ml-1">' +
           (window.t ? t('ver.hint') : './start.sh update') + '</a>' +
           '<button id="updateBannerClose" aria-label="Dismiss" ' +

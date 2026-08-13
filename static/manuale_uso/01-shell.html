@@ -275,18 +275,42 @@
 
         <h4><span class="n">5</span><span lang="en">Update banner</span><span lang="it">Banner aggiornamenti</span></h4>
         <p lang="en">
-          On every page load the shell calls <code>GET /api/version/check</code>, which compares the running git tag
-          against the latest GitHub release (result cached six hours server-side). If a newer version exists, a dark pill
-          appears at the bottom-left: <em>“New version X available — update with ./start.sh update”</em>, with a link to
-          the releases page. Dismissing it stores that version number in <code>localStorage</code>, so the banner stays
-          quiet until the <em>next</em> release.
+          On every page load the shell calls <code>GET /api/version/check</code>, which compares the installed version
+          against the latest <strong>published GitHub release</strong> (result cached six hours server-side). If a newer
+          one exists, a dark pill appears at the bottom-left: <em>“New version X available — update with ./start.sh
+          update”</em>, linking straight to that release and marked <span class="badge b-warn">PRE-RELEASE</span> when
+          it is one. Dismissing it stores that version number in <code>localStorage</code>, so the banner stays quiet
+          until the <em>next</em> release.
         </p>
         <p lang="it">
-          A ogni caricamento la shell chiama <code>GET /api/version/check</code>, che confronta il tag git in esecuzione
-          con l'ultima release su GitHub (risultato in cache sei ore lato server). Se esiste una versione più recente
-          compare una pillola scura in basso a sinistra: <em>«New version X available — update with ./start.sh
-          update»</em>, con link alla pagina delle release. Chiudendola il numero di versione viene salvato in
+          A ogni caricamento la shell chiama <code>GET /api/version/check</code>, che confronta la versione installata
+          con l'ultima <strong>release pubblicata</strong> su GitHub (risultato in cache sei ore lato server). Se ne
+          esiste una più recente compare una pillola scura in basso a sinistra: <em>«New version X available — update
+          with ./start.sh update»</em>, con link diretto a quella release e la marcatura
+          <span class="badge b-warn">PRE-RELEASE</span> quando lo è. Chiudendola il numero di versione viene salvato in
           <code>localStorage</code>, così il banner resta silenzioso fino alla release <em>successiva</em>.
+        </p>
+        <div class="note">
+          <span lang="en"><b>Releases, not tags.</b> A tag can exist without a release — work that is tagged but not
+            published — and offering it as an update would send you to a version nobody released. The comparison is
+            also numeric, not string-based: a development checkout can sit <em>ahead</em> of the latest release, and it
+            is not asked to downgrade. If the installed version cannot be determined at all (sources without a git tag)
+            the banner never appears, rather than appearing forever.</span>
+          <span lang="it"><b>Release, non tag.</b> Un tag può esistere senza release — lavoro taggato ma non pubblicato
+            — e proporlo come aggiornamento ti manderebbe su una versione che nessuno ha rilasciato. Il confronto è
+            inoltre numerico, non fra stringhe: una copia di sviluppo può stare <em>avanti</em> all'ultima release, e
+            non le viene chiesto di retrocedere. Se la versione installata non è determinabile (sorgenti senza tag git)
+            il banner non compare, invece di comparire per sempre.</span>
+        </div>
+        <p lang="en">
+          Which version you are running is read from the git tag; on an installation unpacked from an archive there is
+          no git history, so <code>start.sh</code> records the release it applied in <code>.vfa_version</code> and that
+          file is used instead. Only when neither exists does the version read <code>dev</code>.
+        </p>
+        <p lang="it">
+          La versione in esecuzione viene letta dal tag git; su un'installazione scompattata da archivio non c'è storia
+          git, quindi <code>start.sh</code> annota in <code>.vfa_version</code> la release che ha applicato e viene
+          usato quel file. Solo quando non esiste nessuno dei due la versione risulta <code>dev</code>.
         </p>
       </section>
 

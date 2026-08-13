@@ -94,17 +94,37 @@ def _set_session_cookie(resp, user_id: int) -> None:
                     max_age=SESSION_TTL, httponly=True,
                     samesite="lax", secure=COOKIE_SECURE)
 
+# Versione scritta da start.sh quando aggiorna da tarball (installazioni senza
+# .git: lo zip di una release non porta con se' la storia).
+VERSION_FILE = BASE_DIR / ".vfa_version"
+
+
 def _git_version() -> str:
-    """Versione app dal tag git piu' recente (es. 'v1.0.1-alfa', o
-    'v1.0.1-alfa-3-gabc1234' se HEAD e' oltre il tag). 'dev' se git assente."""
+    """
+    Versione dell'installazione corrente.
+
+    Ordine: tag git ('v1.0.1-alfa', o 'v1.0.1-alfa-3-gabc1234' se HEAD e' oltre
+    il tag), poi .vfa_version (scritto da start.sh sugli aggiornamenti da
+    tarball), infine 'dev'. Senza il secondo passaggio un'installazione da zip
+    non saprebbe MAI quale versione sta eseguendo.
+    """
     try:
         out = subprocess.run(
             ["git", "describe", "--tags", "--always"],
             cwd=BASE_DIR, capture_output=True, text=True, timeout=3,
         )
-        return out.stdout.strip() or "dev"
+        v = out.stdout.strip()
+        if v:
+            return v
     except Exception:
-        return "dev"
+        pass
+    try:
+        v = VERSION_FILE.read_text(encoding="utf-8").strip()
+        if v:
+            return v
+    except Exception:
+        pass
+    return "dev"
 
 
 APP_VERSION = _git_version()
@@ -129,27 +149,54 @@ def _version_tuple(tag: str):
 
 
 # Cache del check remoto: 1 chiamata GitHub ogni 6 ore, non a ogni pagina.
-_version_cache = {"at": 0.0, "latest": None}
+_version_cache = {"at": 0.0, "release": None}
 
 
-def _fetch_latest_tag() -> Optional[str]:
-    """Tag piu' recente su GitHub (max per versione). None se irraggiungibile."""
+def _fetch_latest_release() -> Optional[dict]:
+    """
+    Release pubblicata piu' recente su GitHub.
+    {tag, name, url, prerelease, published_at}, None se irraggiungibile.
+
+    Si guarda alle RELEASE, non ai tag: un tag puo' esistere senza release
+    (lavoro taggato ma non ancora pubblicato) e proporlo come aggiornamento
+    manderebbe l'utente su una versione che nessuno ha rilasciato.
+
+    Non si usa /releases/latest: quell'endpoint ESCLUDE le prerelease, e questo
+    progetto pubblica solo '-beta' — risponderebbe 404 nascondendo ogni
+    aggiornamento. Si prende quindi l'elenco e si sceglie la versione massima
+    fra le release pubblicate (draft esclusi: non sono pubbliche). A parita' di
+    versione una release stabile batte una prerelease.
+    """
     import time as _time
     import requests as _req
     now = _time.time()
-    if _version_cache["latest"] and now - _version_cache["at"] < 6 * 3600:
-        return _version_cache["latest"]
+    if _version_cache["release"] and now - _version_cache["at"] < 6 * 3600:
+        return _version_cache["release"]
     try:
-        r = _req.get(f"https://api.github.com/repos/{GITHUB_REPO}/tags",
+        r = _req.get(f"https://api.github.com/repos/{GITHUB_REPO}/releases",
                      params={"per_page": 30},
                      headers={"Accept": "application/vnd.github+json"},
                      timeout=6)
         r.raise_for_status()
-        tags = [t.get("name") for t in r.json() if t.get("name")]
-        parsed = [(v, t) for t in tags if (v := _version_tuple(t))]
-        latest = max(parsed)[1] if parsed else None
-        _version_cache.update({"at": now, "latest": latest})
-        return latest
+        best, best_key = None, None
+        for rel in r.json():
+            if rel.get("draft"):
+                continue
+            tag = rel.get("tag_name") or ""
+            ver = _version_tuple(tag)
+            if not ver:
+                continue
+            key = (ver, 0 if rel.get("prerelease") else 1)
+            if best_key is None or key > best_key:
+                best_key, best = key, {
+                    "tag": tag,
+                    "name": rel.get("name") or tag,
+                    "url": rel.get("html_url"),
+                    "prerelease": bool(rel.get("prerelease")),
+                    "published_at": rel.get("published_at"),
+                }
+        _version_cache.update({"at": now, "release": best})
+        return best
     except Exception as exc:
         logger.info("check versione GitHub fallito: %s", exc)
         return None
@@ -349,20 +396,30 @@ def api_me(user: CurrentUser = Depends(get_current_user)):
 @app.get("/api/version/check")
 def api_version_check(user: CurrentUser = Depends(get_current_user)):
     """
-    Confronta la versione locale (tag git) con l'ultimo tag su GitHub.
+    Confronta la versione installata con l'ultima RELEASE pubblicata su GitHub.
     Risposta cache-ata lato server (6h) per non consumare rate limit.
-    {current, latest, update_available, repo_url}
+
+    {current, current_known, latest, latest_url, prerelease, published_at,
+     update_available, repo_url}
+
+    Il confronto e' sempre numerico: se la versione locale non e' riconoscibile
+    (installazione da sorgenti senza tag ne' .vfa_version) 'update_available'
+    resta false e 'current_known' lo dichiara. Prima bastava che le due stringhe
+    fossero diverse per annunciare un aggiornamento, e un'installazione 'dev'
+    vedeva il banner per sempre, anche sull'ultima versione.
     """
     # Riletta a ogni chiamata: APP_VERSION e' congelata all'avvio del processo
     # e diventa stantia se nel frattempo viene creato/checkout-ato un tag.
     current = _base_tag(_git_version())
-    latest = _fetch_latest_tag()
-    update = False
-    if latest and latest != current:
-        cur_v, lat_v = _version_tuple(current), _version_tuple(latest)
-        # Confronto numerico se possibile; fallback: diverso = aggiornabile.
-        update = (lat_v > cur_v) if (cur_v and lat_v) else True
-    return {"current": current, "latest": latest, "update_available": update,
+    release = _fetch_latest_release() or {}
+    latest = release.get("tag")
+    cur_v, lat_v = _version_tuple(current), _version_tuple(latest)
+    update = bool(cur_v and lat_v and lat_v > cur_v)
+    return {"current": current, "current_known": cur_v is not None,
+            "latest": latest, "latest_url": release.get("url"),
+            "prerelease": release.get("prerelease"),
+            "published_at": release.get("published_at"),
+            "update_available": update,
             "repo_url": f"https://github.com/{GITHUB_REPO}"}
 
 
