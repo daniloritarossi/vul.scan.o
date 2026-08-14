@@ -492,6 +492,10 @@
       'ver.available': 'New version {v} available',
       'ver.hint': 'update with ./start.sh update',
       'ver.prerelease': 'PRE-RELEASE',
+      'ver.unreleased': 'UNRELEASED',
+      'ver.unreleased_t': 'This build corresponds to a git tag that was never published as a release.',
+      'ver.build_t': 'build {v}',
+      'ver.last_release': 'latest release {v}',
       // findings page
       'find.crumb': 'Findings',
       'find.header': 'Unified Findings',
@@ -1171,6 +1175,10 @@
       'ver.available': 'Nuova versione {v} disponibile',
       'ver.hint': 'aggiorna con ./start.sh update',
       'ver.prerelease': 'PRE-RELEASE',
+      'ver.unreleased': 'NON RILASCIATA',
+      'ver.unreleased_t': 'Questa build corrisponde a un tag git mai pubblicato come release.',
+      'ver.build_t': 'build {v}',
+      'ver.last_release': 'ultima release {v}',
       // findings page
       'find.crumb': 'Finding',
       'find.header': 'Finding Unificati',

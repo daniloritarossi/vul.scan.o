@@ -149,7 +149,56 @@ def _version_tuple(tag: str):
 
 
 # Cache del check remoto: 1 chiamata GitHub ogni 6 ore, non a ogni pagina.
-_version_cache = {"at": 0.0, "release": None}
+_version_cache = {"at": 0.0, "release": None, "tags": None}
+
+
+def _release_build() -> Optional[dict]:
+    """
+    Versione dell'installazione espressa in RELEASE: {base, ahead}.
+
+    'git describe' da solo risponde col tag piu' recente, rilasciato o no, e il
+    sito finiva per esibire una versione che come release non esiste. Qui si
+    chiede a git la distanza dall'ultima release PUBBLICATA raggiungibile da
+    HEAD (--match ripetuto sui soli tag rilasciati):
+
+        base='v1.0.60-beta', ahead=0  -> l'installazione E' quella release
+        base='v1.0.60-beta', ahead=1  -> una build oltre quella release
+
+    None se GitHub non e' raggiungibile (non si conoscono le release), se non
+    c'e' git, o se nessuna release e' raggiungibile da HEAD: in quei casi resta
+    la versione locale, senza inventare corrispondenze.
+    """
+    tags = _released_tags()
+    if not tags:
+        return None
+    cmd = ["git", "describe", "--tags", "--long", "--always"]
+    for t in sorted(tags):
+        cmd += ["--match", t]
+    try:
+        out = subprocess.run(cmd, cwd=BASE_DIR, capture_output=True,
+                             text=True, timeout=3)
+        desc = out.stdout.strip()
+    except Exception:
+        return None
+    # Formato: '<tag>-<n>-g<sha>'. Senza tag raggiungibile git risponde col solo
+    # sha abbreviato, che non e' una versione.
+    import re
+    m = re.match(r"^(.*)-(\d+)-g[0-9a-f]+$", desc)
+    if not m or m.group(1) not in tags:
+        return None
+    return {"base": m.group(1), "ahead": int(m.group(2))}
+
+
+def _released_tags() -> Optional[set]:
+    """
+    Tag che corrispondono a una release PUBBLICATA. None se GitHub non risponde.
+
+    Serve a dire se la versione in esecuzione e' una release o un tag interno:
+    la versione mostrata nel sito viene da 'git describe', che prende il tag
+    piu' recente indipendentemente dal fatto che sia mai stato rilasciato.
+    """
+    _fetch_latest_release()          # popola la cache (una sola chiamata)
+    return _version_cache.get("tags")
 
 
 def _fetch_latest_release() -> Optional[dict]:
@@ -178,11 +227,12 @@ def _fetch_latest_release() -> Optional[dict]:
                      headers={"Accept": "application/vnd.github+json"},
                      timeout=6)
         r.raise_for_status()
-        best, best_key = None, None
+        best, best_key, tags = None, None, set()
         for rel in r.json():
             if rel.get("draft"):
                 continue
             tag = rel.get("tag_name") or ""
+            tags.add(tag)
             ver = _version_tuple(tag)
             if not ver:
                 continue
@@ -195,7 +245,7 @@ def _fetch_latest_release() -> Optional[dict]:
                     "prerelease": bool(rel.get("prerelease")),
                     "published_at": rel.get("published_at"),
                 }
-        _version_cache.update({"at": now, "release": best})
+        _version_cache.update({"at": now, "release": best, "tags": tags})
         return best
     except Exception as exc:
         logger.info("check versione GitHub fallito: %s", exc)
@@ -415,7 +465,23 @@ def api_version_check(user: CurrentUser = Depends(get_current_user)):
     latest = release.get("tag")
     cur_v, lat_v = _version_tuple(current), _version_tuple(latest)
     update = bool(cur_v and lat_v and lat_v > cur_v)
+    # La versione mostrata nel sito viene da 'git describe', che prende il tag
+    # piu' recente anche se non e' mai stato rilasciato. Qui si dice se quella
+    # versione corrisponde a una release pubblicata: None = non verificabile
+    # (GitHub irraggiungibile), e in quel caso l'interfaccia non afferma nulla.
+    tags = _released_tags()
+    released = None if tags is None else (current in tags)
+    # Versione da MOSTRARE: la release da cui deriva la build, non il tag piu'
+    # recente. 'ahead' > 0 significa che si sta eseguendo qualcosa oltre quella
+    # release, e va detto invece di spacciare la build per la release stessa.
+    build = _release_build() or {}
+    display = build.get("base") or current
+    ahead = build.get("ahead")
+    if released:                       # la build E' esattamente quella release
+        display, ahead = current, 0
     return {"current": current, "current_known": cur_v is not None,
+            "current_released": released,
+            "display_version": display, "commits_ahead": ahead,
             "latest": latest, "latest_url": release.get("url"),
             "prerelease": release.get("prerelease"),
             "published_at": release.get("published_at"),

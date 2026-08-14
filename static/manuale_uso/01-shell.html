@@ -307,10 +307,29 @@
           no git history, so <code>start.sh</code> records the release it applied in <code>.vfa_version</code> and that
           file is used instead. Only when neither exists does the version read <code>dev</code>.
         </p>
+        <p lang="en">
+          A tag is not a release: <code>git describe</code> returns the newest tag whether or not it was ever
+          published. What the drawer shows is therefore the <strong>release the build comes from</strong>, not the
+          newest tag — so the number you read is one you can actually find on the releases page. If the build is past
+          that release the drawer appends how far (<code>v1.0.60-beta +1</code>) and marks it
+          <span class="badge b-warn">UNRELEASED</span>; the exact build identifier stays in the tooltip, which is what
+          you quote when reporting a bug. If GitHub cannot be reached nothing is claimed and the local value is left
+          as it is. The sign-in page has no session to ask with, so it labels its value <code>build</code>.
+        </p>
         <p lang="it">
           La versione in esecuzione viene letta dal tag git; su un'installazione scompattata da archivio non c'è storia
           git, quindi <code>start.sh</code> annota in <code>.vfa_version</code> la release che ha applicato e viene
           usato quel file. Solo quando non esiste nessuno dei due la versione risulta <code>dev</code>.
+        </p>
+        <p lang="it">
+          Un tag non è una release: <code>git describe</code> restituisce il tag più recente a prescindere dal fatto che
+          sia mai stato pubblicato. Quello che il drawer mostra è quindi la <strong>release da cui la build
+          deriva</strong>, non il tag più recente — così il numero che leggi è uno che trovi davvero nella pagina delle
+          release. Se la build è oltre quella release, il drawer indica di quanto (<code>v1.0.60-beta +1</code>) e la
+          marca <span class="badge b-warn">NON RILASCIATA</span>; l'identificativo esatto della build resta nel
+          tooltip, ed è quello da citare quando segnali un bug. Se GitHub non è raggiungibile non si afferma nulla e il
+          valore locale resta com'è. La pagina di accesso non ha una sessione con cui chiedere, quindi etichetta il
+          proprio valore come <code>build</code>.
         </p>
       </section>
 

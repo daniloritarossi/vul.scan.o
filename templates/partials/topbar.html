@@ -289,7 +289,29 @@ Expects one of:
     // (localStorage), cache lato server (6h).
     fetch('/api/version/check').then(function (r) { return r.ok ? r.json() : null; })
       .then(function (v) {
-        if (!v || !v.update_available) return;
+        if (!v) return;
+        // La versione resa dal server viene dal tag git locale, che puo' non
+        // essere mai stato pubblicato. Appena si sa quali tag sono release, il
+        // chip passa alla RELEASE da cui la build deriva; se la build e' oltre
+        // quella release lo dice ('+n' e marcatore), invece di spacciarla per
+        // la release stessa. Offline non si tocca nulla: nessuna affermazione.
+        var chip = document.getElementById('appVersionChip');
+        if (chip && v.display_version && v.current_released !== null) {
+          var label = chip.lastChild;                    // nodo di testo del tag
+          if (label && label.nodeType === 3) {
+            label.textContent = v.display_version + (v.commits_ahead ? ' +' + v.commits_ahead : '');
+          }
+          chip.title = (window.t ? t('ver.build_t', { v: v.current }) : 'build ' + v.current);
+          if (v.current_released === false) {
+            var mark = document.createElement('span');
+            mark.className = 'px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-label-caps text-[9px]';
+            mark.textContent = window.t ? t('ver.unreleased') : 'UNRELEASED';
+            mark.title = (window.t ? t('ver.unreleased_t') : 'This build is not a published release')
+              + (v.latest ? ' (' + (window.t ? t('ver.last_release', { v: v.latest }) : 'latest release ' + v.latest) + ')' : '');
+            chip.appendChild(mark);
+          }
+        }
+        if (!v.update_available) return;
         try {
           if (localStorage.getItem('dismissedVersion') === v.latest) return;
         } catch (e) { }

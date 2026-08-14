@@ -203,6 +203,23 @@ sidebar) with the latest **published GitHub release**:
   tarball. Only when neither is available does the version read `dev`, and in
   that case no update banner is shown — an installation that cannot know its
   own version must not be told it is out of date forever.
+- **The version shown is the release, not the newest tag.** `git describe`
+  returns the newest tag whether or not it was ever published, so the sidebar
+  used to display a version that does not exist as a release. The check now
+  resolves the **published release the build comes from** (`git describe`
+  restricted to released tags) and returns it as `display_version`, with
+  `commits_ahead` when the build is past it:
+
+  | Situation | Sidebar shows |
+  |---|---|
+  | build is exactly a published release | `v1.0.60-beta` |
+  | build is 1 commit past it | `v1.0.60-beta +1` <kbd>UNRELEASED</kbd> |
+  | GitHub unreachable | the local tag, unchanged, with no claim either way |
+
+  The exact build (`current`, e.g. `v1.0.61-beta`) stays in the chip's tooltip —
+  it is what you need to reproduce a bug — while the visible number is one you
+  can actually download from the releases page. The login page has no session to
+  query the endpoint with, so it labels its value `build` explicitly.
 
 - **In the UI** — a discreet, dismissible banner appears at the bottom-left of
   every page when a newer release exists ("New version vX available — update

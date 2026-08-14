@@ -51,9 +51,9 @@ def fake_releases(monkeypatch):
 
     import requests
     monkeypatch.setattr(requests, "get", _fake_get)
-    app_module._version_cache.update({"at": 0.0, "release": None})
+    app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
     yield calls
-    app_module._version_cache.update({"at": 0.0, "release": None})
+    app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
 
 
 # --------------------------------------------------------------- quale endpoint
@@ -86,12 +86,12 @@ def test_a_stable_release_wins_over_a_prerelease_of_the_same_version(monkeypatch
          "html_url": "https://example.invalid/stable", "published_at": "y"},
     ]
     monkeypatch.setattr(requests, "get", lambda url, **kw: _Resp(same))
-    app_module._version_cache.update({"at": 0.0, "release": None})
+    app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
     try:
         rel = app_module._fetch_latest_release()
         assert rel["tag"] == "v1.1.0" and rel["prerelease"] is False
     finally:
-        app_module._version_cache.update({"at": 0.0, "release": None})
+        app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
 
 
 def test_github_unreachable_is_not_an_update(monkeypatch):
@@ -101,11 +101,11 @@ def test_github_unreachable_is_not_an_update(monkeypatch):
         raise requests.RequestException("offline")
 
     monkeypatch.setattr(requests, "get", _boom)
-    app_module._version_cache.update({"at": 0.0, "release": None})
+    app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
     try:
         assert app_module._fetch_latest_release() is None
     finally:
-        app_module._version_cache.update({"at": 0.0, "release": None})
+        app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
 
 
 # ------------------------------------------------------------------- l'endpoint
@@ -143,6 +143,74 @@ def test_a_tag_without_a_release_is_not_an_update(role_clients, monkeypatch,
     body = _check(role_clients["viewer"], monkeypatch, "v1.0.60-beta")
     assert body["latest"] == "v1.0.59-beta"
     assert body["update_available"] is False
+
+
+def test_a_locally_tagged_but_unreleased_build_is_flagged(role_clients,
+                                                          monkeypatch,
+                                                          fake_releases):
+    """
+    La versione mostrata nel sito viene da 'git describe', che prende il tag
+    piu' recente anche se non e' mai stato rilasciato. L'interfaccia deve
+    dirlo, invece di lasciar credere che sia una versione pubblicata.
+    """
+    body = _check(role_clients["viewer"], monkeypatch, "v1.0.60-beta")
+    assert body["current_released"] is False
+    assert body["update_available"] is False      # e' comunque avanti alla 59
+
+
+def test_a_released_build_is_not_flagged(role_clients, monkeypatch, fake_releases):
+    body = _check(role_clients["viewer"], monkeypatch, "v1.0.57-beta")
+    assert body["current_released"] is True
+    # La build E' quella release: si mostra il suo numero, senza distanze.
+    assert body["display_version"] == "v1.0.57-beta"
+    assert body["commits_ahead"] == 0
+
+
+def test_the_shown_version_is_the_release_the_build_comes_from(role_clients,
+                                                               monkeypatch,
+                                                               fake_releases):
+    """
+    Il sito mostrava il tag piu' recente (che puo' non essere mai stato
+    rilasciato). Deve mostrare la RELEASE da cui la build deriva, dicendo di
+    quanto la supera.
+    """
+    import app as app_module
+    monkeypatch.setattr(app_module, "_release_build",
+                        lambda: {"base": "v1.0.59-beta", "ahead": 3})
+    body = _check(role_clients["viewer"], monkeypatch, "v1.0.61-beta")
+    assert body["display_version"] == "v1.0.59-beta"
+    assert body["commits_ahead"] == 3
+    assert body["current_released"] is False
+    assert body["current"] == "v1.0.61-beta"      # la build resta identificabile
+
+
+def test_without_a_reachable_release_the_local_version_stays(role_clients,
+                                                             monkeypatch,
+                                                             fake_releases):
+    """Se nessuna release e' raggiungibile da HEAD non si inventa nulla."""
+    import app as app_module
+    monkeypatch.setattr(app_module, "_release_build", lambda: None)
+    body = _check(role_clients["viewer"], monkeypatch, "v1.0.61-beta")
+    assert body["display_version"] == "v1.0.61-beta"
+    assert body["commits_ahead"] is None
+
+
+def test_nothing_is_claimed_when_github_is_unreachable(role_clients, monkeypatch):
+    """Offline non si sa se la build sia una release: 'null', non 'false'."""
+    import requests
+    import app as app_module
+
+    def _boom(url, **kw):
+        raise requests.RequestException("offline")
+
+    monkeypatch.setattr(requests, "get", _boom)
+    app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
+    try:
+        body = _check(role_clients["viewer"], monkeypatch, "v1.0.59-beta")
+        assert body["current_released"] is None
+        assert body["update_available"] is False
+    finally:
+        app_module._version_cache.update({"at": 0.0, "release": None, "tags": None})
 
 
 def test_unknown_local_version_never_shows_a_permanent_banner(role_clients,
