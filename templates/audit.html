@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=41" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=42" />
   <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -121,7 +121,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=31"></script>
+  <script src="/static/i18n.js?v=32"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -373,6 +373,10 @@
                 class="material-symbols-outlined text-[14px]">table_view</span>XLS</button>
           </div>
         </div>
+        <!-- Copertura della verifica: visibile solo quando il verdetto non e'
+             'intatto', perche' e' li' che il numero conta. -->
+        <div id="coverageNote"
+          class="hidden flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 font-code-sm text-[12px] text-slate-700"></div>
         <!-- Scans list -->
         <section id="list" class="space-y-6">
           <div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-500"
@@ -619,8 +623,14 @@
     }
     // Chip per-scan di integrita': legacy (pre-migrazione) / verificata / manomessa.
     function scanVerifyChip(s) {
-      if (!s.row_hash)
+      if (!s.row_hash) {
+        // Riga non firmata: se un'ancora valida la copre, e' protetta DA quella
+        // data in poi — cosa diversa sia da "verificata" sia da "riscrivibile".
+        const anch = integrity && integrity.anchoredThrough != null && s.id <= integrity.anchoredThrough;
+        if (anch)
+          return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full" title="${esc(t('audit.anchored_t', { d: integrity.anchoredAt || '' }))}"><span class="material-symbols-outlined text-[12px]">anchor</span>${t('audit.anchored')}</span>`;
         return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full" title="${esc(t('audit.unverified_t'))}"><span class="material-symbols-outlined text-[12px]">help</span>${t('audit.unverified')}</span>`;
+      }
       if (integrity && integrity.brokenSet.has(s.id))
         return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full" title="${esc(t('audit.tampered_t'))}"><span class="material-symbols-outlined text-[12px]">gpp_bad</span>${t('audit.tampered')}</span>`;
       if (integrity)
@@ -818,6 +828,9 @@
       const map = {
         ok: ['shield_lock', 'audit.integrity_ok', 'text-emerald-600 bg-emerald-50 border-emerald-200'],
         tampered: ['gpp_bad', 'audit.integrity_tampered', 'text-rose-600 bg-rose-50 border-rose-200'],
+        // Copertura parziale: niente di rotto, ma nemmeno integrita' dimostrata.
+        // Un tempo mostrava il badge verde anche col 3,7% di righe verificate.
+        partial: ['shield_question', 'audit.integrity_partial', 'text-amber-600 bg-amber-50 border-amber-200'],
         legacy: ['shield', 'audit.integrity_legacy', 'text-amber-600 bg-amber-50 border-amber-200'],
         none: ['shield', 'audit.integrity_none', 'text-slate-500 bg-slate-50 border-slate-200'],
         off: ['cloud_off', 'audit.integrity_off', 'text-slate-500 bg-slate-50 border-slate-200'],
@@ -838,12 +851,67 @@
       // conteggio CVE sigillato a fine scan). Per l'operatore sono la stessa
       // cosa — la riga e' stata alterata — quindi un solo insieme.
       const broken = [...(res.broken || []), ...(res.finals_broken || [])];
-      integrity = { ok: res.ok, brokenSet: new Set(broken), legacy: res.legacy || 0, total: res.total || 0 };
-      if (!res.total) setIntegrityBadge('none');
-      else if (!res.ok) setIntegrityBadge('tampered', broken.length);
-      else if (res.legacy > 0 && res.verified === 0) setIntegrityBadge('legacy');
+      const anch = res.anchor || {};
+      const anchorValid = anch.present && anch.digest_ok && anch.self_hash_ok;
+      integrity = {
+        ok: res.ok, brokenSet: new Set(broken), verdict: res.verdict,
+        unprotected: res.unprotected || 0, total: res.total || 0,
+        coverage: res.coverage, anchored: res.anchored || 0,
+        anchoredThrough: anchorValid ? anch.through_id : null,
+        anchoredAt: anchorValid ? String(anch.at || '').slice(0, 10) : null,
+      };
+      // Il badge segue il VERDETTO, non "nessun controllo fallito": una catena
+      // con righe non dimostrabili non e' verde.
+      if (res.verdict === 'empty') setIntegrityBadge('none');
+      else if (res.verdict === 'tampered') setIntegrityBadge('tampered', broken.length);
+      else if (res.verdict === 'partial') setIntegrityBadge('partial', Math.round((res.coverage || 0) * 100));
       else setIntegrityBadge('ok', res.verified);
+      renderCoverage(res);
       if (last) renderCards(last.scans || []);   // aggiorna i chip per-scan
+    }
+
+    // Riga di copertura sotto la toolbar: dice quante righe reggono davvero il
+    // verdetto e, se serve, offre l'ancoraggio (solo admin).
+    async function renderCoverage(res) {
+      const box = $('coverageNote'); if (!box) return;
+      const unprot = res.unprotected || 0;
+      const pct = res.coverage == null ? null : Math.round(res.coverage * 100);
+      if (res.verdict === 'intact' || res.verdict === 'empty') { box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      const anchoredAt = (res.anchor && res.anchor.present) ? res.anchor.at : null;
+      let msg;
+      if (res.verdict === 'tampered') {
+        msg = t('audit.cov_tampered');
+      } else {
+        msg = t('audit.cov_partial', { pct: pct == null ? '—' : pct, n: unprot });
+        if (anchoredAt) msg += ' ' + t('audit.cov_anchored', { d: String(anchoredAt).slice(0, 10), n: res.anchored || 0 });
+        if (res.finals_pending) msg += ' ' + t('audit.cov_unsealed', { n: res.finals_pending });
+      }
+      const me = await window.vfaUser;
+      const canAnchor = me && me.role === 'admin' && unprot > 0;
+      box.innerHTML =
+        `<span class="material-symbols-outlined text-[16px] ${res.verdict === 'tampered' ? 'text-rose-500' : 'text-amber-500'}">` +
+        `${res.verdict === 'tampered' ? 'gpp_bad' : 'shield_question'}</span>` +
+        `<span class="flex-1">${esc(msg)}</span>` +
+        (canAnchor ? `<button id="anchorBtn" class="shrink-0 font-label-caps text-[10px] text-slate-700 border border-amber-300 bg-amber-50 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors">${t('audit.cov_anchor_btn')}</button>` : '');
+      const btn = $('anchorBtn');
+      if (btn) btn.addEventListener('click', anchorLedgers);
+    }
+
+    async function anchorLedgers() {
+      const btn = $('anchorBtn');
+      if (!confirm(t('audit.cov_anchor_confirm'))) return;
+      if (btn) { btn.disabled = true; btn.textContent = t('audit.cov_anchor_running'); }
+      try {
+        const r = await fetch('/api/audit/anchor', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: 'anchored from the audit page' }),
+        });
+        if (!r.ok) throw 0;
+        loadIntegrity();
+      } catch (e) {
+        if (btn) { btn.disabled = false; btn.textContent = t('audit.cov_anchor_failed'); }
+      }
     }
 
     // Deep-link #scan-<id>: espande, scrolla ed evidenzia la scan puntata.
@@ -1143,6 +1211,7 @@
       const map = {
         ok: ['shield_lock', 'audit.integrity_ok', 'text-emerald-600 bg-emerald-50 border-emerald-200'],
         tampered: ['gpp_bad', 'audit.integrity_tampered', 'text-rose-600 bg-rose-50 border-rose-200'],
+        partial: ['shield_question', 'audit.integrity_partial', 'text-amber-600 bg-amber-50 border-amber-200'],
         none: ['shield', 'audit.integrity_none', 'text-slate-500 bg-slate-50 border-slate-200'],
         off: ['cloud_off', 'audit.integrity_off', 'text-slate-500 bg-slate-50 border-slate-200'],
       };
@@ -1156,8 +1225,9 @@
       try { const r = await fetch('/api/audit/events/verify'); res = await r.json(); if (!r.ok) throw 0; }
       catch (e) { ev.integrity = null; evSetIntegrityBadge('off'); return; }
       ev.integrity = { ok: res.ok, brokenSet: new Set(res.broken || []) };
-      if (!res.total) evSetIntegrityBadge('none');
-      else if (!res.ok) evSetIntegrityBadge('tampered', (res.broken || []).length);
+      if (res.verdict === 'empty') evSetIntegrityBadge('none');
+      else if (res.verdict === 'tampered') evSetIntegrityBadge('tampered', (res.broken || []).length);
+      else if (res.verdict === 'partial') evSetIntegrityBadge('partial', Math.round((res.coverage || 0) * 100));
       else evSetIntegrityBadge('ok', res.verified);
       if (ev.last) evRenderTable(ev.last.events || []);   // ricolora le righe rotte
     }

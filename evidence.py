@@ -85,6 +85,19 @@ def build_report(state: dict, before: dict | None, delta: dict | None,
     # report.
     checked = [c for c in report["integrity_checks"].values() if c["available"]]
     report["integrity_ok"] = bool(checked) and all(c["ok"] for c in checked)
+    # 'integrity_ok' da solo non distingue una catena ROTTA da una catena
+    # semplicemente non dimostrabile su tutte le righe. Sono due cose diverse
+    # per chi riceve il documento: la prima e' un incidente, la seconda un
+    # limite di copertura da dichiarare.
+    report["integrity_verdict"] = (
+        "unknown" if not checked
+        else "tampered" if any(c.get("tamper_free") is False for c in checked)
+        else "intact" if all(c["ok"] for c in checked)
+        else "partial")
+    report["coverage"] = {
+        name: c.get("coverage")
+        for name, c in report["integrity_checks"].items() if c["available"]
+    }
     return report
 
 
@@ -114,15 +127,27 @@ def _chain(result: dict | None) -> dict:
     Normalizza l'esito di una verifica di catena. 'available' distingue il DB
     irraggiungibile (verifica non eseguita) da una catena effettivamente rotta:
     confonderli renderebbe il report inutile proprio quando serve.
+
+    Il report porta la COPERTURA, non solo l'esito: un "ok" calcolato su una
+    frazione delle righe non e' una prova di integrita', e chi legge il
+    documento deve poterlo vedere senza aprire il database.
     """
     if result is None:
-        return {"available": False, "ok": False, "detail": "DB unreachable"}
+        return {"available": False, "ok": False, "verdict": "unknown",
+                "detail": "DB unreachable"}
+    anchor = result.get("anchor") or {}
     return {
         "available": True,
         "ok": bool(result.get("ok")),
+        "verdict": result.get("verdict"),
+        "tamper_free": result.get("tamper_free"),
         "total": result.get("total"),
         "verified": result.get("verified"),
-        "legacy": result.get("legacy"),
+        "unsigned": result.get("unsigned"),
+        "anchored": result.get("anchored"),
+        "unprotected": result.get("unprotected"),
+        "coverage": result.get("coverage"),
+        "anchored_at": anchor.get("at") if anchor.get("present") else None,
         "broken": result.get("broken") or [],
         "finals_verified": result.get("finals_verified"),
         "finals_pending": result.get("finals_pending"),
@@ -195,12 +220,21 @@ def _rows(report: dict) -> list:
         out.append(("delta", k, v))
     for name, chain in (report.get("integrity_checks") or {}).items():
         out.append(("integrity_checks", f"{name}_available", chain.get("available")))
+        out.append(("integrity_checks", f"{name}_verdict", chain.get("verdict")))
         out.append(("integrity_checks", f"{name}_ok", chain.get("ok")))
+        out.append(("integrity_checks", f"{name}_total", chain.get("total")))
         out.append(("integrity_checks", f"{name}_verified", chain.get("verified")))
+        # Le righe non dimostrabili sono parte del risultato quanto le rotture:
+        # un conteggio "verificato" senza il denominatore non dice niente.
+        out.append(("integrity_checks", f"{name}_anchored", chain.get("anchored")))
+        out.append(("integrity_checks", f"{name}_unprotected", chain.get("unprotected")))
+        out.append(("integrity_checks", f"{name}_coverage", chain.get("coverage")))
+        out.append(("integrity_checks", f"{name}_anchored_at", chain.get("anchored_at")))
         out.append(("integrity_checks", f"{name}_broken",
                     ";".join(str(i) for i in (chain.get("broken") or []))))
         out.append(("integrity_checks", f"{name}_finals_broken",
                     ";".join(str(i) for i in (chain.get("finals_broken") or []))))
+    out.append(("integrity", "overall_verdict", report.get("integrity_verdict")))
     out.append(("integrity", "overall_ok", report.get("integrity_ok")))
     block = report.get("integrity") or {}
     out.append(("integrity", "algo", block.get("algo")))
@@ -235,6 +269,7 @@ td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .ok { color: #047857; font-weight: 600; }
 .bad { color: #b91c1c; font-weight: 600; }
+.warn { color: #b45309; font-weight: 600; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
         font-size: 11px; word-break: break-all; }
 .note { color: #6b7280; font-size: 12px; margin-top: 6px; }
@@ -256,7 +291,6 @@ def to_html(report: dict) -> str:
     counts_from = (report.get("counts") or {}).get("at_from") or {}
     delta = report.get("delta") or {}
     block = report.get("integrity") or {}
-    ok_all = report.get("integrity_ok")
 
     parts = [
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>",
@@ -322,23 +356,56 @@ def to_html(report: dict) -> str:
 
     parts += ["<h2>Integrity verification</h2>",
               "<table><thead><tr><th>Chain</th><th>Result</th><th>Verified</th>"
+              "<th>Coverage</th><th>Unprotected</th>"
               "<th>Broken entries</th></tr></thead><tbody>"]
     for name, chain in (report.get("integrity_checks") or {}).items():
+        # Tre esiti distinti, non due: "non dimostrabile" non e' "manomesso",
+        # e nessuno dei due e' "integro".
         if not chain.get("available"):
             verdict = "<span class='bad'>NOT CHECKED</span>"
-        elif chain.get("ok"):
-            verdict = "<span class='ok'>INTACT</span>"
-        else:
+        elif chain.get("verdict") == "tampered":
             verdict = "<span class='bad'>TAMPERED</span>"
+        elif chain.get("verdict") == "partial":
+            verdict = "<span class='warn'>PARTIAL COVERAGE</span>"
+        elif chain.get("verdict") == "empty":
+            verdict = "<span class='note'>EMPTY</span>"
+        else:
+            verdict = "<span class='ok'>INTACT</span>"
         broken = (chain.get("broken") or []) + (chain.get("finals_broken") or [])
+        cov = chain.get("coverage")
+        cov_txt = "—" if cov is None else f"{cov * 100:.1f}%"
+        anchored_at = chain.get("anchored_at")
+        unprot = chain.get("unprotected")
+        unprot_txt = "—" if unprot is None else str(unprot)
+        if anchored_at:
+            unprot_txt += f" <span class='note'>(anchored {_esc(anchored_at[:10])})</span>"
         parts.append(
             f"<tr><td>{_esc(name)}</td><td>{verdict}</td>"
-            f"<td class='num'>{_esc(chain.get('verified'))}</td>"
+            f"<td class='num'>{_esc(chain.get('verified'))} / {_esc(chain.get('total'))}</td>"
+            f"<td class='num'>{cov_txt}</td>"
+            f"<td class='num'>{unprot_txt}</td>"
             f"<td class='mono'>{_esc(', '.join(str(i) for i in broken) or '—')}</td></tr>")
     parts.append("</tbody></table>")
-    parts.append(
-        f"<p class='{'ok' if ok_all else 'bad'}'>Overall integrity: "
-        f"{'all chains intact' if ok_all else 'VERIFICATION FAILED — do not submit this report before investigating'}.</p>")
+    overall = report.get("integrity_verdict")
+    if overall == "intact":
+        parts.append("<p class='ok'>Overall integrity: all chains intact, "
+                     "full coverage.</p>")
+    elif overall == "tampered":
+        parts.append("<p class='bad'>Overall integrity: VERIFICATION FAILED — "
+                     "do not submit this report before investigating.</p>")
+    elif overall == "partial":
+        # Il punto dell'intera modifica: un report non deve MAI far passare una
+        # copertura parziale per integrita' dimostrata.
+        parts.append(
+            "<p class='warn'>Overall integrity: <b>partial</b>. No tampering was "
+            "detected, but part of the ledger cannot be proven intact — rows "
+            "written before the hash chains existed, or values never sealed. "
+            "The coverage column states exactly how much of each chain this "
+            "verdict rests on. Anchored rows are protected from the anchor date "
+            "onward, not before it.</p>")
+    else:
+        parts.append("<p class='bad'>Overall integrity: not verified (no chain "
+                     "could be checked).</p>")
 
     parts += ["<h2>Signature</h2>",
               "<table><tbody>",

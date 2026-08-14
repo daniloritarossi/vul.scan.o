@@ -319,6 +319,54 @@ def test_activity_ledger_is_denied_to_non_audit_roles(role_clients, role):
     assert role_clients[role].get("/api/audit/events/verify").status_code == 403
 
 
+@pytest.mark.parametrize("role", ["manager", "editor", "auditor", "viewer",
+                                  "stakeholder"])
+def test_anchoring_the_ledger_is_admin_only(role_clients, role):
+    """
+    L'ancoraggio dichiara "questo era lo stato al momento T" e cambia il
+    verdetto di integrita': non e' una lettura, e nemmeno una scrittura
+    ordinaria. Nemmeno l'auditor puo' farlo — legge le prove, non le fabbrica.
+    """
+    assert role_clients[role].post("/api/audit/anchor").status_code == 403
+
+
+def test_anchoring_is_recorded_with_who_did_it(role_clients, monkeypatch):
+    """
+    Percorso admin con la scrittura simulata: il test non deve ancorare il
+    registro reale dell'installazione, che e' una decisione dell'operatore.
+    """
+    import app as app_module
+
+    calls = []
+
+    def _fake_anchor(chain, actor=None, note=""):
+        calls.append((chain, (actor or {}).get("name")))
+        return {"chain": chain, "through_id": 42, "row_count": 7,
+                "digest": "d" * 64}
+
+    monkeypatch.setattr(app_module.db, "create_ledger_anchor", _fake_anchor)
+    logged = []
+    monkeypatch.setattr(app_module.db, "log_audit_event",
+                        lambda action, **kw: logged.append((action, kw)) or True)
+
+    r = role_clients["admin"].post("/api/audit/anchor",
+                                   json={"chains": ["scans"], "note": "baseline"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["anchored"] == [{"chain": "scans", "through_id": 42,
+                                 "row_count": 7, "digest": "d" * 64}]
+    assert calls == [("scans", USERNAME(role="admin"))]
+    actions = [a for a, _ in logged]
+    assert "audit.anchor" in actions, "ancoraggio non registrato"
+
+
+def test_anchoring_rejects_unknown_chains(role_clients):
+    r = role_clients["admin"].post("/api/audit/anchor",
+                                   json={"chains": ["users"]})
+    assert r.status_code == 400
+    assert "users" in r.text
+
+
 def test_editor_sees_only_its_own_activity(role_clients):
     """Un ruolo scoped non legge l'attivita' amministrativa altrui."""
     role_clients["admin"].get("/api/me")            # attivita' di un altro attore

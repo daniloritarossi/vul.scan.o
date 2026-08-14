@@ -392,6 +392,44 @@ CREATE INDEX IF NOT EXISTS idx_audit_events_action   ON public.audit_events(acti
 CREATE INDEX IF NOT EXISTS idx_audit_events_category ON public.audit_events(category);
 CREATE INDEX IF NOT EXISTS idx_audit_events_actor    ON public.audit_events(actor_id);
 
+-- 8-ter) ANCORAGGIO DELLE RIGHE NON FIRMATE.
+--    Le righe scritte PRIMA che esistessero le catene hash non hanno row_hash.
+--    La verifica le saltava e continuava a rispondere "ok": su un'installazione
+--    reale questo significava dichiarare integro un ledger in cui 104 righe su
+--    108 erano riscrivibili senza lasciare traccia. Non si possono firmare a
+--    posteriori — nessuno puo' dimostrare che non siano gia' state alterate, e
+--    fingerlo sarebbe fabbricare una prova.
+--
+--    Quello che si puo' fare, ed e' la pratica standard, e' ancorarle: si
+--    calcola ORA il digest del loro contenuto e lo si registra in una riga
+--    firmata e concatenata. Da quel momento qualsiasi modifica a quelle righe
+--    e' rilevabile. L'ancora dichiara "questo era lo stato al momento T", non
+--    "queste righe non sono mai state toccate": la differenza resta scritta
+--    nella risposta di verifica e nel report di evidenza.
+--
+--      chain      -> tabella coperta (scans | posture_runs | ...)
+--      through_id -> id massimo coperto (le righe successive sono firmate)
+--      row_count  -> quante righe non firmate sono state ancorate
+--      digest     -> sha256 del contenuto canonicalizzato di quelle righe
+--      prev_hash/row_hash -> le ancore stesse sono concatenate fra loro, cosi'
+--                            un'ancora non puo' essere sostituita di nascosto
+CREATE TABLE IF NOT EXISTS public.ledger_anchors (
+  id          bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  at          timestamptz NOT NULL DEFAULT now(),
+  event_ts    text NOT NULL,
+  chain       text NOT NULL,
+  through_id  bigint NOT NULL,
+  row_count   integer NOT NULL,
+  digest      text NOT NULL,
+  actor_id    bigint,
+  actor_name  text,
+  note        text DEFAULT '',
+  prev_hash   text,
+  row_hash    text
+);
+
+CREATE INDEX IF NOT EXISTS idx_ledger_anchors_chain ON public.ledger_anchors(chain);
+
 -- Hash FINALE della scansione: copre i campi MUTABILI (version + cve_count +
 -- cve_ids) che update_scan_summary riscrive a fine scansione e che row_hash,
 -- calcolato all'insert, non puo' coprire. E' ancorato a row_hash, quindi il
@@ -511,6 +549,7 @@ DROP TRIGGER IF EXISTS trg_posture_findings_immutable   ON public.posture_findin
 DROP TRIGGER IF EXISTS trg_posture_components_immutable ON public.posture_components;
 DROP TRIGGER IF EXISTS trg_finding_events_immutable     ON public.finding_events;
 DROP TRIGGER IF EXISTS trg_audit_events_immutable       ON public.audit_events;
+DROP TRIGGER IF EXISTS trg_ledger_anchors_immutable      ON public.ledger_anchors;
 
 CREATE TRIGGER trg_scans_append_only
   BEFORE UPDATE OR DELETE ON public.scans
@@ -535,6 +574,11 @@ CREATE TRIGGER trg_finding_events_immutable
   FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
 CREATE TRIGGER trg_audit_events_immutable
   BEFORE UPDATE OR DELETE ON public.audit_events
+  FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
+-- Un'ancora cancellabile non protegge nulla: si toglie l'ancora e le righe
+-- ancorate tornano riscrivibili senza che la verifica se ne accorga.
+CREATE TRIGGER trg_ledger_anchors_immutable
+  BEFORE UPDATE OR DELETE ON public.ledger_anchors
   FOR EACH ROW EXECUTE FUNCTION public.ledger_immutable_row();
 
 -- Valvola di sfogo per la suite di test, che esercita gli endpoint reali e
@@ -569,18 +613,19 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
 REVOKE UPDATE, DELETE, TRUNCATE ON
   public.scans, public.scan_results, public.posture_runs, public.posture_assets,
   public.posture_findings, public.posture_components, public.finding_events,
-  public.audit_events
+  public.audit_events, public.ledger_anchors
   FROM anon, authenticated;
 REVOKE DELETE, TRUNCATE ON
   public.scans, public.scan_results, public.posture_runs, public.posture_assets,
   public.posture_findings, public.posture_components, public.finding_events,
-  public.audit_events
+  public.audit_events, public.ledger_anchors
   FROM service_role;
 -- service_role conserva UPDATE solo dove l'app deve davvero scrivere il
 -- risultato finale (scans, posture_runs); i trigger delimitano cosa puo' toccare.
 REVOKE UPDATE ON
   public.scan_results, public.posture_assets, public.posture_findings,
-  public.posture_components, public.finding_events, public.audit_events
+  public.posture_components, public.finding_events, public.audit_events,
+  public.ledger_anchors
   FROM service_role;
 
 REVOKE ALL ON FUNCTION public.purge_test_ledger() FROM PUBLIC;

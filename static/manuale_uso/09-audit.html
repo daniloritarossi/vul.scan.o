@@ -142,9 +142,11 @@
           <img src="img/audit-integrity.webp" alt="Ledger integrity badge" loading="lazy" />
           <figcaption>
             <span lang="en"><b>The integrity badge</b> — the first thing to read on this page, verified through
-              <code>GET /api/audit/verify</code>.</span>
+              <code>GET /api/audit/verify</code>. Here it reports partial coverage: the percentage is the share of the
+              ledger the verdict actually rests on.</span>
             <span lang="it"><b>Il badge di integrità</b> — la prima cosa da leggere in questa pagina, verificato tramite
-              <code>GET /api/audit/verify</code>.</span>
+              <code>GET /api/audit/verify</code>. Qui riporta una copertura parziale: la percentuale è la quota di
+              registro su cui il verdetto si regge davvero.</span>
           </figcaption>
         </figure>
 
@@ -207,6 +209,106 @@
           <span class="badge b-err">TAMPERED</span> significa quindi che qualcuno è arrivato direttamente al database,
           non che l'applicazione abbia sbagliato.
         </p>
+
+        <h3><span lang="en">What the verdict rests on</span><span lang="it">Su cosa si regge il verdetto</span></h3>
+        <p lang="en">
+          A verification that answers <em>“ok”</em> while checking a fraction of the rows is worse than no verification.
+          The badge therefore reports a <strong>verdict</strong> and the coverage behind it, not merely the absence of
+          detected failures:
+        </p>
+        <p lang="it">
+          Una verifica che risponde <em>«ok»</em> controllando una frazione delle righe è peggio di nessuna verifica.
+          Il badge riporta quindi un <strong>verdetto</strong> e la copertura che lo sostiene, non semplicemente
+          l'assenza di errori rilevati:
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Verdict</span><span lang="it">Verdetto</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-ok">LEDGER VERIFIED</span></td>
+                <td><span lang="en">Every entry is verified or anchored and every sealed value checks out. This is the only state that means <em>the ledger is intact</em>.</span><span lang="it">Ogni voce è verificata o ancorata e ogni valore sigillato torna. È l'unico stato che significa <em>il registro è integro</em>.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">PARTIAL COVERAGE · n%</span></td>
+                <td><span lang="en">Nothing is broken, but part of the ledger <strong>cannot be proven</strong>: entries written before the hash chains existed, or scans whose final values were never sealed. The percentage is the share of the ledger the verdict actually rests on, and a line under the toolbar says how many entries are still freely rewritable.</span><span lang="it">Niente è rotto, ma una parte del registro <strong>non è dimostrabile</strong>: voci scritte prima che esistessero le catene hash, o scansioni i cui valori finali non sono mai stati sigillati. La percentuale è la quota di registro su cui il verdetto si regge davvero, e una riga sotto la toolbar dice quante voci restano liberamente riscrivibili.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">TAMPERED</span></td>
+                <td><span lang="en">At least one entry does not match its hash, or an anchored entry was changed after being anchored. This is an incident, not a limitation — investigate before using the ledger as evidence.</span><span lang="it">Almeno una voce non corrisponde al proprio hash, oppure una voce ancorata è stata modificata dopo l'ancoraggio. È un incidente, non un limite — indaga prima di usare il registro come evidenza.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="warn">
+          <span lang="en"><b>This used to read differently.</b> Until recently the endpoint answered <code>ok: true</code>
+            whenever nothing it could check had failed — on a real installation that meant declaring intact a ledger
+            where 104 entries out of 108 were skipped and rewritable, and the response said so nowhere. The posture
+            ledger, which holds the point-in-time vulnerability counts, was unsigned at 100% and still answered
+            <code>ok: true</code>.</span>
+          <span lang="it"><b>Prima diceva un'altra cosa.</b> Fino a poco tempo fa l'endpoint rispondeva
+            <code>ok: true</code> ogni volta che nulla di ciò che poteva controllare era fallito — su un'installazione
+            reale significava dichiarare integro un registro in cui 104 voci su 108 erano saltate e riscrivibili, e la
+            risposta non lo diceva da nessuna parte. Il registro di postura, che regge i conteggi point-in-time delle
+            vulnerabilità, era non firmato al 100% e rispondeva comunque <code>ok: true</code>.</span>
+        </div>
+
+        <figure>
+          <img src="img/audit-coverage.webp" alt="Coverage line with the anchor button" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>The coverage line</b> — appears under the toolbar whenever the verdict is not
+              <em>intact</em>, and states in plain numbers what is not proven. The <b>ANCHOR NOW</b> button is shown to
+              administrators only.</span>
+            <span lang="it"><b>La riga di copertura</b> — compare sotto la toolbar ogni volta che il verdetto non è
+              <em>intatto</em>, e dice in numeri espliciti cosa non è dimostrato. Il pulsante <b>ANCORA ORA</b> è
+              mostrato ai soli amministratori.</span>
+          </figcaption>
+        </figure>
+
+        <h3><span lang="en">Anchoring the entries that came before</span><span lang="it">Ancorare le voci precedenti</span></h3>
+        <p lang="en">
+          Entries written before the hash chains existed <strong>cannot be signed retroactively</strong>: nobody can
+          prove they were not already altered, and signing them now would be manufacturing evidence. They can be
+          <em>anchored</em>. Anchoring records the current digest of those entries in a signed, chained row, so from
+          that moment any change to them is detectable — a change to an anchored entry turns the verdict to
+          <span class="badge b-err">TAMPERED</span>, exactly like a broken signature.
+        </p>
+        <p lang="it">
+          Le voci scritte prima che esistessero le catene hash <strong>non si possono firmare a posteriori</strong>:
+          nessuno può dimostrare che non siano già state alterate, e firmarle ora significherebbe fabbricare una prova.
+          Si possono <em>ancorare</em>. L'ancoraggio registra il digest attuale di quelle voci in una riga firmata e
+          concatenata, così da quel momento ogni loro modifica è rilevabile — una modifica a una voce ancorata porta il
+          verdetto a <span class="badge b-err">TAMPERED</span>, esattamente come una firma rotta.
+        </p>
+        <p lang="en">
+          When there are unprotected entries, an <span class="badge b-acc">ANCHOR NOW</span> button appears next to the
+          coverage line — <strong>for administrators only</strong>. Not even an auditor can press it: an auditor reads
+          the evidence, and does not create it. The action is deliberately manual and is recorded in the activity
+          ledger with the name of whoever performed it.
+        </p>
+        <p lang="it">
+          Quando ci sono voci non protette, accanto alla riga di copertura compare un pulsante
+          <span class="badge b-acc">ANCORA ORA</span> — <strong>solo per gli amministratori</strong>. Nemmeno un auditor
+          può premerlo: un auditor legge le prove, non le crea. L'azione è volutamente manuale e viene registrata nel
+          registro attività con il nome di chi l'ha eseguita.
+        </p>
+        <div class="note">
+          <span lang="en"><b>What an anchor claims, and what it does not.</b> It says <em>“this was the content at time
+            T”</em>. It does <b>not</b> say <em>“these entries were never altered”</em> — no one can prove that after
+            the fact. Anchored entries are labelled <span class="badge b-warn">ANCHORED</span> with their anchor date,
+            and the signed evidence report carries the same date, so a reader can always tell proven history from
+            history that is merely protected from a point onward.</span>
+          <span lang="it"><b>Cosa afferma un'ancora, e cosa no.</b> Dice <em>«questo era il contenuto al momento T»</em>.
+            <b>Non</b> dice <em>«queste voci non sono mai state alterate»</em> — nessuno può dimostrarlo a posteriori.
+            Le voci ancorate sono marcate <span class="badge b-warn">ANCORATA</span> con la data di ancoraggio, e il
+            report di evidenza firmato porta la stessa data, così chi legge distingue sempre la storia dimostrata da
+            quella soltanto protetta da un certo punto in poi.</span>
+        </div>
 
         <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
         <div class="scroll-x">

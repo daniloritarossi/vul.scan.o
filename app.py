@@ -1490,6 +1490,54 @@ def api_audit_events(
             "actors": actors, "scoped": user.scoped}
 
 
+ANCHORABLE_CHAINS = ("scans", "posture_runs", "finding_events", "audit_events")
+
+
+@app.post("/api/audit/anchor")
+async def api_audit_anchor(request: Request,
+                           user: CurrentUser = Depends(_admin_only)):
+    """
+    Ancora le righe non firmate dei registri: ne registra il digest in una riga
+    firmata, cosi' da quel momento ogni loro modifica e' rilevabile.
+
+    Body opzionale {"chains": ["scans", ...], "note": "..."}; senza corpo
+    vengono ancorate tutte le catene che ne hanno bisogno.
+
+    Solo admin, e volutamente NON automatico: l'ancora dichiara "questo era lo
+    stato al momento T" e trasforma righe indimostrabili in righe protette da
+    qui in avanti. E' un'affermazione che deve fare una persona, non un job di
+    avvio — e resta scritta nel registro attivita' con chi l'ha fatta.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    chains = body.get("chains") or list(ANCHORABLE_CHAINS)
+    bad = [c for c in chains if c not in ANCHORABLE_CHAINS]
+    if bad:
+        return JSONResponse({"error": f"Catene non valide: {bad}",
+                             "valid": list(ANCHORABLE_CHAINS)}, status_code=400)
+    note = (body.get("note") or "").strip()
+    created, skipped = [], []
+    for chain in chains:
+        row = db.create_ledger_anchor(chain, actor=_actor(user), note=note)
+        if row is None:
+            # Nessuna riga da ancorare (tutto gia' firmato) o DB muto.
+            skipped.append(chain)
+            continue
+        created.append({"chain": chain, "through_id": row.get("through_id"),
+                        "row_count": row.get("row_count"),
+                        "digest": row.get("digest")})
+        _audit("audit.anchor", request, user,
+               target={"type": "ledger", "id": chain, "label": chain},
+               detail={"through_id": row.get("through_id"),
+                       "row_count": row.get("row_count"),
+                       "digest": row.get("digest"), "note": note})
+    if not created and not skipped:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    return {"ok": True, "anchored": created, "nothing_to_anchor": skipped}
+
+
 @app.get("/api/audit/events/verify")
 def api_audit_events_verify(user: CurrentUser = Depends(_audit_reader)):
     """

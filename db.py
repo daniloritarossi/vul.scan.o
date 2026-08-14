@@ -97,6 +97,231 @@ def _get_client():
     return _client
 
 
+# ---------------------------------------------------------------------------
+# ANCORAGGIO DELLE RIGHE NON FIRMATE + VERDETTO DI INTEGRITA'
+#
+# Le righe scritte prima dell'introduzione delle catene non hanno row_hash. La
+# verifica le saltava e rispondeva comunque "ok": su un'installazione reale
+# significava dichiarare integro un ledger in cui 104 righe su 108 erano
+# riscrivibili senza lasciare traccia — e le run di postura, che reggono i
+# conteggi point-in-time, erano non firmate al 100%.
+#
+# Non si possono firmare a posteriori: nessuno puo' dimostrare che non siano
+# gia' state alterate. Si possono pero' ANCORARE — registrarne ORA il digest in
+# una riga firmata — cosi' da li' in avanti ogni modifica e' rilevabile. Il
+# verdetto distingue i tre casi che prima erano tutti "ok":
+#   intact  -> tutto verificato (firmato o ancorato), nessuna rottura
+#   partial -> nulla di rotto, ma una parte non e' dimostrabile
+#   tampered-> almeno una riga non torna
+# ---------------------------------------------------------------------------
+
+# Colonne che entrano nel digest di ancoraggio: tutto cio' che un audit
+# leggerebbe come dato probante e che, senza firma, sarebbe riscrivibile.
+_ANCHOR_COLUMNS = {
+    "scans": ("id", "created_at", "description", "product", "version", "source",
+              "actor_id", "actor_name", "cve_count", "cve_ids"),
+    "posture_runs": ("id", "created_at", "assets_scanned", "total_packages",
+                     "total_vulnerable", "total_vulns", "avg_score",
+                     "actor_id", "actor_name"),
+    "finding_events": ("id", "event_ts", "fingerprint", "event", "from_status",
+                       "to_status", "severity", "actor_id", "actor_name"),
+    "audit_events": ("id", "event_ts", "category", "action", "outcome",
+                     "actor_id", "actor_name", "target_type", "target_id"),
+}
+
+_ANCHOR_HASH_FIELDS = ("chain", "through_id", "row_count", "digest",
+                       "actor_id", "event_ts")
+
+
+def _anchor_hash(payload: dict, prev_hash: str) -> str:
+    """sha256(prev_hash | campi dell'ancora): le ancore sono a loro volta
+    concatenate, cosi' non se ne puo' sostituire una di nascosto."""
+    return hashlib.sha256(
+        (str(prev_hash or "") + "|" + _canon(payload, _ANCHOR_HASH_FIELDS)).encode("utf-8")
+    ).hexdigest()
+
+
+def _anchor_digest(chain: str, rows: list) -> str:
+    """Digest deterministico del contenuto delle righe indicate (ordinate per id)."""
+    cols = _ANCHOR_COLUMNS.get(chain, ())
+    payload = [
+        {c: (sorted(r.get(c), key=str) if isinstance(r.get(c), list) else r.get(c))
+         for c in cols}
+        for r in sorted(rows, key=lambda x: x.get("id") or 0)
+    ]
+    blob = json.dumps(payload, sort_keys=True, ensure_ascii=False,
+                      separators=(",", ":"), default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def _fetch_unsigned(client, chain: str, through_id: Optional[int] = None) -> list:
+    """Righe della catena prive di row_hash (fino a through_id, se indicato)."""
+    cols = _ANCHOR_COLUMNS.get(chain)
+    if not cols:
+        return []
+    try:
+        q = client.table(chain).select(",".join(cols) + ",row_hash").is_("row_hash", "null")
+        if through_id is not None:
+            q = q.lte("id", through_id)
+        return (q.order("id").execute().data) or []
+    except Exception as exc:
+        logger.warning("_fetch_unsigned fallita (%s): %s", chain, exc)
+        return []
+
+
+def fetch_ledger_anchor(chain: str) -> Optional[dict]:
+    """Ancora piu' recente della catena indicata. None se assente o DB muto."""
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("ledger_anchors").select("*")
+                .eq("chain", chain).order("id", desc=True).limit(1).execute())
+        return resp.data[0] if resp.data else None
+    except Exception as exc:
+        logger.warning("fetch_ledger_anchor fallita (%s): %s", chain, exc)
+        return None
+
+
+def create_ledger_anchor(chain: str, actor: Optional[dict] = None,
+                         note: str = "") -> Optional[dict]:
+    """
+    Ancora le righe non firmate della catena: ne registra il digest in una riga
+    firmata e concatenata alle ancore precedenti.
+
+    Ritorna la riga creata, None se il DB non risponde o se non c'e' nulla da
+    ancorare (tutte le righe sono gia' firmate: in quel caso l'ancora sarebbe
+    rumore, non protezione).
+
+    Attenzione a cosa significa: l'ancora dichiara "questo era il contenuto al
+    momento T", non "queste righe non sono mai state modificate". Nessuno puo'
+    dimostrare il secondo enunciato a posteriori, e la verifica continua a
+    dichiararlo apertamente.
+    """
+    client = _get_client()
+    if client is None or chain not in _ANCHOR_COLUMNS:
+        return None
+    rows = _fetch_unsigned(client, chain)
+    if not rows:
+        return None
+    actor = actor or {}
+    row = {
+        "event_ts": _utc_iso(),
+        "chain": chain,
+        "through_id": max(r["id"] for r in rows),
+        "row_count": len(rows),
+        "digest": _anchor_digest(chain, rows),
+        "actor_id": actor.get("id"),
+        "actor_name": actor.get("name"),
+        "note": note or "",
+    }
+    try:
+        prev = (client.table("ledger_anchors").select("row_hash")
+                .order("id", desc=True).limit(1).execute())
+        prev_hash = (prev.data[0].get("row_hash") or "") if prev.data else ""
+    except Exception as exc:
+        logger.warning("lettura ultima ancora fallita: %s", exc)
+        prev_hash = ""
+    row["prev_hash"] = prev_hash
+    row["row_hash"] = _anchor_hash(row, prev_hash)
+    try:
+        resp = client.table("ledger_anchors").insert(row).execute()
+        return (resp.data or [row])[0]
+    except Exception as exc:
+        logger.warning("create_ledger_anchor fallita (%s): %s", chain, exc)
+        return None
+
+
+def _anchor_status(client, chain: str) -> dict:
+    """
+    Stato dell'ancoraggio della catena:
+    {present, at, through_id, row_count, digest_ok, actor}. 'digest_ok' False
+    significa che una riga ancorata E' STATA modificata dopo l'ancoraggio: e'
+    una manomissione rilevata, non una copertura mancante.
+    """
+    try:
+        resp = (client.table("ledger_anchors").select("*")
+                .eq("chain", chain).order("id", desc=True).limit(1).execute())
+    except Exception as exc:
+        logger.warning("_anchor_status fallita (%s): %s", chain, exc)
+        return {"present": False}
+    if not resp.data:
+        return {"present": False}
+    a = resp.data[0]
+    rows = _fetch_unsigned(client, chain, through_id=a.get("through_id"))
+    return {
+        "present": True,
+        "at": a.get("event_ts"),
+        "through_id": a.get("through_id"),
+        "row_count": a.get("row_count") or 0,
+        "actor": a.get("actor_name"),
+        "digest_ok": _anchor_digest(chain, rows) == a.get("digest"),
+        "self_hash_ok": a.get("row_hash") == _anchor_hash(a, a.get("prev_hash") or ""),
+    }
+
+
+def _chain_verdict(chain: str, total: int, verified: int, broken: list,
+                   unsigned: int, extra: Optional[dict] = None) -> dict:
+    """
+    Compone la risposta di verifica con la copertura REALE e un verdetto
+    esplicito. Prima si rispondeva {ok: true} quando nessun controllo falliva,
+    anche se i controlli coprivano il 2% delle righe: 'ok' voleva dire "niente
+    di quello che ho potuto controllare e' rotto", e la risposta non lo diceva
+    da nessuna parte.
+    """
+    client = _get_client()
+    anchor = _anchor_status(client, chain) if client is not None else {"present": False}
+    # Un'ancora valida copre le righe non firmate fino a through_id: da li' in
+    # avanti sono protette. Se il digest non torna, quelle righe sono state
+    # modificate dopo l'ancoraggio -> manomissione.
+    anchored = 0
+    if anchor.get("present") and anchor.get("digest_ok") and anchor.get("self_hash_ok"):
+        anchored = min(anchor.get("row_count") or 0, unsigned)
+    unprotected = max(unsigned - anchored, 0)
+
+    extra = extra or {}
+    finals_broken = extra.get("finals_broken") or []
+    unsealed = extra.get("finals_pending") or 0
+
+    tampered = bool(broken) or bool(finals_broken) or (
+        anchor.get("present") and not (anchor.get("digest_ok") and anchor.get("self_hash_ok")))
+    covered = verified + anchored
+    if total == 0:
+        verdict = "empty"
+    elif tampered:
+        verdict = "tampered"
+    elif unprotected or unsealed:
+        verdict = "partial"
+    else:
+        verdict = "intact"
+
+    out = {
+        "chain": chain,
+        "total": total,
+        "verified": verified,
+        "broken": broken,
+        # 'unsigned' = righe senza row_hash; 'anchored' = quante di quelle sono
+        # coperte da un'ancora valida; 'unprotected' = quante restano
+        # riscrivibili senza lasciare traccia. E' la cifra che conta.
+        "unsigned": unsigned,
+        "anchored": anchored,
+        "unprotected": unprotected,
+        "covered": covered,
+        "coverage": round(covered / total, 4) if total else None,
+        "verdict": verdict,
+        # 'ok' ora significa cio' che un lettore assume che significhi: la
+        # catena e' integra E la copertura e' completa.
+        "ok": verdict in ("intact", "empty"),
+        # Manomissione e copertura incompleta sono due fatti diversi e vanno
+        # letti separatamente: il primo e' un incidente, il secondo un limite
+        # dichiarato.
+        "tamper_free": not tampered,
+        "anchor": anchor,
+    }
+    out.update(extra)
+    return out
+
+
 def _last_row_hash(client) -> str:
     """row_hash della scansione piu' recente (per linkare la catena). '' se nessuna."""
     try:
@@ -166,12 +391,13 @@ def verify_audit_chain() -> Optional[dict]:
         (il CONTEGGIO CVE: senza questo controllo il numero sarebbe alterabile
         a posteriori senza rompere nulla)
 
-    Ritorna {total, verified, legacy, broken:[id...], finals_verified,
-    finals_pending, finals_broken:[id...], ok} oppure None se il DB non e'
-    raggiungibile. Le righe precedenti alla migrazione (row_hash NULL) sono
-    contate come 'legacy' e non rompono la catena; le scansioni senza
-    final_hash (mai finalizzate o antecedenti al sigillo) sono 'finals_pending'
-    e non contano come rotture.
+    Ritorna il verdetto completo (vedi _chain_verdict): total, verified,
+    broken, unsigned, anchored, unprotected, coverage, verdict, ok, piu'
+    finals_verified/finals_pending/finals_broken. None se il DB non risponde.
+
+    Le righe precedenti alla migrazione (row_hash NULL) non rompono la catena
+    ma NON sono verificate: contano come 'unprotected' finche' non vengono
+    ancorate, e finche' ce ne sono il verdetto e' 'partial', non 'intact'.
     """
     client = _get_client()
     if client is None:
@@ -185,12 +411,12 @@ def verify_audit_chain() -> Optional[dict]:
         logger.warning("verify_audit_chain fallita: %s", exc)
         return None
     rows = resp.data or []
-    broken, verified, legacy = [], 0, 0
+    broken, verified, unsigned = [], 0, 0
     finals_broken, finals_verified, finals_pending = [], 0, 0
     prev = ""                      # row_hash dell'ultima riga hashata
     for r in rows:
-        if not r.get("row_hash"):  # riga legacy pre-migrazione
-            legacy += 1
+        if not r.get("row_hash"):  # riga pre-migrazione, non firmata
+            unsigned += 1
             continue
         expect = _scan_hash(r, r.get("prev_hash") or "")
         linked = (r.get("prev_hash") or "") == prev
@@ -205,11 +431,10 @@ def verify_audit_chain() -> Optional[dict]:
             finals_verified += 1
         else:
             finals_broken.append(r["id"])
-    return {"total": len(rows), "verified": verified,
-            "legacy": legacy, "broken": broken,
-            "finals_verified": finals_verified, "finals_pending": finals_pending,
-            "finals_broken": finals_broken,
-            "ok": not broken and not finals_broken}
+    return _chain_verdict("scans", len(rows), verified, broken, unsigned,
+                          {"finals_verified": finals_verified,
+                           "finals_pending": finals_pending,
+                           "finals_broken": finals_broken})
 
 
 def persist_result(scan_id: Optional[int], rd: dict) -> None:
@@ -464,12 +689,12 @@ def verify_posture_chain() -> Optional[dict]:
         logger.warning("verify_posture_chain fallita: %s", exc)
         return None
     rows = resp.data or []
-    broken, verified, legacy = [], 0, 0
+    broken, verified, unsigned = [], 0, 0
     finals_broken, finals_verified, finals_pending = [], 0, 0
     prev = ""
     for r in rows:
         if not r.get("row_hash"):          # run precedente alla migrazione
-            legacy += 1
+            unsigned += 1
             continue
         expect = _posture_hash(r, r.get("prev_hash") or "")
         linked = (r.get("prev_hash") or "") == prev
@@ -484,11 +709,10 @@ def verify_posture_chain() -> Optional[dict]:
             finals_verified += 1
         else:
             finals_broken.append(r["id"])
-    return {"total": len(rows), "verified": verified,
-            "legacy": legacy, "broken": broken,
-            "finals_verified": finals_verified, "finals_pending": finals_pending,
-            "finals_broken": finals_broken,
-            "ok": not broken and not finals_broken}
+    return _chain_verdict("posture_runs", len(rows), verified, broken, unsigned,
+                          {"finals_verified": finals_verified,
+                           "finals_pending": finals_pending,
+                           "finals_broken": finals_broken})
 
 
 def persist_posture_asset(run_id: Optional[int], report: dict) -> None:
@@ -780,8 +1004,11 @@ def verify_findings_chain() -> Optional[dict]:
         logger.warning("verify_findings_chain fallita: %s", exc)
         return None
     rows = resp.data or []
-    broken, verified, prev = [], 0, ""
+    broken, verified, unsigned, prev = [], 0, 0, ""
     for r in rows:
+        if not r.get("row_hash"):
+            unsigned += 1
+            continue
         expect = _fevent_hash(r, r.get("prev_hash") or "")
         linked = (r.get("prev_hash") or "") == prev
         if r.get("row_hash") == expect and linked:
@@ -789,8 +1016,7 @@ def verify_findings_chain() -> Optional[dict]:
         else:
             broken.append(r["id"])
         prev = r.get("row_hash") or ""
-    return {"total": len(rows), "verified": verified,
-            "broken": broken, "ok": not broken}
+    return _chain_verdict("finding_events", len(rows), verified, broken, unsigned)
 
 
 def set_finding_status(finding_id: int, status: str, note: str = "",
@@ -1081,8 +1307,11 @@ def verify_events_chain() -> Optional[dict]:
         logger.warning("verify_events_chain fallita: %s", exc)
         return None
     rows = resp.data or []
-    broken, verified, prev = [], 0, ""
+    broken, verified, unsigned, prev = [], 0, 0, ""
     for r in rows:
+        if not r.get("row_hash"):
+            unsigned += 1
+            continue
         expect = _aevent_hash(r, r.get("prev_hash") or "")
         linked = (r.get("prev_hash") or "") == prev
         if r.get("row_hash") == expect and linked:
@@ -1090,8 +1319,7 @@ def verify_events_chain() -> Optional[dict]:
         else:
             broken.append(r["id"])
         prev = r.get("row_hash") or ""
-    return {"total": len(rows), "verified": verified,
-            "broken": broken, "ok": not broken}
+    return _chain_verdict("audit_events", len(rows), verified, broken, unsigned)
 
 
 # ---------------------------------------------------------------------------

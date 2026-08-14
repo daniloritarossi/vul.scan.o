@@ -729,6 +729,46 @@ the previous run, and `final_hash` sealing the run totals (`assets_scanned`,
 `total_packages`, `total_vulnerable`, `total_vulns`, `avg_score`) when the run
 finishes. Verified by `GET /api/audit/posture-verify`.
 
+**Coverage is part of the verdict** — a verification that answers `ok` while
+covering a fraction of the rows is worse than no verification. On a real
+installation the scan ledger reported `{"total":106,"verified":2,"legacy":104,
+"ok":true}`: 104 rows written before the chains existed were skipped, remained
+freely rewritable, and the response said nothing about it. The posture ledger —
+the one holding the point-in-time vulnerability counts — was unsigned at 100%
+and also answered `ok:true`.
+
+Every `verify` endpoint now returns a three-state `verdict` and the figures it
+rests on:
+
+| Verdict | Meaning | `ok` |
+|---|---|---|
+| `intact` | every row verified or anchored, every value sealed | `true` |
+| `partial` | nothing broken, but part of the ledger **cannot be proven** — unsigned rows, or values never sealed | `false` |
+| `tampered` | at least one row does not match its hash | `false` |
+
+plus `total`, `verified`, `unsigned`, `anchored`, `unprotected` and `coverage`.
+`ok` now means what a reader assumes it means — *the ledger is intact* — and
+`tamper_free` keeps the two failures distinct: a broken chain is an incident, a
+partial one is a declared limit.
+
+**Anchoring the unsigned rows (`ledger_anchors`)** — rows predating the chains
+cannot be signed retroactively: nobody can prove they were not already altered,
+and pretending otherwise would be fabricating evidence. They can be **anchored**:
+`POST /api/audit/anchor` (admin only) records the current digest of those rows in
+a signed, chained row, so from that moment any change to them is detectable.
+
+```bash
+curl -X POST http://localhost:8000/api/audit/anchor \
+     -H 'Content-Type: application/json' -d '{"note":"baseline before external audit"}'
+```
+
+An anchor states *"this was the content at time T"*, **not** *"these rows were
+never altered"* — the distinction stays visible in the verify response
+(`anchored_at`), in the evidence report and in the UI. Anchoring is deliberately
+not automatic: it is an assertion a person makes, and it is recorded in the
+activity ledger with their name. The anchor table is append-only too — an anchor
+you could delete would protect nothing.
+
 **Append-only enforced by the database** — hash chains prove a row *was not
 modified*; on their own they prevent nothing, and a chain truncated at the tail
 still verifies. Postgres triggers now make append-only a constraint rather than
@@ -736,7 +776,7 @@ a convention:
 
 | Table | UPDATE | DELETE |
 |-------|--------|--------|
-| `scan_results`, `posture_assets`, `posture_findings`, `posture_components`, `finding_events` | denied | denied |
+| `scan_results`, `posture_assets`, `posture_findings`, `posture_components`, `finding_events`, `audit_events`, `ledger_anchors` | denied | denied |
 | `scans` | only the end-of-scan write; signed fields immutable, sealed values write-once | denied |
 | `posture_runs` | only the end-of-run write; same rules | denied |
 
@@ -764,7 +804,11 @@ curl -X POST --data-binary @audit-evidence-2026-06-30.json \
 ```
 
 Figures and integrity proof travel together — a report claiming *"12 open"*
-without stating whether the ledger is intact proves nothing. The signature covers
+without stating whether the ledger is intact proves nothing, and one claiming
+integrity over 2% of the rows is worse. The report carries the per-chain
+`verdict` and `coverage`, an overall `integrity_verdict`
+(`intact` / `partial` / `tampered` / `unknown`), and states in the printable
+version how much of each chain the verdict rests on. The signature covers
 every figure *and* every verification verdict, so neither the numbers nor a
 failed check can be edited after export. A chain that could not be checked
 (DB unreachable) is reported as `available: false`, never as a passing check.
@@ -1013,6 +1057,7 @@ Schema:
 - `findings` — unified findings: fingerprint (dedup), source, severity, cve\_ids, cwe\_ids, status, SLA, reopen/observation counters, ticket\_ref/ticket\_url
 - `finding_events` — **append-only** lifecycle ledger (one row per transition: actor, from/to status, `event_ts`, hash chain); the source of point-in-time audit evidence, since `findings` is updated in place
 - `audit_events` — **append-only** activity ledger (one row per action: category, action, outcome, actor, target, redacted `detail`, source IP, hash chain); answers "who did what" for authentication, authorisation, user/group administration, assignments, configuration and exports
+- `ledger_anchors` — **append-only** baseline anchors: digest of the rows that predate the hash chains, so they stop being freely rewritable from the anchor date onward
 
 The ledger tables (`scans`, `scan_results`, `posture_*`, `finding_events`, `audit_events`) are
 **append-only at database level**: `BEFORE UPDATE OR DELETE` triggers reject
@@ -1146,6 +1191,7 @@ omitted for scoped roles for the same reason.
 | `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 | `GET /api/audit/events` (activity ledger) | **all** | **all** | own activity only | **all** | 403 | 403 |
 | `GET /api/audit/events/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
+| `POST /api/audit/anchor` (baseline anchor) | ✅ **admin only** | 403 | 403 | 403 | 403 | 403 |
 
 Notes:
 
