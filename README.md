@@ -1,4 +1,4 @@
-# VUL.SCAN.O
+# VUL.SCAN.O [V.S.O]
 
 <p align="center">
   <img src="static/logo-icon-animated.svg" alt="Home" width="128">
