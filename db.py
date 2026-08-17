@@ -23,6 +23,8 @@ import logging
 import os
 from typing import Optional
 
+import ledger_head
+
 logger = logging.getLogger("vfa.db")
 
 # Campi immutabili di una 'scans' che entrano nella catena hash. version e cve_*
@@ -260,17 +262,84 @@ def _anchor_status(client, chain: str) -> dict:
     }
 
 
+def _head_touch(chain: str, rewind: bool = False) -> None:
+    """
+    Aggiorna il testimone locale della testa della catena dopo un append.
+
+    Best-effort e silenzioso come il resto della persistenza: se fallisce si
+    perde la capacita' di rilevare un troncamento successivo, non l'operazione
+    dell'utente. La verifica dichiara il testimone assente invece di dare per
+    buona la coda.
+
+    'rewind' solo per purge_test_ledger(): vedi ledger_head.record.
+    """
+    client = _get_client()
+    if client is None:
+        return
+    try:
+        head = (client.table(chain).select("id,row_hash")
+                .order("id", desc=True).limit(1).execute()).data or []
+        rows = (client.table(chain).select("id", count="exact")
+                .limit(1).execute()).count or 0
+        signed = (client.table(chain).select("id", count="exact")
+                  .not_.is_("row_hash", "null").limit(1).execute()).count or 0
+    except Exception as exc:
+        logger.warning("_head_touch fallita (%s): %s", chain, exc)
+        return
+    last = head[0] if head else {}
+    ledger_head.record(chain, last.get("id"), rows, signed,
+                       last.get("row_hash"), _utc_iso(), rewind=rewind)
+
+
+def _head_state(client, chain: str, rows: list) -> dict:
+    """Confronto fra le righe osservate e il testimone locale."""
+    signed = sum(1 for r in rows if r.get("row_hash"))
+    last = rows[-1] if rows else {}
+    return ledger_head.compare(chain, last.get("id"), len(rows), signed,
+                               last.get("row_hash"))
+
+
+def _unsigned_after_signed(rows: list) -> list:
+    """
+    Righe non firmate che compaiono DOPO una riga firmata.
+
+    Le righe prive di hash sono quelle scritte prima che la catena esistesse:
+    stanno tutte all'inizio, per costruzione. Una riga non firmata che segue
+    una firmata non e' storia vecchia — e' una riga a cui qualcuno ha tolto
+    l'hash per farla passare da pre-migrazione, che era il modo piu' comodo di
+    riscrivere la coda senza rompere nulla.
+    """
+    out, seen_signed = [], False
+    for r in rows:
+        if r.get("row_hash"):
+            seen_signed = True
+        elif seen_signed:
+            out.append(r.get("id"))
+    return out
+
+
 def _chain_verdict(chain: str, total: int, verified: int, broken: list,
-                   unsigned: int, extra: Optional[dict] = None) -> dict:
+                   unsigned: int, extra: Optional[dict] = None,
+                   rows: Optional[list] = None) -> dict:
     """
     Compone la risposta di verifica con la copertura REALE e un verdetto
     esplicito. Prima si rispondeva {ok: true} quando nessun controllo falliva,
     anche se i controlli coprivano il 2% delle righe: 'ok' voleva dire "niente
     di quello che ho potuto controllare e' rotto", e la risposta non lo diceva
     da nessuna parte.
+
+    'rows' sono le righe lette dalla catena, in ordine di id: servono ai due
+    controlli che una catena percorsa in avanti non puo' fare da sola —
+    troncamento della coda (confronto col testimone esterno) e declassamento di
+    righe firmate a "pre-migrazione".
     """
     client = _get_client()
     anchor = _anchor_status(client, chain) if client is not None else {"present": False}
+    rows = rows or []
+    head = _head_state(client, chain, rows) if client is not None else {"present": False,
+                                                                        "ok": True,
+                                                                        "reasons": []}
+    downgraded = _unsigned_after_signed(rows)
     # Un'ancora valida copre le righe non firmate fino a through_id: da li' in
     # avanti sono protette. Se il digest non torna, quelle righe sono state
     # modificate dopo l'ancoraggio -> manomissione.
@@ -283,14 +352,29 @@ def _chain_verdict(chain: str, total: int, verified: int, broken: list,
     finals_broken = extra.get("finals_broken") or []
     unsealed = extra.get("finals_pending") or 0
 
-    tampered = bool(broken) or bool(finals_broken) or (
-        anchor.get("present") and not (anchor.get("digest_ok") and anchor.get("self_hash_ok")))
+    # Tre modi diversi di scoprire la stessa cosa — che la storia e' stata
+    # riscritta: un hash che non torna, il testimone esterno che ricorda righe
+    # che non ci sono piu', una riga firmata tornata "non firmata".
+    tamper_reasons = []
+    if broken:
+        tamper_reasons.append("broken_hash")
+    if finals_broken:
+        tamper_reasons.append("broken_seal")
+    if anchor.get("present") and not (anchor.get("digest_ok") and anchor.get("self_hash_ok")):
+        tamper_reasons.append("anchor_mismatch")
+    tamper_reasons += head.get("reasons") or []
+    if downgraded:
+        tamper_reasons.append("downgraded_rows")
+    tampered = bool(tamper_reasons)
+
     covered = verified + anchored
-    if total == 0:
+    if total == 0 and not tampered:
         verdict = "empty"
     elif tampered:
         verdict = "tampered"
-    elif unprotected or unsealed:
+    elif unprotected or unsealed or not head.get("present"):
+        # Senza testimone esterno la coda non e' verificabile: cancellare le
+        # ultime righe lascerebbe una catena piu' corta e perfettamente valida.
         verdict = "partial"
     else:
         verdict = "intact"
@@ -316,7 +400,11 @@ def _chain_verdict(chain: str, total: int, verified: int, broken: list,
         # letti separatamente: il primo e' un incidente, il secondo un limite
         # dichiarato.
         "tamper_free": not tampered,
+        "tamper_reasons": sorted(set(tamper_reasons)),
+        "downgraded": downgraded,
         "anchor": anchor,
+        # Testimone esterno della testa: 'present' False = coda non verificabile.
+        "head": head,
     }
     out.update(extra)
     return out
@@ -375,6 +463,7 @@ def persist_scan(description: str, target: dict, cve: dict,
     row["row_hash"] = _scan_hash(row, prev_hash)
     try:
         resp = client.table("scans").insert(row).execute()
+        _head_touch("scans")      # testimone della coda, vedi ledger_head.py
         return resp.data[0]["id"] if resp.data else None
     except Exception as exc:
         logger.warning("persist_scan fallita: %s", exc)
@@ -434,7 +523,7 @@ def verify_audit_chain() -> Optional[dict]:
     return _chain_verdict("scans", len(rows), verified, broken, unsigned,
                           {"finals_verified": finals_verified,
                            "finals_pending": finals_pending,
-                           "finals_broken": finals_broken})
+                           "finals_broken": finals_broken}, rows=rows)
 
 
 def persist_result(scan_id: Optional[int], rd: dict) -> None:
@@ -664,6 +753,7 @@ def create_posture_run(actor: Optional[dict] = None) -> Optional[int]:
     row["row_hash"] = _posture_hash(row, prev_hash)
     try:
         resp = client.table("posture_runs").insert(row).execute()
+        _head_touch("posture_runs")
         return resp.data[0]["id"] if resp.data else None
     except Exception as exc:
         logger.warning("create_posture_run fallita: %s", exc)
@@ -712,7 +802,7 @@ def verify_posture_chain() -> Optional[dict]:
     return _chain_verdict("posture_runs", len(rows), verified, broken, unsigned,
                           {"finals_verified": finals_verified,
                            "finals_pending": finals_pending,
-                           "finals_broken": finals_broken})
+                           "finals_broken": finals_broken}, rows=rows)
 
 
 def persist_posture_asset(run_id: Optional[int], report: dict) -> None:
@@ -956,6 +1046,7 @@ def log_finding_events(events: list) -> int:
         rows.append(row)
     try:
         client.table("finding_events").insert(rows).execute()
+        _head_touch("finding_events")
         return len(rows)
     except Exception as exc:
         logger.warning("log_finding_events fallita (%d eventi): %s", len(rows), exc)
@@ -1016,7 +1107,8 @@ def verify_findings_chain() -> Optional[dict]:
         else:
             broken.append(r["id"])
         prev = r.get("row_hash") or ""
-    return _chain_verdict("finding_events", len(rows), verified, broken, unsigned)
+    return _chain_verdict("finding_events", len(rows), verified, broken, unsigned,
+                          rows=rows)
 
 
 def set_finding_status(finding_id: int, status: str, note: str = "",
@@ -1256,6 +1348,7 @@ def log_audit_event(action: str, category: str = "", outcome: str = "success",
     row["row_hash"] = _aevent_hash(row, prev)
     try:
         client.table("audit_events").insert(row).execute()
+        _head_touch("audit_events")
         return True
     except Exception as exc:
         logger.warning("log_audit_event fallita (%s): %s", action, exc)
@@ -1319,7 +1412,8 @@ def verify_events_chain() -> Optional[dict]:
         else:
             broken.append(r["id"])
         prev = r.get("row_hash") or ""
-    return _chain_verdict("audit_events", len(rows), verified, broken, unsigned)
+    return _chain_verdict("audit_events", len(rows), verified, broken, unsigned,
+                          rows=rows)
 
 
 # ---------------------------------------------------------------------------

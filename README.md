@@ -759,11 +759,14 @@ rests on:
 
 | Verdict | Meaning | `ok` |
 |---|---|---|
-| `intact` | every row verified or anchored, every value sealed | `true` |
+| `intact` | every row verified or anchored, every value sealed, tail witnessed | `true` |
 | `partial` | nothing broken, but part of the ledger **cannot be proven** — unsigned rows, or values never sealed | `false` |
 | `tampered` | at least one row does not match its hash | `false` |
 
-plus `total`, `verified`, `unsigned`, `anchored`, `unprotected` and `coverage`.
+plus `total`, `verified`, `unsigned`, `anchored`, `unprotected`, `coverage`,
+`tamper_reasons` (`broken_hash`, `broken_seal`, `anchor_mismatch`, `truncated`,
+`downgraded`, `head_rewritten`, `downgraded_rows`) and the ids of any
+`downgraded` rows.
 `ok` now means what a reader assumes it means — *the ledger is intact* — and
 `tamper_free` keeps the two failures distinct: a broken chain is an incident, a
 partial one is a declared limit.
@@ -785,6 +788,43 @@ never altered"* — the distinction stays visible in the verify response
 not automatic: it is an assertion a person makes, and it is recorded in the
 activity ledger with their name. The anchor table is append-only too — an anchor
 you could delete would protect nothing.
+
+**The tail of the chain, and the legacy escape hatch** — a hash chain proves a
+row was not modified. It says nothing about a row that is no longer there, and
+nothing about a row whose hash columns were emptied. Both gaps were exploitable
+without breaking a single link:
+
+| Attack | What the old verification answered |
+|---|---|
+| delete the most recent entries | `{"total":3,"verified":3,"broken":[],"ok":true}` — a shorter chain verifies perfectly, because a chain does not know how long it should be |
+| null a row's `row_hash`/`prev_hash` and rewrite it | `{"verified":3,"legacy":1,"ok":true}` — indistinguishable from a pre-migration row, so it was skipped |
+
+Two complementary defences, because the two attacks are not the same shape:
+
+- **An unsigned row after a signed one is tampering, not history.** Rows without
+  a hash are the ones written before the chain existed: by construction they are
+  all at the beginning. One appearing *after* a signed row had its hash stripped.
+  This needs nothing but the database, and it catches the downgrade the moment
+  it happens — the offending ids are returned in `downgraded`.
+- **A witness kept outside the database** (`.vfa_ledger_head.json`, mode 0600,
+  git-ignored). After every append the app records, per chain, the last id, the
+  row count, how many rows were signed and the head hash. Verification compares
+  the database against it: fewer rows, a lower last id, a signed count that
+  dropped, or a different head hash are all reported as tampering
+  (`truncated`, `downgraded`, `head_rewritten`). The witness only ever moves
+  forward — the first verification after a truncation must not overwrite the
+  evidence of it.
+
+Until a witness exists, the tail is not verifiable and the verdict is `partial`,
+not `intact`: `POST /api/audit/anchor` establishes it along with the anchors.
+
+> **The honest limit.** The witness protects against someone with access to the
+> **database**. Someone with access to the **application host** can rewrite it
+> too — that is why it is not signed: the key would live on the same machine and
+> the signature would be theatre. The only real defence against a compromised
+> host is a witness the host does not control (external notarisation, WORM
+> storage, replication to another system). This application does not have one
+> and does not pretend to.
 
 **Append-only enforced by the database** — hash chains prove a row *was not
 modified*; on their own they prevent nothing, and a chain truncated at the tail

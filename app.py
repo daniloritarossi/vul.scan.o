@@ -1586,6 +1586,12 @@ async def api_audit_anchor(request: Request,
     note = (body.get("note") or "").strip()
     created, skipped = [], []
     for chain in chains:
+        # Il testimone locale della testa (ledger_head) viene mantenuto a ogni
+        # append, ma su un'installazione preesistente non ha ancora una
+        # baseline: senza, un troncamento della coda resterebbe invisibile.
+        # Questa e' l'azione deliberata in cui l'admin dichiara di accettare lo
+        # stato corrente, quindi e' anche il punto giusto per registrarla.
+        db._head_touch(chain)
         row = db.create_ledger_anchor(chain, actor=_actor(user), note=note)
         if row is None:
             # Nessuna riga da ancorare (tutto gia' firmato) o DB muto.

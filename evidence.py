@@ -148,6 +148,10 @@ def _chain(result: dict | None) -> dict:
         "unprotected": result.get("unprotected"),
         "coverage": result.get("coverage"),
         "anchored_at": anchor.get("at") if anchor.get("present") else None,
+        # Perche' la catena e' considerata manomessa, e se la coda e' testimoniata:
+        # senza testimone, cancellare le ultime righe non sarebbe rilevabile.
+        "tamper_reasons": result.get("tamper_reasons") or [],
+        "tail_witnessed": bool((result.get("head") or {}).get("present")),
         "broken": result.get("broken") or [],
         "finals_verified": result.get("finals_verified"),
         "finals_pending": result.get("finals_pending"),
@@ -230,6 +234,9 @@ def _rows(report: dict) -> list:
         out.append(("integrity_checks", f"{name}_unprotected", chain.get("unprotected")))
         out.append(("integrity_checks", f"{name}_coverage", chain.get("coverage")))
         out.append(("integrity_checks", f"{name}_anchored_at", chain.get("anchored_at")))
+        out.append(("integrity_checks", f"{name}_tail_witnessed", chain.get("tail_witnessed")))
+        out.append(("integrity_checks", f"{name}_tamper_reasons",
+                    ";".join(chain.get("tamper_reasons") or [])))
         out.append(("integrity_checks", f"{name}_broken",
                     ";".join(str(i) for i in (chain.get("broken") or []))))
         out.append(("integrity_checks", f"{name}_finals_broken",
@@ -356,7 +363,7 @@ def to_html(report: dict) -> str:
 
     parts += ["<h2>Integrity verification</h2>",
               "<table><thead><tr><th>Chain</th><th>Result</th><th>Verified</th>"
-              "<th>Coverage</th><th>Unprotected</th>"
+              "<th>Coverage</th><th>Unprotected</th><th>Tail witnessed</th>"
               "<th>Broken entries</th></tr></thead><tbody>"]
     for name, chain in (report.get("integrity_checks") or {}).items():
         # Tre esiti distinti, non due: "non dimostrabile" non e' "manomesso",
@@ -384,6 +391,9 @@ def to_html(report: dict) -> str:
             f"<td class='num'>{_esc(chain.get('verified'))} / {_esc(chain.get('total'))}</td>"
             f"<td class='num'>{cov_txt}</td>"
             f"<td class='num'>{unprot_txt}</td>"
+            # Se la coda non e' testimoniata, cancellare le ultime righe non
+            # sarebbe rilevabile: e' un limite che deve stare NEL documento.
+            f"<td>{'yes' if chain.get('tail_witnessed') else "<span class='warn'>no</span>"}</td>"
             f"<td class='mono'>{_esc(', '.join(str(i) for i in broken) or '—')}</td></tr>")
     parts.append("</tbody></table>")
     overall = report.get("integrity_verdict")

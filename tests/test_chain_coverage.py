@@ -22,8 +22,17 @@ import evidence
 
 @pytest.fixture(autouse=True)
 def no_db(monkeypatch):
-    """_chain_verdict consulta le ancore: qui non c'e' DB, quindi nessuna."""
-    monkeypatch.setattr(db, "_get_client", lambda: None)
+    """
+    _chain_verdict consulta le ancore: qui non c'e' DB, quindi nessuna.
+
+    Il testimone della coda e' invece dato per presente e concorde: qui si
+    misura la COPERTURA, e senza testimone ogni verdetto sarebbe 'partial' per
+    un motivo diverso. Il testimone ha i suoi test in test_chain_truncation.py.
+    """
+    monkeypatch.setattr(db, "_get_client", lambda: object())
+    monkeypatch.setattr(db, "_anchor_status", lambda c, ch: {"present": False})
+    monkeypatch.setattr(db, "_head_state", lambda c, ch, rows: {
+        "present": True, "ok": True, "reasons": [], "expected": {}})
 
 
 def _verdict(total, verified, broken=(), unsigned=0, extra=None):

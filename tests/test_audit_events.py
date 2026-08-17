@@ -98,10 +98,19 @@ def test_hash_covers_the_detail_of_the_action():
 
 
 def test_chain_verifies_after_the_suite_writes_to_it(role_clients):
-    """Le scritture reali dei test non rompono la catena."""
+    """
+    Le scritture reali dei test non rompono la catena.
+
+    Le esecuzioni precedenti della suite cancellano le proprie righe (purge),
+    quindi il testimone della coda puo' portarsi dietro un conteggio piu' alto
+    di quello attuale: qui interessa la catena, non il testimone, e lo si
+    riallinea prima di guardare.
+    """
     role_clients["admin"].get("/api/audit/events?page_size=1")
+    db._head_touch("audit_events", rewind=True)
     res = db.verify_events_chain()
     assert res is not None, "Supabase non raggiungibile"
+    assert res["tamper_free"] is True, f"manomissione: {res['tamper_reasons']}"
     assert res["ok"] is True, f"catena rotta: {res['broken']}"
     assert res["verified"] == res["total"]
 
@@ -345,6 +354,9 @@ def test_anchoring_is_recorded_with_who_did_it(role_clients, monkeypatch):
                 "digest": "d" * 64}
 
     monkeypatch.setattr(app_module.db, "create_ledger_anchor", _fake_anchor)
+    # L'endpoint stabilisce anche la baseline del testimone della coda: qui non
+    # deve toccare quella dell'installazione reale.
+    monkeypatch.setattr(app_module.db, "_head_touch", lambda chain, **kw: None)
     logged = []
     monkeypatch.setattr(app_module.db, "log_audit_event",
                         lambda action, **kw: logged.append((action, kw)) or True)

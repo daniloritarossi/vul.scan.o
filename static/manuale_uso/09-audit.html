@@ -270,6 +270,68 @@
           </figcaption>
         </figure>
 
+        <h3><span lang="en">Two things a chain cannot see by itself</span><span lang="it">Due cose che una catena non vede da sola</span></h3>
+        <p lang="en">
+          A hash chain proves that an entry was not modified. It says nothing about an entry that is
+          <strong>no longer there</strong>, and nothing about one whose hash was simply <strong>erased</strong>. Both
+          were exploitable without breaking a single link: delete the most recent entries and what remains is a shorter
+          chain in which every link still matches; empty the hash columns of an entry and it becomes
+          indistinguishable from one written before the chain existed, so verification skipped it. In both cases the
+          old answer was <code>ok: true</code>.
+        </p>
+        <p lang="it">
+          Una catena di hash dimostra che una voce non è stata modificata. Non dice nulla di una voce che
+          <strong>non c'è più</strong>, né di una a cui l'hash è stato semplicemente <strong>cancellato</strong>.
+          Entrambe le cose erano sfruttabili senza rompere un solo collegamento: cancella le voci più recenti e quello
+          che resta è una catena più corta in cui ogni collegamento torna; svuota le colonne hash di una voce e diventa
+          indistinguibile da una scritta prima che la catena esistesse, quindi la verifica la saltava. In tutti e due i
+          casi la risposta era <code>ok: true</code>.
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Defence</span><span lang="it">Difesa</span></th>
+                <th><span lang="en">What it catches</span><span lang="it">Cosa intercetta</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">Position of the unsigned entries</span><span lang="it">Posizione delle voci non firmate</span></td>
+                <td><span lang="en">Entries without a hash are the ones from before the chain, and they are all at the beginning. One appearing <em>after</em> a signed entry had its hash stripped: it is reported as tampering, with the offending entry numbers. Needs nothing but the database.</span><span lang="it">Le voci senza hash sono quelle precedenti alla catena, e stanno tutte all'inizio. Una che compare <em>dopo</em> una voce firmata ha subito la rimozione dell'hash: viene segnalata come manomissione, con i numeri delle voci coinvolte. Non richiede nient'altro che il database.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Witness outside the database</span><span lang="it">Testimone fuori dal database</span></td>
+                <td><span lang="en">After every write the application records, on its own host, where each ledger ended: last entry, how many there were, how many were signed. Fewer entries than recorded, or signed entries that are no longer signed, is a truncation — the thing a chain read forward from the start can never notice.</span><span lang="it">Dopo ogni scrittura l'applicazione annota, sul proprio host, dove finiva ciascun registro: ultima voce, quante erano, quante firmate. Meno voci di quelle registrate, o voci firmate che non lo sono più, sono un troncamento — proprio ciò che una catena percorsa in avanti dall'inizio non può notare.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          Until that witness exists the tail is not verifiable, and the verdict stays <span class="badge b-warn">PARTIAL
+          COVERAGE</span> rather than claiming intact. The same administrator action that anchors the old entries also
+          establishes it.
+        </p>
+        <p lang="it">
+          Finché quel testimone non esiste la coda non è verificabile, e il verdetto resta <span class="badge b-warn">COPERTURA
+          PARZIALE</span> invece di dichiarare l'integrità. La stessa azione dell'amministratore che ancora le voci
+          vecchie lo stabilisce.
+        </p>
+        <div class="warn">
+          <span lang="en"><b>The limit, stated plainly.</b> The witness protects against someone who reaches the
+            <em>database</em>. Someone who reaches the <em>application host</em> can rewrite it as well — which is why
+            it is not signed: the key would sit on the same machine, and the signature would be decoration. The only
+            real defence against a compromised host is a witness the host does not control — external timestamping,
+            write-once storage, replication elsewhere. This application does not have one, and does not pretend
+            to.</span>
+          <span lang="it"><b>Il limite, detto chiaramente.</b> Il testimone protegge da chi arriva al
+            <em>database</em>. Chi arriva all'<em>host dell'applicazione</em> può riscrivere anche quello — ed è il
+            motivo per cui non è firmato: la chiave starebbe sulla stessa macchina, e la firma sarebbe un ornamento.
+            L'unica difesa reale contro un host compromesso è un testimone che l'host non controlla — marcatura
+            temporale esterna, storage write-once, replica altrove. Questa applicazione non ne ha uno, e non finge di
+            averlo.</span>
+        </div>
+
         <h3><span lang="en">Anchoring the entries that came before</span><span lang="it">Ancorare le voci precedenti</span></h3>
         <p lang="en">
           Entries written before the hash chains existed <strong>cannot be signed retroactively</strong>: nobody can

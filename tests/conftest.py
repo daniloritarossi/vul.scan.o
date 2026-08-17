@@ -82,6 +82,11 @@ def role_user_ids(client):
     client_db = db._get_client()
     if client_db is not None:
         client_db.rpc("purge_test_ledger").execute()
+        # La purge CANCELLA righe, ed e' l'unica cancellazione legittima del
+        # prodotto: senza riallineare il testimone della coda, ogni esecuzione
+        # della suite lascerebbe l'installazione con un troncamento segnalato.
+        for chain in ("finding_events", "audit_events"):
+            db._head_touch(chain, rewind=True)
 
 
 def _login(username: str) -> TestClient:

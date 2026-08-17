@@ -33,6 +33,10 @@ node_modules/
 # Versione installata, scritta da start.sh sugli aggiornamenti da tarball:
 # descrive QUESTA copia, non il contenuto del repository.
 .vfa_version
+# Testimone locale della testa dei registri: dice dove finiva ogni catena, cosi'
+# un troncamento della coda diventa rilevabile. Descrive QUESTA installazione.
+.vfa_ledger_head.json
+.vfa_ledger_head.tmp
 
 # ── Segreti runtime: MAI committare ──
 .vfa_auth_secret
