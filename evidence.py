@@ -83,19 +83,33 @@ def build_report(state: dict, before: dict | None, delta: dict | None,
     # se n'e' potuta verificare NESSUNA il verdetto e' negativo: un report che
     # dichiara integrita' senza aver controllato nulla e' peggio di nessun
     # report.
+    # Una catena VUOTA non e' una catena integra: non e' stato verificato
+    # nulla. Contarla fra le prove faceva stampare "all chains intact" a un
+    # report che non aveva controllato una sola riga — lo stesso errore, di
+    # nuovo, sul lato "checked nothing".
     checked = [c for c in report["integrity_checks"].values() if c["available"]]
-    report["integrity_ok"] = bool(checked) and all(c["ok"] for c in checked)
+    with_entries = [c for c in checked if (c.get("total") or 0) > 0]
+    report["integrity_ok"] = bool(with_entries) and all(c["ok"] for c in with_entries)
     # 'integrity_ok' da solo non distingue una catena ROTTA da una catena
     # semplicemente non dimostrabile su tutte le righe. Sono due cose diverse
     # per chi riceve il documento: la prima e' un incidente, la seconda un
     # limite di copertura da dichiarare.
     report["integrity_verdict"] = (
-        "unknown" if not checked
-        else "tampered" if any(c.get("tamper_free") is False for c in checked)
-        else "intact" if all(c["ok"] for c in checked)
+        "tampered" if any(c.get("tamper_free") is False for c in checked)
+        # Nessuna catena con righe = nessuna prova, non "tutto integro".
+        else "unknown" if not with_entries
+        else "intact" if all(c["ok"] for c in with_entries)
         else "partial")
+    # Quante catene reggono davvero il verdetto, e quante sono vuote: un
+    # lettore deve poterlo vedere senza contare le righe della tabella.
+    report["chains_with_entries"] = len(with_entries)
+    report["chains_empty"] = len(checked) - len(with_entries)
     report["coverage"] = {
         name: c.get("coverage")
+        for name, c in report["integrity_checks"].items() if c["available"]
+    }
+    report["protected_coverage"] = {
+        name: c.get("protected_coverage")
         for name, c in report["integrity_checks"].items() if c["available"]
     }
     return report
@@ -146,7 +160,10 @@ def _chain(result: dict | None) -> dict:
         "unsigned": result.get("unsigned"),
         "anchored": result.get("anchored"),
         "unprotected": result.get("unprotected"),
+        # Prova e protezione sono due cose diverse: la prima dice "verificato",
+        # la seconda "da qui in poi una modifica si vedrebbe".
         "coverage": result.get("coverage"),
+        "protected_coverage": result.get("protected_coverage"),
         "anchored_at": anchor.get("at") if anchor.get("present") else None,
         # Perche' la catena e' considerata manomessa, e se la coda e' testimoniata:
         # senza testimone, cancellare le ultime righe non sarebbe rilevabile.
@@ -232,7 +249,9 @@ def _rows(report: dict) -> list:
         # un conteggio "verificato" senza il denominatore non dice niente.
         out.append(("integrity_checks", f"{name}_anchored", chain.get("anchored")))
         out.append(("integrity_checks", f"{name}_unprotected", chain.get("unprotected")))
-        out.append(("integrity_checks", f"{name}_coverage", chain.get("coverage")))
+        out.append(("integrity_checks", f"{name}_coverage_proven", chain.get("coverage")))
+        out.append(("integrity_checks", f"{name}_coverage_protected",
+                    chain.get("protected_coverage")))
         out.append(("integrity_checks", f"{name}_anchored_at", chain.get("anchored_at")))
         out.append(("integrity_checks", f"{name}_tail_witnessed", chain.get("tail_witnessed")))
         out.append(("integrity_checks", f"{name}_tamper_reasons",
@@ -242,6 +261,8 @@ def _rows(report: dict) -> list:
         out.append(("integrity_checks", f"{name}_finals_broken",
                     ";".join(str(i) for i in (chain.get("finals_broken") or []))))
     out.append(("integrity", "overall_verdict", report.get("integrity_verdict")))
+    out.append(("integrity", "chains_with_entries", report.get("chains_with_entries")))
+    out.append(("integrity", "chains_empty", report.get("chains_empty")))
     out.append(("integrity", "overall_ok", report.get("integrity_ok")))
     block = report.get("integrity") or {}
     out.append(("integrity", "algo", block.get("algo")))
@@ -363,7 +384,8 @@ def to_html(report: dict) -> str:
 
     parts += ["<h2>Integrity verification</h2>",
               "<table><thead><tr><th>Chain</th><th>Result</th><th>Verified</th>"
-              "<th>Coverage</th><th>Unprotected</th><th>Tail witnessed</th>"
+              "<th>Proven</th><th>Anchored</th><th>Protected</th>"
+              "<th>Unprotected</th><th>Tail witnessed</th>"
               "<th>Broken entries</th></tr></thead><tbody>"]
     for name, chain in (report.get("integrity_checks") or {}).items():
         # Tre esiti distinti, non due: "non dimostrabile" non e' "manomesso",
@@ -381,6 +403,12 @@ def to_html(report: dict) -> str:
         broken = (chain.get("broken") or []) + (chain.get("finals_broken") or [])
         cov = chain.get("coverage")
         cov_txt = "—" if cov is None else f"{cov * 100:.1f}%"
+        prot = chain.get("protected_coverage")
+        prot_txt = "—" if prot is None else f"{prot * 100:.1f}%"
+        # Copertura DIMOSTRATA a zero: va detto a parole, non lasciato dedurre
+        # da una percentuale in mezzo ad altre.
+        if cov == 0:
+            cov_txt = f"<span class='warn'>{cov_txt} — nothing proven</span>"
         anchored_at = chain.get("anchored_at")
         unprot = chain.get("unprotected")
         unprot_txt = "—" if unprot is None else str(unprot)
@@ -390,6 +418,8 @@ def to_html(report: dict) -> str:
             f"<tr><td>{_esc(name)}</td><td>{verdict}</td>"
             f"<td class='num'>{_esc(chain.get('verified'))} / {_esc(chain.get('total'))}</td>"
             f"<td class='num'>{cov_txt}</td>"
+            f"<td class='num'>{_esc(chain.get('anchored'))}</td>"
+            f"<td class='num'>{prot_txt}</td>"
             f"<td class='num'>{unprot_txt}</td>"
             # Se la coda non e' testimoniata, cancellare le ultime righe non
             # sarebbe rilevabile: e' un limite che deve stare NEL documento.
@@ -397,9 +427,14 @@ def to_html(report: dict) -> str:
             f"<td class='mono'>{_esc(', '.join(str(i) for i in broken) or '—')}</td></tr>")
     parts.append("</tbody></table>")
     overall = report.get("integrity_verdict")
+    empty_n = report.get("chains_empty") or 0
+    # Le catene vuote non dimostrano nulla: se ce ne sono, il titolo lo dice
+    # invece di lasciar intendere che il controllo le abbia coperte.
+    empty_note = (f" {empty_n} chain(s) contained no entries and prove nothing."
+                  if empty_n else "")
     if overall == "intact":
-        parts.append("<p class='ok'>Overall integrity: all chains intact, "
-                     "full coverage.</p>")
+        parts.append("<p class='ok'>Overall integrity: every chain with entries "
+                     f"is intact, with full proven coverage.{empty_note}</p>")
     elif overall == "tampered":
         parts.append("<p class='bad'>Overall integrity: VERIFICATION FAILED — "
                      "do not submit this report before investigating.</p>")
@@ -410,12 +445,17 @@ def to_html(report: dict) -> str:
             "<p class='warn'>Overall integrity: <b>partial</b>. No tampering was "
             "detected, but part of the ledger cannot be proven intact — rows "
             "written before the hash chains existed, or values never sealed. "
-            "The coverage column states exactly how much of each chain this "
-            "verdict rests on. Anchored rows are protected from the anchor date "
-            "onward, not before it.</p>")
+            "<b>Proven</b> is the share actually covered by a verified hash; "
+            "<b>protected</b> adds the rows that are merely anchored, i.e. any "
+            "change to them from the anchor date onward would be detected, "
+            "which is not the same as proving what they contained before it."
+            f"{empty_note}</p>")
     else:
-        parts.append("<p class='bad'>Overall integrity: not verified (no chain "
-                     "could be checked).</p>")
+        # 'unknown' copre due casi che vanno detti, non taciuti: nessuna catena
+        # verificabile (DB muto) e nessuna catena con righe da verificare.
+        parts.append("<p class='bad'>Overall integrity: <b>not proven</b> — no "
+                     "chain with entries could be checked. This report makes no "
+                     "claim about the integrity of the figures above.</p>")
 
     parts += ["<h2>Signature</h2>",
               "<table><tbody>",

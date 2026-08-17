@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <code>&lt;&nbsp;VUL&nbsp;&bull;&nbsp;<b>S</b>CAN&nbsp;&bull;&nbsp;O&nbsp;/&gt;</code>
+  <code>&lt;&nbsp;VUL&nbsp;&bull;&nbsp;<b>S</b>CAN&nbsp;&bull;&nbsp;O&nbsp;/&gt; </code>
 </p>
 
 <p align="center">
@@ -769,7 +769,10 @@ plus `total`, `verified`, `unsigned`, `anchored`, `unprotected`, `coverage`,
 `downgraded` rows.
 `ok` now means what a reader assumes it means — *the ledger is intact* — and
 `tamper_free` keeps the two failures distinct: a broken chain is an incident, a
-partial one is a declared limit.
+partial one is a declared limit. `coverage` is the **proven** share (verified
+over total); `protected_coverage` adds the anchored rows. Anchoring never turns
+`partial` into `intact` — a row that was never signed stays unproven, whatever
+protection is added on top of it later.
 
 **Anchoring the unsigned rows (`ledger_anchors`)** — rows predating the chains
 cannot be signed retroactively: nobody can prove they were not already altered,
@@ -862,10 +865,24 @@ curl -X POST --data-binary @audit-evidence-2026-06-30.json \
 
 Figures and integrity proof travel together — a report claiming *"12 open"*
 without stating whether the ledger is intact proves nothing, and one claiming
-integrity over 2% of the rows is worse. The report carries the per-chain
-`verdict` and `coverage`, an overall `integrity_verdict`
-(`intact` / `partial` / `tampered` / `unknown`), and states in the printable
-version how much of each chain the verdict rests on. The signature covers
+integrity over 2% of the rows is worse. The printable table gives one row per
+chain with **Verified**, **Proven**, **Anchored**, **Protected**,
+**Unprotected**, **Tail witnessed** and the broken entries, plus an overall
+`integrity_verdict` (`intact` / `partial` / `tampered` / `unknown`).
+
+Two distinctions the document never merges, because merging them is how a
+report ends up overstating what it proves:
+
+- **Proven vs protected.** *Proven* is the share of rows covered by a verified
+  hash. *Protected* adds the rows that are merely anchored — a change to them
+  from the anchor date onward would be detected, which is not the same as
+  proving what they contained before it. A chain with 52 anchored rows and none
+  signed reads *proven 0.0% — nothing proven*, not *100% covered*.
+- **Empty vs intact.** A chain with no entries proves nothing. It is printed as
+  `EMPTY`, it cannot carry a positive verdict on its own (`integrity_verdict`
+  becomes `unknown` if no chain has entries), and when other chains do have
+  entries the summary line says how many chains were empty instead of implying
+  they were checked. The signature covers
 every figure *and* every verification verdict, so neither the numbers nor a
 failed check can be edited after export. A chain that could not be checked
 (DB unreachable) is reported as `available: false`, never as a passing check.

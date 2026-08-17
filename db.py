@@ -367,14 +367,20 @@ def _chain_verdict(chain: str, total: int, verified: int, broken: list,
         tamper_reasons.append("downgraded_rows")
     tampered = bool(tamper_reasons)
 
-    covered = verified + anchored
+    # DUE coperture, non una. Sommarle era una sovrastima: una riga ancorata e'
+    # protetta da modifiche FUTURE, non dimostrata. Una catena con 52 righe
+    # ancorate e zero firmate ha copertura di prova ZERO, e il report firmato
+    # non deve poterla presentare come coperta al 100%.
+    proven = round(verified / total, 4) if total else None
+    protected = round((verified + anchored) / total, 4) if total else None
     if total == 0 and not tampered:
         verdict = "empty"
     elif tampered:
         verdict = "tampered"
-    elif unprotected or unsealed or not head.get("present"):
-        # Senza testimone esterno la coda non e' verificabile: cancellare le
-        # ultime righe lascerebbe una catena piu' corta e perfettamente valida.
+    elif unsigned or unsealed or not head.get("present"):
+        # 'unsigned', non 'unprotected': una riga mai firmata resta non
+        # dimostrata anche dopo l'ancoraggio, e nessuna quantita' di ancore
+        # trasforma un registro pre-catena in un registro dimostrato.
         verdict = "partial"
     else:
         verdict = "intact"
@@ -390,8 +396,13 @@ def _chain_verdict(chain: str, total: int, verified: int, broken: list,
         "unsigned": unsigned,
         "anchored": anchored,
         "unprotected": unprotected,
-        "covered": covered,
-        "coverage": round(covered / total, 4) if total else None,
+        "covered": verified + anchored,
+        # 'coverage' e' la copertura DIMOSTRATA (righe firmate e verificate).
+        # Era la somma con le ancorate, e una catena mai firmata risultava
+        # coperta al 100%.
+        "coverage": proven,
+        "proven_coverage": proven,
+        "protected_coverage": protected,
         "verdict": verdict,
         # 'ok' ora significa cio' che un lettore assume che significhi: la
         # catena e' integra E la copertura e' completa.

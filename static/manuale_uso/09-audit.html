@@ -232,7 +232,7 @@
             <tbody>
               <tr>
                 <td><span class="badge b-ok">LEDGER VERIFIED</span></td>
-                <td><span lang="en">Every entry is verified or anchored and every sealed value checks out. This is the only state that means <em>the ledger is intact</em>.</span><span lang="it">Ogni voce è verificata o ancorata e ogni valore sigillato torna. È l'unico stato che significa <em>il registro è integro</em>.</span></td>
+                <td><span lang="en">Every entry is <em>verified</em> — anchoring does not count as proof here — every sealed value checks out and the tail is witnessed. This is the only state that means <em>the ledger is intact</em>.</span><span lang="it">Ogni voce è <em>verificata</em> — l'ancoraggio qui non vale come prova — ogni valore sigillato torna e la coda è testimoniata. È l'unico stato che significa <em>il registro è integro</em>.</span></td>
               </tr>
               <tr>
                 <td><span class="badge b-warn">PARTIAL COVERAGE · n%</span></td>
@@ -330,6 +330,23 @@
             L'unica difesa reale contro un host compromesso è un testimone che l'host non controlla — marcatura
             temporale esterna, storage write-once, replica altrove. Questa applicazione non ne ha uno, e non finge di
             averlo.</span>
+        </div>
+
+        <div class="note">
+          <span lang="en"><b>Proven is not protected.</b> The signed evidence report prints both, side by side, and
+            never adds them up. <em>Proven</em> is the share of entries covered by a verified hash; <em>protected</em>
+            adds the entries that are only anchored — a change to those would be detected from the anchor date onward,
+            which is not the same as proving what they contained before it. A ledger with 52 anchored entries and none
+            signed reads <em>proven 0.0% — nothing proven</em>, not <em>100% covered</em>. For the same reason a chain
+            with no entries at all is printed as <b>EMPTY</b>: it proves nothing, and cannot make the report say the
+            ledger is intact.</span>
+          <span lang="it"><b>Dimostrato non è protetto.</b> Il report di evidenza firmato stampa entrambi, affiancati,
+            e non li somma mai. <em>Dimostrato</em> è la quota di voci coperte da un hash verificato;
+            <em>protetto</em> aggiunge le voci solo ancorate — una loro modifica sarebbe rilevata da quella data in
+            poi, che non è come dimostrare cosa contenessero prima. Un registro con 52 voci ancorate e nessuna firmata
+            risulta <em>dimostrato 0,0% — nulla di dimostrato</em>, non <em>coperto al 100%</em>. Per lo stesso motivo
+            una catena senza alcuna voce è stampata come <b>EMPTY</b>: non dimostra nulla, e non può far dire al report
+            che il registro è integro.</span>
         </div>
 
         <h3><span lang="en">Anchoring the entries that came before</span><span lang="it">Ancorare le voci precedenti</span></h3>

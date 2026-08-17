@@ -12,6 +12,15 @@ e di rischiare l'unico account admin reale).
 Nessuna email reale viene inviata: gli utenti di test sono creati SEMPRE con
 password esplicita (bypassa il flusso di invito via SMTP, che nel config.json
 locale punta a un account Gmail vero).
+
+ATTENZIONE, se la si esegue contro un'istanza in uso: la suite scrive nei
+registri append-only e a fine sessione cancella le proprie righe con
+purge_test_ledger(). Se fra una riga di test e la successiva riga REALE c'e'
+stata attivita' vera, quella cancellazione lascia un buco permanente nella
+catena — la riga reale che segue punta a un hash che non esiste piu' e resta
+'broken' per sempre. Non e' un falso allarme: le righe sono state davvero
+rimosse. Per avere una catena senza cicatrici la suite va eseguita contro un
+database dedicato (SUPABASE_URL verso uno stack usa-e-getta).
 """
 import os
 import sys

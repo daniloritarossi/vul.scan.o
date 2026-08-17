@@ -136,7 +136,10 @@ def test_html_is_printable_and_states_the_verdict():
     assert out.startswith("<!doctype html>")
     assert "@media print" in out
     assert "Audit evidence report" in out
-    assert "all chains intact" in out
+    # Il verdetto e' esplicito su COSA e' stato dimostrato: "ogni catena CON
+    # RIGHE e' integra". Prima diceva "all chains intact" anche quando una
+    # catena era vuota, cioe' quando non era stato controllato niente.
+    assert "every chain with entries is intact" in out
 
 
 def test_html_escapes_report_values():
