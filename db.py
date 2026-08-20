@@ -1733,6 +1733,43 @@ def fetch_assigned_asset_ids(user_id: int, group_ids: list) -> Optional[set]:
         return None
 
 
+def fetch_posture_history(limit: int = 2000, date_from: Optional[str] = None,
+                          date_to: Optional[str] = None):
+    """
+    Storico delle run di postura per il registro di audit, con gli asset e i
+    campi di integrita' (attore, hash di riga, sigillo dei totali).
+
+    Diverso da fetch_posture_runs, che serve al SELETTORE della pagina postura
+    e per questo seleziona solo cinque colonne: qui servono attore e hash,
+    altrimenti la pagina di audit mostrerebbe le run senza poter dire chi le ha
+    lanciate ne' se i totali sono ancora quelli sigillati.
+
+    Le run reggono i conteggi point-in-time ("a questa data N vulnerabilita'
+    aperte"): sono i numeri piu' probanti del prodotto, e finora non erano
+    sfogliabili da nessuna parte con la loro prova accanto.
+    """
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        q = client.table("posture_runs").select(
+            "id, created_at, assets_scanned, total_packages, total_vulnerable,"
+            "total_vulns, avg_score, actor_id, actor_name, hash_ts, prev_hash,"
+            "row_hash, final_ts, final_hash,"
+            "posture_assets(id, ip, os_guess, os_type, os_major_version, method,"
+            "total_packages, vulnerable_packages, total_vulns, score,"
+            "sev_critical, sev_high, sev_medium, sev_low, sev_unknown)")
+        if date_from:
+            q = q.gte("created_at", date_from)
+        if date_to:
+            q = q.lte("created_at", date_to)
+        resp = q.order("id", desc=True).limit(limit).execute()
+        return resp.data or []
+    except Exception as exc:
+        logger.warning("fetch_posture_history fallita: %s", exc)
+        return None
+
+
 def fetch_posture_runs(limit: int = 30):
     """Elenco sintetico delle run (per il selettore storico)."""
     client = _get_client()

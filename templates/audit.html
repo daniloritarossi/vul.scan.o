@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=43" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=44" />
   <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -121,7 +121,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=36"></script>
+  <script src="/static/i18n.js?v=37"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -252,6 +252,11 @@
             class="tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 border-cyan-500 text-cyan-700 inline-flex items-center gap-1.5">
             <span class="material-symbols-outlined text-[16px]">history</span>
             <span data-i18n="audit.tab_scans">SCANS</span>
+          </button>
+          <button id="tabPosture" role="tab" aria-selected="false" aria-controls="panelPosture"
+            class="tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-700 inline-flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px]">inventory</span>
+            <span data-i18n="audit.tab_posture">POSTURE RUNS</span>
           </button>
           <button id="tabEvents" role="tab" aria-selected="false" aria-controls="panelEvents"
             class="tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 border-transparent text-slate-500 hover:text-slate-700 inline-flex items-center gap-1.5">
@@ -384,6 +389,108 @@
         </section>
         <div id="auditPager"></div>
         </div><!-- /panelScans -->
+
+        <!-- ================= POSTURE RUNS (posture_runs) =================
+             I conteggi point-in-time stanno qui: sono i numeri che un audit
+             contesta per primi, e finora esisteva la loro prova
+             (/api/audit/posture-verify) ma non una vista sfogliabile. -->
+        <div id="panelPosture" role="tabpanel" aria-labelledby="tabPosture" class="space-y-8 hidden">
+          <section class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2" data-i18n="audit.po_kpi_runs">POSTURE RUNS</h3>
+              <span id="poKpiRuns" class="font-display-lg text-display-lg text-slate-900">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2 flex items-center gap-1.5">
+                <span data-i18n="audit.po_kpi_sealed">SEALED RUNS</span>
+                <span class="tip-wrap relative inline-flex items-center focus-visible:outline-none" tabindex="0" role="button" data-i18n-al="audit.po_kpi_sealed_t" aria-label="What is this?">
+                  <span class="material-symbols-outlined text-[14px] text-slate-500 hover:text-cyan-600" style="font-variation-settings:'FILL' 0,'wght' 300;">info</span>
+                  <span class="tip-pop pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 rounded-lg bg-slate-900 text-slate-100 text-[11px] leading-relaxed font-body-md normal-case tracking-normal opacity-0 transition-opacity duration-200 z-50 shadow-xl" data-i18n="audit.po_kpi_sealed_t">Runs whose totals are covered by the end-of-run seal — the figures an audit actually challenges.</span>
+                </span>
+              </h3>
+              <span id="poKpiSealed" class="font-display-lg text-display-lg text-emerald-600">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2" data-i18n="audit.po_kpi_assets">ASSETS SCANNED</h3>
+              <span id="poKpiAssets" class="font-display-lg text-display-lg text-slate-900">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 to-rose-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-error mb-2" data-i18n="audit.po_kpi_vulns">VULNERABILITIES</h3>
+              <span id="poKpiVulns" class="font-display-lg text-display-lg text-error">0</span>
+            </div>
+            <div class="neural-panel p-5 rounded-2xl relative col-span-2 md:col-span-1">
+              <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-400 to-fuchsia-500 rounded-t-2xl"></div>
+              <h3 class="font-label-caps text-label-caps text-slate-500 mb-2" data-i18n="audit.po_kpi_last">LAST RUN</h3>
+              <span id="poKpiLast" class="font-code-lg text-code-lg text-slate-900">—</span>
+            </div>
+          </section>
+
+          <section class="neural-panel rounded-2xl p-4 flex flex-wrap items-end gap-3">
+            <div class="flex flex-col gap-1">
+              <label for="poState" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.po_f_state">INTEGRITY</label>
+              <select id="poState" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+                <option value="sealed" data-i18n="audit.po_state_sealed">sealed</option>
+                <option value="verified" data-i18n="audit.po_state_verified">verified</option>
+                <option value="anchored" data-i18n="audit.po_state_anchored">anchored</option>
+                <option value="unsigned" data-i18n="audit.po_state_unsigned">unsigned</option>
+                <option value="tampered" data-i18n="audit.po_state_tampered">tampered</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="poActor" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_actor">ACTOR</label>
+              <select id="poActor" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700">
+                <option value="" data-i18n="audit.f_all">All</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="poFrom" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_from">FROM</label>
+              <input id="poFrom" type="date" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label for="poTo" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.f_to">TO</label>
+              <input id="poTo" type="date" class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700" />
+            </div>
+            <div class="flex flex-col gap-1 grow min-w-[200px]">
+              <label for="poSearch" class="font-label-caps text-[10px] text-slate-500" data-i18n="audit.ev_f_search">SEARCH</label>
+              <input id="poSearch" type="text" data-i18n-ph="audit.po_search_ph" placeholder="Search host, actor, run…"
+                class="font-code-sm text-code-sm bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-900 placeholder:text-slate-400" />
+            </div>
+            <button id="poClear" class="font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors shadow-sm inline-flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">filter_alt_off</span><span data-i18n="audit.f_clear">CLEAR</span>
+            </button>
+          </section>
+
+          <div class="sticky top-0 z-20 flex items-center justify-between flex-wrap gap-3 -mb-2 bg-white/85 dark:bg-slate-900/85 backdrop-blur-sm py-2 px-1 -mx-1 rounded-xl">
+            <div class="flex items-center gap-3 flex-wrap">
+              <span id="poStatus" role="status" aria-live="polite" class="font-label-caps text-[10px] text-slate-500">—</span>
+              <span id="poIntegrityBadge" role="status" aria-live="polite"
+                class="inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-500">
+                <span class="material-symbols-outlined text-[14px]">shield</span>
+                <span data-i18n="audit.integrity_checking">CHECKING…</span>
+              </span>
+              <span id="poScopeNote" class="hidden font-label-caps text-[10px] text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full"
+                data-i18n="audit.po_scoped">YOUR ASSETS ONLY · SEALED TOTALS UNCHANGED</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="poExportCSV"
+                class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"><span
+                  class="material-symbols-outlined text-[14px]">download</span>CSV</button>
+              <button id="poExportXLS"
+                class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-600 border border-slate-200 bg-white px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors shadow-sm"><span
+                  class="material-symbols-outlined text-[14px]">table_view</span>XLS</button>
+            </div>
+          </div>
+
+          <section id="poList" class="space-y-4">
+            <div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-500" data-i18n="audit.loading">Loading history…</div>
+          </section>
+          <div id="poPager"></div>
+        </div><!-- /panelPosture -->
 
         <!-- ================= ACTIVITY (audit_events) ================= -->
         <div id="panelEvents" role="tabpanel" aria-labelledby="tabEvents" class="space-y-8 hidden">
@@ -1313,41 +1420,287 @@
     $('evExportCSV').addEventListener('click', () => exportCSV(_buildEventRows(), 'audit_activity.csv'));
     $('evExportXLS').addEventListener('click', () => exportXLS(_buildEventRows(), 'audit_activity.xlsx'));
 
+    // =====================================================================
+    // RUN DI POSTURA (/api/audit/posture) — scheda "POSTURE RUNS".
+    // Sono i conteggi point-in-time: la prova esisteva gia', qui c'e' la vista.
+    // =====================================================================
+    const po = {
+      state: { page: 0, page_size: 20, q: '', actor: '', state: '', date_from: '', date_to: '' },
+      last: null, loaded: false, open: new Set(),
+    };
+
+    // Stato di integrita' della singola run. 'sealed' e' piu' forte di
+    // 'verified': copre anche i TOTALI, che sono la cifra contestata.
+    const PO_STATE = {
+      sealed: ['verified', 'text-emerald-600 bg-emerald-50 border-emerald-200'],
+      verified: ['shield_lock', 'text-cyan-700 bg-cyan-50 border-cyan-200'],
+      anchored: ['anchor', 'text-amber-600 bg-amber-50 border-amber-200'],
+      unsigned: ['help', 'text-slate-400 bg-slate-50 border-slate-200'],
+      tampered: ['gpp_bad', 'text-rose-600 bg-rose-50 border-rose-200'],
+    };
+    function poStateChip(s) {
+      const [icon, cls] = PO_STATE[s] || PO_STATE.unsigned;
+      return `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] px-2 py-0.5 rounded-full border ${cls}" title="${esc(t('audit.po_state_' + s + '_t'))}">`
+        + `<span class="material-symbols-outlined text-[12px]">${icon}</span>${esc(t('audit.po_state_' + s))}</span>`;
+    }
+
+    function poAssetRow(a) {
+      const sev = ['sev_critical', 'sev_high', 'sev_medium', 'sev_low']
+        .map((k, i) => ({ n: a[k] || 0, cls: ['text-rose-600', 'text-orange-600', 'text-amber-600', 'text-slate-500'][i] }))
+        .filter(x => x.n)
+        .map(x => `<span class="${x.cls} font-code-sm text-[11px]">${x.n}</span>`).join(' / ') || '<span class="text-slate-300">—</span>';
+      return `<tr class="hover:bg-white/60 transition-colors">
+        <td class="px-4 py-2 font-code-sm text-code-sm text-slate-900 font-semibold" data-label="IP">${esc(a.ip)}</td>
+        <td class="px-4 py-2" data-label="OS">${osChip(a.os_type, a.os_major_version)}</td>
+        <td class="px-4 py-2 font-code-sm text-[11px] text-slate-500" data-label="${esc(t('audit.th_method'))}">${esc(a.method || '—')}</td>
+        <td class="px-4 py-2 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('audit.po_th_packages'))}">${(a.total_packages || 0).toLocaleString()}</td>
+        <td class="px-4 py-2 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('audit.po_th_vulnerable'))}">${(a.vulnerable_packages || 0).toLocaleString()}</td>
+        <td class="px-4 py-2 font-code-sm text-code-sm text-rose-600" data-label="${esc(t('audit.po_th_vulns'))}">${(a.total_vulns || 0).toLocaleString()}</td>
+        <td class="px-4 py-2" data-label="${esc(t('audit.po_th_sev'))}">${sev}</td>
+        <td class="px-4 py-2 font-code-sm text-code-sm text-slate-700" data-label="${esc(t('audit.po_th_score'))}">${a.score == null ? '—' : a.score}</td>
+      </tr>`;
+    }
+
+    function poRunCard(r) {
+      const assets = r.posture_assets || [];
+      const open = po.open.has(r.id);
+      const actor = r.actor_name
+        ? `<span class="inline-flex items-center gap-1 font-label-caps text-[10px] text-slate-600 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full"><span class="material-symbols-outlined text-[12px]">person</span>${esc(r.actor_name)}</span>`
+        : `<span class="font-label-caps text-[10px] text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full" title="${esc(t('audit.actor_system_t'))}">${t('audit.actor_system')}</span>`;
+      return `
+      <div class="neural-panel rounded-2xl overflow-hidden" id="prun-${esc(r.id)}">
+        <div class="p-5 border-b border-slate-100/70">
+          <div class="flex items-start justify-between flex-wrap gap-3">
+            <div class="flex items-start gap-3">
+              <button type="button" data-pocollapse="${esc(r.id)}" aria-expanded="${open ? 'true' : 'false'}" aria-label="${esc(t('audit.toggle'))}"
+                class="mt-0.5 shrink-0 text-slate-400 hover:text-cyan-600 transition-transform ${open ? '' : '-rotate-90'}">
+                <span class="material-symbols-outlined text-[20px]">expand_more</span>
+              </button>
+              <div>
+                <div class="flex items-center gap-2.5 flex-wrap">
+                  <h3 class="font-code-lg text-code-lg text-slate-900 font-semibold">${t('audit.po_run', { n: r.id })}</h3>
+                  ${poStateChip(r.state)}
+                  <span class="font-label-caps text-[10px] text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-full">${t('audit.po_assets_n', { n: r.assets_scanned || 0 })}</span>
+                </div>
+                <div class="font-code-sm text-[11px] text-slate-500 mt-1.5" title="${esc(fmtDate(r.created_at))}">${esc(fmtRel(r.created_at))}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 flex-wrap justify-end">
+              <div class="text-right">
+                <div class="font-label-caps text-[9px] text-slate-500">${t('audit.po_th_packages')}</div>
+                <div class="font-code-lg text-code-lg text-slate-900">${(r.total_packages || 0).toLocaleString()}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-label-caps text-[9px] text-slate-500">${t('audit.po_th_vulnerable')}</div>
+                <div class="font-code-lg text-code-lg text-amber-600">${(r.total_vulnerable || 0).toLocaleString()}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-label-caps text-[9px] text-slate-500">${t('audit.po_th_vulns')}</div>
+                <div class="font-code-lg text-code-lg text-error">${(r.total_vulns || 0).toLocaleString()}</div>
+              </div>
+              <div class="text-right">
+                <div class="font-label-caps text-[9px] text-slate-500">${t('audit.po_th_score')}</div>
+                <div class="font-code-lg text-code-lg text-slate-900">${r.avg_score == null ? '—' : r.avg_score}</div>
+              </div>
+              ${actor}
+            </div>
+          </div>
+        </div>
+        <div class="${open ? '' : 'hidden'}" data-pobody="${esc(r.id)}">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse vfa-responsive-table">
+              <thead><tr class="border-b border-slate-200/70 bg-white/40">
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">IP</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">OS</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.th_method')}</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.po_th_packages')}</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.po_th_vulnerable')}</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.po_th_vulns')}</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.po_th_sev')}</th>
+                <th class="font-label-caps text-label-caps text-slate-500 px-4 py-2.5">${t('audit.po_th_score')}</th>
+              </tr></thead>
+              <tbody class="divide-y divide-slate-100/70">${assets.length
+          ? assets.map(poAssetRow).join('')
+          : `<tr><td colspan="8" class="px-4 py-6 text-center font-code-sm text-code-sm text-slate-500">${t('audit.po_no_assets')}</td></tr>`}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function poAnyFilter() {
+      const s = po.state;
+      return !!(s.q || s.actor || s.state || s.date_from || s.date_to);
+    }
+
+    function poRenderAll(data) {
+      const k = data.kpis || {};
+      $('poKpiRuns').textContent = (k.runs || 0).toLocaleString();
+      $('poKpiSealed').textContent = (k.sealed || 0).toLocaleString();
+      $('poKpiAssets').textContent = (k.assets || 0).toLocaleString();
+      $('poKpiVulns').textContent = (k.vulns || 0).toLocaleString();
+      const lastEl = $('poKpiLast');
+      lastEl.textContent = fmtRel(k.last_run);
+      lastEl.title = fmtDate(k.last_run);
+      fillSelect($('poActor'), data.actors || [], po.state.actor);
+      $('poScopeNote').classList.toggle('hidden', !data.scoped);
+      $('poStatus').textContent = t('audit.po_status', { n: (data.total || 0).toLocaleString() })
+        + (poAnyFilter() ? ' · ' + t('audit.filtered') : '');
+
+      // Badge di integrita' della catena, con la copertura DIMOSTRATA: qui
+      // "2 run su 54" e' l'informazione, non "nessun errore".
+      const ig = data.integrity || {};
+      const pct = ig.coverage == null ? null : Math.round(ig.coverage * 100);
+      const b = $('poIntegrityBadge');
+      const map = {
+        intact: ['shield_lock', 'text-emerald-600 bg-emerald-50 border-emerald-200', t('audit.integrity_ok', { n: ig.verified })],
+        partial: ['shield_question', 'text-amber-600 bg-amber-50 border-amber-200', t('audit.integrity_partial', { n: pct == null ? '—' : pct })],
+        tampered: ['gpp_bad', 'text-rose-600 bg-rose-50 border-rose-200', t('audit.integrity_tampered', { n: (ig.tamper_reasons || []).length })],
+        empty: ['shield', 'text-slate-500 bg-slate-50 border-slate-200', t('audit.integrity_none')],
+      };
+      const [icon, cls, label] = map[ig.verdict] || ['cloud_off', 'text-slate-500 bg-slate-50 border-slate-200', t('audit.integrity_off')];
+      b.className = 'inline-flex items-center gap-1.5 font-label-caps text-[10px] px-2.5 py-1 rounded-full border ' + cls;
+      b.innerHTML = `<span class="material-symbols-outlined text-[14px]">${icon}</span><span>${esc(label)}</span>`;
+      b.title = t('audit.po_integrity_t', { v: ig.verified || 0, s: ig.finals_verified || 0, tot: ig.total || 0 });
+
+      const box = $('poList');
+      const runs = data.runs || [];
+      box.innerHTML = runs.length
+        ? runs.map(poRunCard).join('')
+        : `<div class="neural-panel rounded-2xl p-10 text-center">
+             <span class="material-symbols-outlined text-4xl text-slate-300">${poAnyFilter() ? 'search_off' : 'inventory'}</span>
+             <p class="font-code-sm text-code-sm text-slate-500 mt-3">${poAnyFilter() ? t('audit.no_match') : t('audit.po_empty')}</p>
+           </div>`;
+      renderPaginator('poPager', data.total || 0, po.state.page, po.state.page_size, (p, sz) => {
+        po.state.page = p; if (typeof sz === 'number') po.state.page_size = sz;
+        poLoad(); window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    async function poLoad() {
+      const box = $('poList');
+      box.setAttribute('aria-busy', 'true');
+      box.innerHTML = `<div class="neural-panel rounded-2xl p-10 text-center font-code-sm text-code-sm text-slate-500">${t('audit.loading')}</div>`;
+      const p = new URLSearchParams();
+      p.set('page', po.state.page); p.set('page_size', po.state.page_size);
+      for (const k of ['q', 'actor', 'state', 'date_from', 'date_to'])
+        if (po.state[k]) p.set(k, po.state[k]);
+      let resp;
+      try { resp = await fetch('/api/audit/posture?' + p.toString()); }
+      catch (e) {
+        box.innerHTML = `<div class="neural-panel rounded-2xl p-10 text-center"><span class="material-symbols-outlined text-4xl text-rose-400">cloud_off</span>
+          <p class="font-code-sm text-code-sm text-rose-600 mt-3">${esc(t('audit.err_network'))}</p></div>`;
+        return;
+      }
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        box.innerHTML = `<div class="neural-panel rounded-2xl p-10 text-center"><span class="material-symbols-outlined text-4xl text-rose-400">cloud_off</span>
+          <p class="font-code-sm text-code-sm text-rose-600 mt-3">${esc(t('audit.err_unreachable'))}</p></div>`;
+        $('poPager').innerHTML = '';
+        return;
+      }
+      po.last = data; po.loaded = true;
+      poRenderAll(data);
+      box.removeAttribute('aria-busy');
+    }
+
+    $('poList').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-pocollapse]');
+      if (!btn) return;
+      const id = Number(btn.dataset.pocollapse);
+      const body = document.querySelector(`[data-pobody="${id}"]`);
+      const now = !po.open.has(id);
+      if (now) po.open.add(id); else po.open.delete(id);
+      if (body) body.classList.toggle('hidden', !now);
+      btn.classList.toggle('-rotate-90', !now);
+      btn.setAttribute('aria-expanded', now ? 'true' : 'false');
+    });
+
+    const poOnFilter = () => { po.state.page = 0; poLoad(); };
+    $('poState').addEventListener('change', e => { po.state.state = e.target.value; poOnFilter(); });
+    $('poActor').addEventListener('change', e => { po.state.actor = e.target.value; poOnFilter(); });
+    $('poFrom').addEventListener('change', e => { po.state.date_from = e.target.value || ''; poOnFilter(); });
+    $('poTo').addEventListener('change', e => { po.state.date_to = e.target.value ? e.target.value + 'T23:59:59.999' : ''; poOnFilter(); });
+    $('poSearch').addEventListener('input', debounce(() => { po.state.q = $('poSearch').value.trim(); po.state.page = 0; poLoad(); }, 250));
+    $('poClear').addEventListener('click', () => {
+      Object.assign(po.state, { page: 0, q: '', actor: '', state: '', date_from: '', date_to: '' });
+      ['poState', 'poActor'].forEach(id => { $(id).value = ''; });
+      $('poFrom').value = ''; $('poTo').value = ''; $('poSearch').value = '';
+      poLoad();
+    });
+
+    // Export: una riga per ASSET della run, con lo stato di integrita' della
+    // run accanto — chi riceve il file deve poter dire quali cifre sono
+    // sigillate e quali no.
+    function _buildPostureRows() {
+      return ((po.last && po.last.runs) || []).flatMap(r =>
+        (r.posture_assets || []).map(a => ({
+          Run_ID: r.id, Date: r.created_at, Actor: r.actor_name || '',
+          Integrity: r.state, Run_Assets: r.assets_scanned || 0,
+          Run_Packages: r.total_packages || 0, Run_Vulnerable: r.total_vulnerable || 0,
+          Run_Vulns: r.total_vulns || 0, Run_Score: r.avg_score,
+          IP: a.ip, OS_Type: a.os_type || '', OS_Version: a.os_major_version || '',
+          Method: a.method || '', Packages: a.total_packages || 0,
+          Vulnerable: a.vulnerable_packages || 0, Vulns: a.total_vulns || 0,
+          Critical: a.sev_critical || 0, High: a.sev_high || 0,
+          Medium: a.sev_medium || 0, Low: a.sev_low || 0, Score: a.score,
+        })));
+    }
+    $('poExportCSV').addEventListener('click', () => exportCSV(_buildPostureRows(), 'audit_posture_runs.csv'));
+    $('poExportXLS').addEventListener('click', () => exportXLS(_buildPostureRows(), 'audit_posture_runs.xlsx'));
+
+    window.addEventListener('langchange', () => { if (po.last) poRenderAll(po.last); });
+
     // --- Schede ---
+    // Tre registri, tre domande: cosa e' stato cercato (scans), cosa e' stato
+    // misurato sulla flotta (posture), chi ha fatto cosa (activity).
+    const TABS = {
+      scans: { tab: 'tabScans', panel: 'panelScans', hash: '', sub: 'audit.subtitle' },
+      posture: { tab: 'tabPosture', panel: 'panelPosture', hash: '#posture', sub: 'audit.po_subtitle' },
+      events: { tab: 'tabEvents', panel: 'panelEvents', hash: '#activity', sub: 'audit.ev_subtitle' },
+    };
+    const ACTIVE_TAB = 'border-cyan-500 text-cyan-700';
+    const IDLE_TAB = 'border-transparent text-slate-500 hover:text-slate-700';
+
     function selectTab(which) {
+      if (!TABS[which]) which = 'scans';
+      for (const [name, cfg] of Object.entries(TABS)) {
+        const on = name === which;
+        $(cfg.panel).classList.toggle('hidden', !on);
+        $(cfg.tab).setAttribute('aria-selected', on ? 'true' : 'false');
+        $(cfg.tab).className = 'tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 inline-flex items-center gap-1.5 '
+          + (on ? ACTIVE_TAB : IDLE_TAB);
+      }
+      // Ricerca e badge in testata appartengono allo storico scansioni: nelle
+      // altre schede sarebbero controlli che non fanno nulla.
       const scans = which === 'scans';
-      $('panelScans').classList.toggle('hidden', !scans);
-      $('panelEvents').classList.toggle('hidden', scans);
-      $('tabScans').setAttribute('aria-selected', scans ? 'true' : 'false');
-      $('tabEvents').setAttribute('aria-selected', scans ? 'false' : 'true');
-      $('tabScans').className = 'tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 inline-flex items-center gap-1.5 '
-        + (scans ? 'border-cyan-500 text-cyan-700' : 'border-transparent text-slate-500 hover:text-slate-700');
-      $('tabEvents').className = 'tab-btn font-label-caps text-[11px] px-4 py-2.5 -mb-px border-b-2 inline-flex items-center gap-1.5 '
-        + (scans ? 'border-transparent text-slate-500 hover:text-slate-700' : 'border-cyan-500 text-cyan-700');
-      // La ricerca in testata filtra lo storico scansioni: fuori scheda sarebbe
-      // un campo che non fa nulla.
       $('searchWrap').classList.toggle('hidden', !scans);
-      // L'integrity badge in testata riguarda il ledger scansioni.
       $('integrityBadge').classList.toggle('hidden', !scans);
       // Il sottotitolo descrive il registro mostrato, non la pagina.
       const sub = $('auditSubtitle');
-      const subKey = scans ? 'audit.subtitle' : 'audit.ev_subtitle';
-      sub.setAttribute('data-i18n', subKey);      // il cambio lingua lo ritraduce
-      sub.innerHTML = t(subKey);
-      if (!scans && !ev.loaded) evLoad();
+      sub.setAttribute('data-i18n', TABS[which].sub);   // il cambio lingua lo ritraduce
+      sub.innerHTML = t(TABS[which].sub);
+      if (which === 'events' && !ev.loaded) evLoad();
+      if (which === 'posture' && !po.loaded) poLoad();
     }
-    $('tabScans').addEventListener('click', () => { selectTab('scans'); history.replaceState(null, '', location.pathname); });
-    $('tabEvents').addEventListener('click', () => { selectTab('events'); history.replaceState(null, '', '#activity'); });
+    for (const [name, cfg] of Object.entries(TABS)) {
+      $(cfg.tab).addEventListener('click', () => {
+        selectTab(name);
+        history.replaceState(null, '', cfg.hash || location.pathname);
+      });
+    }
 
     // Il reload della testata agisce sulla scheda attiva.
     $('reload').addEventListener('click', () => {
       if ($('tabEvents').getAttribute('aria-selected') === 'true') evLoad();
+      else if ($('tabPosture').getAttribute('aria-selected') === 'true') poLoad();
     });
 
     window.addEventListener('langchange', () => { if (ev.last) evRenderAll(ev.last); });
 
-    // Deep-link: /audit#activity apre direttamente il registro attivita'.
-    if ((location.hash || '') === '#activity') selectTab('events');
+    // Deep-link: /audit#activity e /audit#posture aprono la scheda relativa.
+    const _byHash = { '#activity': 'events', '#posture': 'posture' }[location.hash || ''];
+    if (_byHash) selectTab(_byHash);
   </script>
 </body>
 

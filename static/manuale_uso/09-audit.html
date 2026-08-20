@@ -54,6 +54,7 @@
               <li><a href="#kpi">KPI</a></li>
               <li><a href="#filters"><span lang="en">Filters &amp; search</span><span lang="it">Filtri e ricerca</span></a></li>
               <li><a href="#entries"><span lang="en">Scan entries</span><span lang="it">Voci di scansione</span></a></li>
+              <li><a href="#posture"><span lang="en">Posture runs</span><span lang="it">Run di postura</span></a></li>
               <li><a href="#activity"><span lang="en">Activity — who did what</span><span lang="it">Attività — chi ha fatto cosa</span></a></li>
               <li><a href="#howto"><span lang="en">Procedures</span><span lang="it">Procedure</span></a></li>
             </ol>
@@ -64,17 +65,18 @@
         <div class="kicker">09 · <span lang="en">Audit Ledger</span><span lang="it">Registro audit</span> <span class="route">/audit</span></div>
         <h1><span lang="en">Audit Ledger</span><span lang="it">Registro di audit</span></h1>
         <p lang="en">
-          Two ledgers, two tabs. <b>SCANS</b> is the history of every scan the application has run, most recent first.
+          Three ledgers, three tabs. <b>SCANS</b> is the history of the threat-intelligence queries, most recent first.
+          <b>POSTURE RUNS</b> is the history of the full-posture runs — the point-in-time figures.
           <b>ACTIVITY</b> is the history of everything <em>else</em> — who signed in, who was denied, who changed a
-          role, a configuration key or an assignment, who exported data. Both are protected by a tamper-evident hash
-          chain. This is the page you open when someone asks you to <em>prove</em> what was scanned, when, by whom —
+          role, a configuration key or an assignment, who exported data. All three are protected by a tamper-evident
+          hash chain. This is the page you open when someone asks you to <em>prove</em> what was scanned, when, by whom —
           and what that person did around it.
         </p>
         <p lang="it">
-          Due registri, due schede. <b>SCANS</b> è lo storico di ogni scansione eseguita dall'applicazione, dalla più
-          recente. <b>ACTIVITY</b> è lo storico di tutto il <em>resto</em> — chi ha effettuato l'accesso, a chi è stato
+          Tre registri, tre schede. <b>SCANS</b> è lo storico delle query di threat intelligence, dalla più recente.
+          <b>RUN DI POSTURA</b> è lo storico delle run di postura — le cifre point-in-time. <b>ACTIVITY</b> è lo storico di tutto il <em>resto</em> — chi ha effettuato l'accesso, a chi è stato
           negato, chi ha cambiato un ruolo, una chiave di configurazione o un'assegnazione, chi ha esportato dati.
-          Entrambi sono protetti da una catena di hash a prova di manomissione. È la pagina che apri quando qualcuno ti
+          Tutti e tre sono protetti da una catena di hash a prova di manomissione. È la pagina che apri quando qualcuno ti
           chiede di <em>dimostrare</em> cosa è stato scansionato, quando, da chi — e cosa quella persona ha fatto
           attorno a quell'operazione.
         </p>
@@ -596,6 +598,99 @@
               <tr><td><span lang="en">Scan without an identified product</span><span lang="it">Scansione senza prodotto identificato</span></td><td><em>“product not identified”</em></td></tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ======================================= POSTURE RUNS -->
+      <section class="block" id="posture">
+        <h2><span lang="en">Posture runs</span><span lang="it">Run di postura</span>
+          <span class="roles">admin · manager · auditor (<span lang="en">all</span><span lang="it">tutto</span>) · editor (<span lang="en">own cone</span><span lang="it">proprio cono</span>) · <span lang="en">viewer and stakeholder denied</span><span lang="it">viewer e stakeholder negati</span></span>
+        </h2>
+
+        <p lang="en">
+          The <b>POSTURE RUNS</b> tab lists the full-posture runs: how many assets were scanned, how many packages were
+          found, how many were vulnerable, the total number of vulnerabilities and the average score — per run, with
+          the person who launched it. These are the <strong>point-in-time figures</strong>: the ones behind
+          <em>“on this date you had N open vulnerabilities”</em>, and the first an external audit challenges.
+        </p>
+        <p lang="it">
+          La scheda <b>RUN DI POSTURA</b> elenca le run di postura: quanti asset sono stati scansionati, quanti
+          pacchetti trovati, quanti vulnerabili, il totale delle vulnerabilità e lo score medio — per run, con la
+          persona che l'ha lanciata. Sono le <strong>cifre point-in-time</strong>: quelle dietro <em>«a questa data
+          avevi N vulnerabilità aperte»</em>, e le prime che un audit esterno contesta.
+        </p>
+        <div class="note">
+          <span lang="en"><b>Why this tab exists.</b> Posture runs already had their hash chain, their end-of-run seal
+            and their verification endpoint — the <em>proof</em> — while the audit page showed only the
+            threat-intelligence queries. The most probative numbers in the product had a proof and no document to read
+            it from. This tab is that document.</span>
+          <span lang="it"><b>Perché esiste questa scheda.</b> Le run di postura avevano già la loro catena di hash, il
+            sigillo di fine run e l'endpoint di verifica — la <em>prova</em> — mentre la pagina di audit mostrava solo
+            le query di threat intelligence. I numeri più probanti del prodotto avevano una prova e nessun documento da
+            cui leggerla. Questa scheda è quel documento.</span>
+        </div>
+
+        <h3><span lang="en">What each run is worth</span><span lang="it">Quanto vale ogni run</span></h3>
+        <p lang="en">
+          Every run carries a chip saying what can actually be claimed about it. Read that before reading its numbers.
+        </p>
+        <p lang="it">
+          Ogni run porta un chip che dice cosa si può davvero affermare su di essa. Leggilo prima dei suoi numeri.
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Chip</span><span lang="it">Chip</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-ok">SEALED</span></td>
+                <td><span lang="en">Signed at creation <em>and</em> sealed at the end: the totals of this run are covered too. This is the state you want on a run you are about to hand over.</span><span lang="it">Firmata alla creazione <em>e</em> sigillata alla fine: anche i totali di questa run sono coperti. È lo stato che vuoi su una run che stai per consegnare.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">VERIFIED</span></td>
+                <td><span lang="en">Signed and linked to the chain, but the end-of-run totals were never sealed — the run exists and is attributable, its figures are not covered.</span><span lang="it">Firmata e concatenata, ma i totali di fine run non sono mai stati sigillati — la run esiste ed è attribuibile, le sue cifre non sono coperte.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">ANCHORED</span></td>
+                <td><span lang="en">Written before the chain existed, and anchored: a change from the anchor date onward would be detected, but nothing is proven about what it contained before that.</span><span lang="it">Scritta prima che la catena esistesse, e ancorata: una modifica dalla data di ancoraggio in poi verrebbe rilevata, ma su cosa contenesse prima non si dimostra nulla.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">UNSIGNED</span></td>
+                <td><span lang="en">Written before the chain existed and never anchored: it can still be rewritten without leaving a trace.</span><span lang="it">Scritta prima che la catena esistesse e mai ancorata: può ancora essere riscritta senza lasciare traccia.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">TAMPERED</span></td>
+                <td><span lang="en">The run does not match its hash, or its sealed totals were altered.</span><span lang="it">La run non corrisponde al proprio hash, o i suoi totali sigillati sono stati alterati.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          The badge next to the run count applies the same rule to the chain as a whole, with the <em>proven</em>
+          coverage: <span class="badge b-warn">PARTIAL COVERAGE · 4%</span> means four runs in a hundred rest on a
+          verified hash, whatever the others are protected by. Expanding a run shows its assets, one row each, with
+          packages, vulnerable packages, vulnerabilities by severity and score.
+        </p>
+        <p lang="it">
+          Il badge accanto al conteggio delle run applica la stessa regola all'intera catena, con la copertura
+          <em>dimostrata</em>: <span class="badge b-warn">COPERTURA PARZIALE · 4%</span> significa che quattro run su
+          cento si reggono su un hash verificato, qualunque cosa protegga le altre. Espandendo una run si vedono i suoi
+          asset, una riga ciascuno, con pacchetti, pacchetti vulnerabili, vulnerabilità per severità e score.
+        </p>
+        <div class="warn">
+          <span lang="en"><b>For an editor the totals are not recomputed.</b> The run is shown with only the assets in
+            their visibility cone, but the run totals stay the <em>sealed</em> ones. Recomputing them on the visible
+            subset would mean printing, under a chip that says SEALED, a figure different from the one that was
+            actually signed. The header states it: <em>“your assets only · sealed totals unchanged”</em>.</span>
+          <span lang="it"><b>Per un editor i totali non vengono ricalcolati.</b> La run è mostrata con i soli asset del
+            proprio cono di visibilità, ma i totali della run restano quelli <em>sigillati</em>. Ricalcolarli sul
+            sottoinsieme visibile significherebbe stampare, sotto un chip che dice SIGILLATA, una cifra diversa da
+            quella davvero firmata. L'intestazione lo dichiara: <em>«solo i tuoi asset · totali sigillati
+            invariati»</em>.</span>
         </div>
       </section>
 

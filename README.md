@@ -746,6 +746,25 @@ the previous run, and `final_hash` sealing the run totals (`assets_scanned`,
 `total_packages`, `total_vulnerable`, `total_vulns`, `avg_score`) when the run
 finishes. Verified by `GET /api/audit/posture-verify`.
 
+Those runs are also **browsable**, which they were not: the audit page listed
+only the free-text threat-intelligence scans, so the most probative numbers in
+the product had a proof and no document. `GET /api/audit/posture` returns the
+run history — actor, sealed totals, per-asset breakdown — each row labelled
+with what can actually be claimed about it:
+
+| State | Meaning |
+|---|---|
+| `sealed` | signed at creation **and** sealed at the end: the totals are covered too |
+| `verified` | signed and linked, but the end-of-run totals were never sealed |
+| `anchored` | predates the chain; a change from the anchor date onward would be detected |
+| `unsigned` | predates the chain and is not anchored — still rewritable without a trace |
+| `tampered` | the run or its sealed totals do not match |
+
+For an `editor` the run is shown with only the assets inside their visibility
+cone, and the run totals are **left as sealed** rather than recomputed on the
+subset: rewriting them would mean presenting a figure other than the signed one
+under the label "sealed". The response says so in `scoped`.
+
 **Coverage is part of the verdict** — a verification that answers `ok` while
 covering a fraction of the rows is worse than no verification. On a real
 installation the scan ledger reported `{"total":106,"verified":2,"legacy":104,
@@ -1264,6 +1283,7 @@ omitted for scoped roles for the same reason.
 | `GET /api/audit/evidence` (signed report) | full | full | cone only, stated in `scope` | **full** | 403 | 403 |
 | `POST /api/audit/evidence/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 | `GET /api/audit/events` (activity ledger) | **all** | **all** | own activity only | **all** | 403 | 403 |
+| `GET /api/audit/posture` (posture run history) | **all** | **all** | own-cone assets only | **all** | 403 | 403 |
 | `GET /api/audit/events/verify` | ✅ | ✅ | ✅ | ✅ | 403 | 403 |
 | `POST /api/audit/anchor` (baseline anchor) | ✅ **admin only** | 403 | 403 | 403 | 403 | 403 |
 

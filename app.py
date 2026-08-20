@@ -1556,6 +1556,103 @@ def api_audit_events(
             "actors": actors, "scoped": user.scoped}
 
 
+def _posture_run_state(run: dict, verdict: dict) -> str:
+    """
+    Stato di integrita' della singola run: verified | sealed | anchored |
+    unsigned | tampered.
+
+    'sealed' e' piu' forte di 'verified': significa che anche i TOTALI (asset,
+    pacchetti, vulnerabilita', score) sono coperti dal sigillo di fine run, ed
+    e' esattamente cio' che un audit contesta.
+    """
+    rid = run.get("id")
+    broken = set(verdict.get("broken") or []) | set(verdict.get("finals_broken") or [])
+    if rid in broken:
+        return "tampered"
+    if not run.get("row_hash"):
+        anchor = verdict.get("anchor") or {}
+        anchored = (anchor.get("present") and anchor.get("digest_ok")
+                    and anchor.get("self_hash_ok")
+                    and rid is not None and rid <= (anchor.get("through_id") or 0))
+        return "anchored" if anchored else "unsigned"
+    return "sealed" if run.get("final_hash") else "verified"
+
+
+@app.get("/api/audit/posture")
+def api_audit_posture(
+    user: CurrentUser = Depends(_audit_reader),
+    page: int = 0, page_size: int = 20,
+    date_from: str | None = None, date_to: str | None = None,
+    actor: str | None = None, state: str | None = None,
+    q: str | None = None,
+):
+    """
+    Storico delle run di postura per il registro di audit: una riga per run,
+    con attore, totali sigillati e stato di integrita'.
+
+    Esisteva gia' la PROVA (GET /api/audit/posture-verify) ma non la VISTA: un
+    auditor poteva farsi dire che i conteggi point-in-time non erano stati
+    alterati, senza poterli sfogliare dalla pagina di audit. Sono i numeri piu'
+    probanti del prodotto — "a questa data N vulnerabilita' aperte" — e la
+    pagina mostrava solo le query di threat intelligence.
+
+    Ruoli scoped (editor): la run resta, ma vengono mostrati solo gli asset del
+    proprio cono di visibilita' e i totali NON vengono ricalcolati — sono
+    valori sigillati, e riscriverli qui significherebbe presentare come
+    'sigillata' una cifra diversa da quella firmata. Il campo 'scoped' lo
+    dichiara.
+    """
+    runs = db.fetch_posture_history(date_from=date_from, date_to=date_to)
+    if runs is None:
+        return JSONResponse({"error": "Supabase unreachable", "runs": []},
+                            status_code=503)
+    verdict = verify_posture_chain() or {}
+    scope_ips = visible_asset_ips(user)
+
+    out = []
+    for r in runs:
+        assets = r.get("posture_assets") or []
+        if scope_ips is not None:
+            assets = [a for a in assets if (a.get("ip") or "") in scope_ips]
+            if not assets:
+                continue          # run che non tocca nessun asset del cono
+        out.append({**r, "posture_assets": assets,
+                    "state": _posture_run_state(r, verdict)})
+
+    actors = sorted({(r.get("actor_name") or "").strip() for r in out if r.get("actor_name")})
+    if actor:
+        out = [r for r in out if (r.get("actor_name") or "").lower() == actor.lower()]
+    if state:
+        out = [r for r in out if r["state"] == state]
+    if q:
+        ql = q.strip().lower()
+        out = [r for r in out
+               if ql in json.dumps({k: v for k, v in r.items()
+                                    if k != "posture_assets"}, default=str).lower()
+               or any(ql in (a.get("ip") or "").lower() for a in (r.get("posture_assets") or []))]
+
+    kpis = {
+        "runs": len(out),
+        "assets": sum(r.get("assets_scanned") or 0 for r in out),
+        "vulns": sum(r.get("total_vulns") or 0 for r in out),
+        # Quante run reggono davvero una verifica: e' la cifra che conta quando
+        # si consegna lo storico, non il numero di run.
+        "sealed": sum(1 for r in out if r["state"] == "sealed"),
+        "last_run": max((r.get("created_at") or "" for r in out), default="") or None,
+    }
+    total = len(out)
+    if page_size and page_size > 0:
+        start = max(page, 0) * page_size
+        out = out[start:start + page_size]
+    return {"runs": out, "total": total, "page": page, "page_size": page_size,
+            "kpis": kpis, "actors": actors, "scoped": scope_ips is not None,
+            "integrity": {k: verdict.get(k) for k in
+                          ("verdict", "ok", "verified", "total", "unsigned",
+                           "anchored", "unprotected", "coverage",
+                           "protected_coverage", "finals_verified",
+                           "finals_pending", "tamper_reasons")}}
+
+
 ANCHORABLE_CHAINS = ("scans", "posture_runs", "finding_events", "audit_events")
 
 
