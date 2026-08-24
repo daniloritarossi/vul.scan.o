@@ -86,6 +86,13 @@ _DEFAULTS: dict = {
         "min_password_len": 12,
         "invite_ttl_hours": 48,  # validita' del link di attivazione
         "reset_ttl_hours": 4,    # validita' del link di reset
+        # Freno al password guessing (ratelimit.py). Il conteggio e' su una
+        # finestra scorrevole: 'max_attempts' fallimenti sullo stesso username
+        # (o 'ip_max_attempts' dalla stessa origine) dentro 'window_seconds'
+        # bloccano il login finche' la finestra non si svuota.
+        "max_attempts": 5,
+        "ip_max_attempts": 20,
+        "window_seconds": 900,
     },
     # Giorni di SLA remediation per severita' (ciclo di vita findings).
     "sla": {

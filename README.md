@@ -1095,7 +1095,10 @@ Visual states: `idle` (gray) → `running` (pulsing cyan) → `done` (green ✓)
     "rotation_days": 0,             // 0 = rotation disabled (NIST 800-63B)
     "min_password_len": 12,
     "invite_ttl_hours": 48,
-    "reset_ttl_hours": 4
+    "reset_ttl_hours": 4,
+    "max_attempts": 5,              // failed logins per username before lockout
+    "ip_max_attempts": 20,          // failed logins per source address
+    "window_seconds": 900           // sliding window of the two counters
   },
   "sla": {                          // remediation SLA days per severity
     "critical": 7,
@@ -1360,6 +1363,27 @@ Related flows, all built on the same one-time token mechanism:
 - **Global logout on password change** — session tokens carry their issue
   time; any session issued *before* the last password change is rejected. A
   password change/reset instantly invalidates every other open session.
+- **Brute-force brake** — failed logins are counted on a sliding window, per
+  username *and* per source address (`auth.max_attempts`, `auth.ip_max_attempts`,
+  `auth.window_seconds`). Over the threshold `/api/login` answers `429` with
+  `Retry-After` without even evaluating the password, and the login page shows
+  the remaining time. Unknown usernames are counted exactly like real ones, so
+  "goes into lockout" never confirms that an account exists. A correct login,
+  a password change or an admin reset clears the account counter; the counter
+  per address is not cleared by someone else's success.
+  The state lives in memory (single uvicorn worker) and is rebuilt from
+  `audit_events` at startup, so a restart neither forgets a lockout nor
+  resurrects one an admin has already lifted.
+- **Unlock from the console** — the `ACCESS` column in `/admin` shows a padlock
+  per user: closed and red with a live countdown when the account is locked
+  (click it to unlock immediately), open with the `n/max` counter when failures
+  are accumulating. Unlocking is admin-only (`POST /api/users/{id}/unlock`) and
+  is recorded as `auth.unlock` in the activity ledger.
+- **Client address behind a proxy** — `X-Forwarded-For` is trusted only when
+  `VFA_TRUST_PROXY=1`. Exposed directly, the app would receive that header from
+  the client itself: the `src_ip` of every audit event, and the per-address
+  brake above, would believe whatever the caller declares. Set it in the unit
+  file / compose env only when a reverse proxy rewrites the header.
 
 SMTP is configured in Settings (admin only): host, port, STARTTLS, credentials
 (masked like the other secrets), sender and the base URL used in email links.

@@ -47,6 +47,22 @@ ROLE_PASSWORD = "Ftest-Passw0rd-2026!"          # rispetta min_password_len=12
 USERNAME = "_ftest_{role}".format
 
 
+@pytest.fixture(autouse=True)
+def _reset_ratelimit():
+    """
+    Il freno anti-guessing e' stato in memoria condiviso fra i test: senza
+    azzerarlo, i login volutamente falliti di un test farebbero scattare il
+    blocco in quello dopo. '_WARMED' resta True per non ripescare dal registro
+    i fallimenti VERI dell'istanza sotto test.
+    """
+    import ratelimit
+    ratelimit.reset_all()
+    ratelimit._WARMED = True
+    yield
+    ratelimit.reset_all()
+    ratelimit._WARMED = True
+
+
 @pytest.fixture(scope="session")
 def client():
     """TestClient 'anonimo' condiviso (nessun cookie): triggera lo startup event."""

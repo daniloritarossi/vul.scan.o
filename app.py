@@ -21,6 +21,7 @@ import logging
 import os
 import socket
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
@@ -74,6 +75,7 @@ from auth import _secret as _hmac_secret
 import evidence
 import msrc
 import nvd
+import ratelimit
 from mailer import (send_activation, send_reset, activation_link,
                     smtp_enabled, MailError)
 
@@ -86,6 +88,11 @@ ASSETS_FILE = BASE_DIR / "assets.txt"
 # per lo sviluppo locale su http (VFA_COOKIE_SECURE=0). In produzione (dietro
 # TLS) il cookie NON deve mai viaggiare in chiaro.
 COOKIE_SECURE = os.environ.get("VFA_COOKIE_SECURE", "1") != "0"
+
+# Fiducia in X-Forwarded-For: attiva SOLO dietro un reverse proxy che riscrive
+# l'header (VFA_TRUST_PROXY=1). Esposta direttamente, l'applicazione riceve
+# quell'header dal client e crederebbe a qualunque indirizzo dichiari.
+TRUST_PROXY = os.environ.get("VFA_TRUST_PROXY", "0") == "1"
 
 
 def _set_session_cookie(resp, user_id: int) -> None:
@@ -337,13 +344,21 @@ def _require_ip_in_scope(user: CurrentUser, ip: str) -> None:
 
 
 def _req_meta(request: Request | None) -> dict:
-    """Provenienza della richiesta per il registro attivita' (ip + user agent).
-    Dietro reverse proxy l'IP del client e' in X-Forwarded-For; il primo valore
-    e' quello dell'origine."""
+    """
+    Provenienza della richiesta per il registro attivita' (ip + user agent).
+
+    X-Forwarded-For viene letto SOLO se VFA_TRUST_PROXY=1, cioe' se davanti
+    all'applicazione c'e' davvero un reverse proxy che lo riscrive. Senza
+    quella garanzia l'header e' scrivibile dal client: bastava cambiarlo a ogni
+    richiesta per falsificare il 'da dove' del registro d'audit e per farla
+    franca col contatore per indirizzo del rate limit sul login.
+    """
     if request is None:
         return {}
-    fwd = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
-    ip = fwd or (request.client.host if request.client else "")
+    ip = ""
+    if TRUST_PROXY:
+        ip = (request.headers.get("x-forwarded-for") or "").split(",")[0].strip()
+    ip = ip or (request.client.host if request.client else "")
     return {"ip": ip or None, "user_agent": request.headers.get("user-agent") or ""}
 
 
@@ -393,12 +408,32 @@ async def api_login(request: Request):
         return JSONResponse({"error": "Invalid JSON"}, status_code=400)
     username = (body.get("username") or "").strip()
     password = body.get("password") or ""
+    src_ip = _req_meta(request).get("ip") or ""
+    # Freno al password guessing PRIMA di toccare il DB e l'hash: superata la
+    # soglia il tentativo non viene nemmeno valutato. Il conteggio comprende
+    # gli username inesistenti, altrimenti "va in blocco" varrebbe come
+    # conferma che l'account esiste.
+    wait = ratelimit.retry_after(username, src_ip, load_config().get("auth"))
+    if wait:
+        if ratelimit.should_announce(username, src_ip):
+            _audit("auth.throttled", request, outcome="denied",
+                   actor={"name": username or None},
+                   detail={"username": username, "retry_after": wait,
+                           "reason": "too_many_failed_logins"})
+        # Ritardo fisso: un rifiuto istantaneo distinguerebbe "bloccato" da
+        # "password sbagliata" col solo cronometro.
+        time.sleep(0.5)
+        return JSONResponse(
+            {"error": "Troppi tentativi di accesso. Riprova più tardi.",
+             "code": "too_many_attempts", "retry_after": wait},
+            status_code=429, headers={"Retry-After": str(wait)})
     row = db.fetch_user_by_username(username) if username else None
     # Account invitato ma mai attivato: password_hash assente o is_active falso.
     # Risposta identica alle credenziali errate (no enumeration).
     if (not row or not row.get("password_hash")
             or not row.get("is_active", True)
             or not verify_password(password, row["password_hash"])):
+        ratelimit.record_failure(username, src_ip, load_config().get("auth"))
         # Il registro invece DISTINGUE il motivo: la risposta HTTP non deve
         # rivelare se l'utente esiste, ma un audit di sicurezza deve poter
         # separare "password sbagliata su account reale" (possibile attacco a
@@ -411,6 +446,10 @@ async def api_login(request: Request):
                       "role": (row or {}).get("role")},
                detail={"username": username, "reason": reason})
         return JSONResponse({"error": "Credenziali non valide"}, status_code=401)
+    # Credenziali corrette: l'account riparte pulito. Il contatore per
+    # INDIRIZZO resta, un successo su un account non assolve l'origine che sta
+    # provando gli altri.
+    ratelimit.clear_user(username)
     _audit("auth.login", request,
            actor={"id": row["id"], "name": row["username"], "role": row["role"]},
            detail={"must_change_password": bool(row.get("must_change_password"))})
@@ -582,6 +621,9 @@ async def api_change_password(request: Request,
     _audit("auth.password_change", request, user,
            target={"type": "user", "id": user.id, "label": user.username},
            detail={"forced": bool(user.must_change_password)})
+    # La password vecchia non esiste piu': i fallimenti accumulati su di essa
+    # non devono chiudere fuori chi ha appena scelto quella nuova.
+    ratelimit.clear_user(user.username)
     # Nuovo cookie: quello corrente e' invalidato da password_changed_at.
     resp = JSONResponse({"ok": True})
     _set_session_cookie(resp, user.id)
@@ -2313,11 +2355,43 @@ def admin_page(request: Request, user: CurrentUser = Depends(_admin_only)):
 @app.get("/api/users")
 def api_users_list(user: CurrentUser = Depends(_admin_manager)):
     """Elenco utenti (senza hash password). Admin e manager (il manager ne ha
-    bisogno per assegnare gli asset); le scritture restano solo admin."""
+    bisogno per assegnare gli asset); le scritture restano solo admin.
+
+    Ogni riga porta lo stato del freno anti-guessing ('lock'): un account
+    bloccato da troppi login falliti non e' distinguibile da uno con la
+    password dimenticata se non lo si dice, e l'admin finirebbe per resettare
+    credenziali che funzionano.
+    """
     users = db.fetch_users()
     if users is None:
         return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    auth_cfg = load_config().get("auth")
+    for u in users:
+        u["lock"] = ratelimit.user_status(u.get("username") or "", auth_cfg)
     return {"users": users}
+
+
+@app.post("/api/users/{user_id}/unlock")
+def api_users_unlock(user_id: int, request: Request,
+                     user: CurrentUser = Depends(_admin_only)):
+    """
+    Sblocca subito un account frenato dai troppi login falliti, senza
+    aspettare la scadenza della finestra e senza toccare la password.
+
+    Solo admin: rimuovere il freno riapre la porta a chi stava provando le
+    password, quindi e' una decisione da registrare con un nome sopra.
+    """
+    target = db.fetch_user(user_id)
+    if not target:
+        return JSONResponse({"error": "Utente non trovato"}, status_code=404)
+    cleared = ratelimit.clear_user(target.get("username") or "")
+    _audit("auth.unlock", request, user,
+           target={"type": "user", "id": user_id,
+                   "label": target.get("username")},
+           detail={"cleared_failures": cleared})
+    return {"ok": True, "cleared_failures": cleared,
+            "lock": ratelimit.user_status(target.get("username") or "",
+                                          load_config().get("auth"))}
 
 
 def _send_invite(user_row: dict) -> dict:
@@ -2433,6 +2507,9 @@ def api_users_reset(user_id: int, request: Request,
     _audit("user.password_reset", request, user,
            target={"type": "user", "id": user_id, "label": target.get("username")},
            detail={"email": target.get("email")})
+    # Chi riceve un reset deve poter rientrare: tenerlo bloccato dai tentativi
+    # falliti che hanno portato al reset non protegge nulla.
+    ratelimit.clear_user(target.get("username") or "")
     if smtp_enabled() and target.get("email"):
         try:
             send_reset(target["email"], target["username"], token)
