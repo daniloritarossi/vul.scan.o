@@ -1,0 +1,211 @@
+/*
+ * vfa-field.css — DEEP FIELD, il guscio visivo delle schermate di accesso
+ * (login, attivazione da invito, cambio password obbligatorio).
+ *
+ * Sono le uniche pagine senza dati sopra, quindi portano l'affermazione del
+ * prodotto invece dei suoi numeri: un campo a lunga esposizione dove ogni
+ * punto e' un finding, il colore e' il suo stato e la luminosita' la sua
+ * probabilita' di sfruttamento. Il campo e' GENERATO (seed fisso, nessuna
+ * richiesta): chi non ha ancora una sessione non deve poter dedurre quanti
+ * asset o quanti finding esistono in questa istanza.
+ *
+ * Tema unico, nero, forzato: qui non si segue la preferenza chiaro/scuro del
+ * resto della UI: la figura esiste solo su fondo nero, e il percorso
+ * invito -> attivazione -> primo accesso deve essere un unico ambiente.
+ */
+
+:root {
+  --void: #03040a;
+  --holo: #2ee6ff;
+  --holo-dim: #1b8fa8;
+  --crit: #ff416b;
+  --warn: #ffb038;
+  --ok: #3df5b0;
+  --brand: #f97316;
+  --ink: #cfeef8;
+  --ink-dim: #5f7f92;
+  --ink-faint: #33505f;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 900px at 74% 26%, rgba(46, 230, 255, .10), transparent 58%),
+    radial-gradient(900px 700px at 18% 82%, rgba(90, 60, 190, .14), transparent 62%),
+    radial-gradient(600px 500px at 62% 88%, rgba(255, 65, 107, .05), transparent 60%),
+    var(--void);
+  color: var(--ink);
+  font-family: var(--mono);
+  overflow: hidden;
+}
+
+canvas#sky { position: fixed; inset: 0; display: block; }
+
+.fx {
+  position: fixed; inset: 0; pointer-events: none; z-index: 4; mix-blend-mode: screen;
+  background: repeating-linear-gradient(0deg, rgba(46, 230, 255, .02) 0 1px, transparent 1px 4px);
+}
+.vig {
+  position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(130% 130% at 50% 44%, transparent 46%, rgba(0, 0, 0, .8) 100%);
+}
+/* orizzonte: l'unica linea netta della pagina, tenuta libera dal form */
+.horizon {
+  position: fixed; left: 0; right: 0; bottom: 13%; height: 1px; z-index: 5; pointer-events: none;
+  background: linear-gradient(90deg, transparent 34%, rgba(46, 230, 255, .4) 52%, rgba(61, 245, 176, .46) 70%, transparent 94%);
+  box-shadow: 0 0 26px rgba(46, 230, 255, .28);
+}
+.corner { position: fixed; width: 20px; height: 20px; border: 1px solid rgba(46, 230, 255, .3); z-index: 7; pointer-events: none; }
+.c-tl { top: 22px; left: 22px; border-right: 0; border-bottom: 0; }
+.c-br { bottom: 22px; right: 22px; border-left: 0; border-top: 0; }
+
+.wrap {
+  position: relative; z-index: 6; height: 100%; display: grid;
+  grid-template-columns: minmax(340px, 640px) 1fr; align-items: center;
+  gap: 40px; padding: 0 clamp(28px, 7vw, 110px);
+}
+
+/* colonna di accesso: nessun pannello, la copy sta su una propria velatura */
+.col { position: relative; display: flex; flex-direction: column; gap: 26px; }
+.col::before {
+  content: ""; position: absolute; inset: -52px -120px -52px -80px; z-index: -1;
+  background: radial-gradient(66% 60% at 34% 50%, rgba(3, 4, 10, .94), rgba(3, 4, 10, .62) 56%, transparent 80%);
+}
+
+.mark { font-size: 22px; letter-spacing: .28em; color: var(--holo-dim); user-select: none; }
+/* Il tracking scende salendo di corpo: il valore fitto delle etichette, a
+   questa dimensione, aprirebbe troppo la parola. */
+.mark b { color: var(--ink); font-weight: 400; }
+.mark i {
+  font-style: normal; display: inline-block; width: .34em; height: .34em; margin: 0 .24em;
+  border-radius: 50%; background: var(--brand); box-shadow: 0 0 7px rgba(249, 115, 22, .65);
+  vertical-align: middle;
+}
+.mark em { font-style: normal; color: var(--brand); }
+
+h1.display {
+  margin: 0; font-family: var(--sans); font-weight: 200;
+  font-size: clamp(34px, 4.6vw, 56px); line-height: 1.06; letter-spacing: -.028em;
+  color: #eaf9ff; text-wrap: balance;
+}
+h1.display br { line-height: 0; }
+h1.display em { font-style: normal; color: var(--holo); text-shadow: 0 0 34px rgba(46, 230, 255, .45); }
+
+.lede {
+  font-size: 13px; line-height: 1.85; letter-spacing: .03em;
+  color: var(--ink-dim); max-width: 58ch; margin: -4px 0 0;
+}
+.lede b { color: var(--ink); font-weight: 400; }
+
+form { display: flex; flex-direction: column; gap: 22px; }
+.fld { position: relative; display: flex; flex-direction: column; gap: 9px; }
+.fld label { font-size: 10.5px; letter-spacing: .26em; color: var(--ink-faint); transition: color .2s; }
+.fld:focus-within label { color: var(--holo); }
+.fld input {
+  width: 100%; background: transparent; border: 0;
+  border-bottom: 1px solid rgba(46, 230, 255, .24); color: var(--ink);
+  font-family: var(--mono); font-size: 17.5px; letter-spacing: .07em;
+  padding: 0 36px 12px 0; outline: none; transition: border-color .22s, box-shadow .28s;
+}
+.fld input::placeholder { color: #2c4654; }
+/* Il bagliore sta sull'input, non in fondo al campo: vfa-auth.js inserisce il
+   misuratore di robustezza dentro .fld, e una riga posizionata sul fondo del
+   contenitore finirebbe sotto al misuratore invece che sotto al campo. */
+.fld:focus-within input {
+  border-bottom-color: var(--holo);
+  box-shadow: 0 9px 24px -15px rgba(46, 230, 255, .95);
+}
+.fld input:disabled { opacity: .35; cursor: not-allowed; }
+/* Chrome dipinge i campi in autofill con la propria targa; qui il campo e' una riga */
+.fld input:-webkit-autofill, #forgotEmail:-webkit-autofill {
+  -webkit-text-fill-color: var(--ink);
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+/* vfa-auth.js avvolge gli input password per agganciarci il pulsante mostra/nascondi */
+.fld > div { display: flex; }
+/* misuratore di robustezza iniettato da vfa-auth.js */
+.fld .vfa-str-label { display: inline-block; margin-top: 2px; }
+
+.row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.cta {
+  padding: 15px 36px; border-radius: 2px; cursor: pointer; font-family: var(--mono);
+  font-size: 12.5px; letter-spacing: .28em; color: #04121a; font-weight: 700; border: 0;
+  background: linear-gradient(135deg, #2ee6ff, #3df5b0);
+  box-shadow: 0 0 30px rgba(46, 230, 255, .34);
+  transition: box-shadow .18s, transform .18s;
+}
+.cta:hover:not(:disabled) { box-shadow: 0 0 46px rgba(46, 230, 255, .62); transform: translateY(-1px); }
+.cta:active:not(:disabled) { transform: none; }
+.cta:disabled { opacity: .3; cursor: not-allowed; filter: grayscale(.6); box-shadow: none; }
+.cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.link {
+  background: none; border: 0; padding: 0; font-family: var(--mono); font-size: 11.5px;
+  letter-spacing: .11em; color: var(--ink-dim); cursor: pointer; text-decoration: none;
+}
+.link:hover { color: var(--holo); }
+.link:focus-visible { outline: 1px solid var(--holo); outline-offset: 3px; border-radius: 3px; }
+
+/* messaggi: una riga luminosa, nessun riquadro */
+.msg {
+  font-size: 12px; line-height: 1.7; letter-spacing: .03em;
+  padding-left: 14px; border-left: 2px solid; margin: 0;
+}
+.msg.hidden { display: none; }
+/* .fld/.msg impostano display, quindi il .hidden di Tailwind (stessa
+   specificita', dichiarato prima) da solo non basterebbe a nasconderli. */
+.hidden { display: none !important; }
+.msg.wait { border-color: var(--warn); color: #ffdca8; }
+.msg.bad { border-color: var(--crit); color: #ffb9c9; }
+.msg.good { border-color: var(--ok); color: #b6f7dd; }
+.note { font-size: 11.5px; line-height: 1.85; letter-spacing: .05em; color: var(--ink-faint); margin: 0; }
+.note a { color: var(--holo-dim); text-decoration: none; }
+.note a:hover { color: var(--holo); }
+
+/* legenda del campo: spiega la figura, senza dire NULLA sull'istanza */
+.side {
+  align-self: center; justify-self: end; text-align: right;
+  display: flex; flex-direction: column; gap: 24px; pointer-events: none;
+}
+.side .cap { font-size: 10px; letter-spacing: .26em; color: var(--ink-faint); line-height: 2.2; }
+.keys { display: flex; flex-direction: column; gap: 11px; align-items: flex-end; }
+.key { display: flex; align-items: center; gap: 11px; font-size: 11px; letter-spacing: .12em; color: var(--ink-dim); }
+.key .d { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+
+.foot {
+  position: fixed; left: clamp(28px, 7vw, 110px); right: clamp(28px, 7vw, 110px); bottom: 34px;
+  z-index: 7; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.build { font-size: 10.5px; letter-spacing: .18em; color: var(--ink-faint); }
+.build span { color: var(--holo-dim); }
+.langs { display: flex; gap: 14px; }
+.langs button {
+  background: none; border: 0; color: var(--ink-faint); font-family: var(--mono);
+  font-size: 11px; letter-spacing: .18em; cursor: pointer; padding: 2px 0;
+  border-bottom: 1px solid transparent;
+}
+.langs button.on { color: var(--holo); border-bottom-color: var(--holo); }
+.langs button:focus-visible { outline: 1px solid var(--holo); outline-offset: 3px; }
+
+@media (max-width: 1080px) {
+  .wrap { grid-template-columns: 1fr; align-content: center; }
+  .side { display: none; }
+  .horizon { bottom: 9%; }
+  body { overflow-y: auto; }
+  .wrap { padding-top: 56px; padding-bottom: 110px; }
+}
+@media (max-width: 560px) {
+  h1.display { font-size: 30px; }
+  .lede { font-size: 12px; }
+  .mark { font-size: 18px; }
+  .foot { flex-direction: column; align-items: flex-start; gap: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fld input, .cta { transition: none; }
+}

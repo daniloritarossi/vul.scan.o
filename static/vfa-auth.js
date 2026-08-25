@@ -25,10 +25,10 @@
     b.setAttribute('aria-label', 'Show password');
     b.setAttribute('aria-pressed', 'false');
     b.style.cssText = 'position:absolute;right:.6rem;top:50%;transform:translateY(-50%);' +
-      'display:inline-flex;align-items:center;color:#94a3b8;background:none;border:0;cursor:pointer;padding:0';
+      'display:inline-flex;align-items:center;color:#5f7f92;background:none;border:0;cursor:pointer;padding:0';
     b.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;line-height:1">visibility</span>';
-    b.addEventListener('mouseenter', function () { b.style.color = '#0891b2'; });
-    b.addEventListener('mouseleave', function () { b.style.color = '#94a3b8'; });
+    b.addEventListener('mouseenter', function () { b.style.color = '#2ee6ff'; });
+    b.addEventListener('mouseleave', function () { b.style.color = '#5f7f92'; });
     b.addEventListener('click', function () {
       const show = input.type === 'password';
       input.type = show ? 'text' : 'password';
@@ -51,7 +51,8 @@
     if (/[^A-Za-z0-9]/.test(pw)) s++;
     return Math.min(s, 4);
   }
-  const COLORS = ['#e2e8f0', '#f43f5e', '#f59e0b', '#3b82f6', '#10b981'];
+  const COLORS = ['#33505f', '#ff416b', '#ffb038', '#2ee6ff', '#3df5b0'];
+  const EMPTY = 'rgba(46,230,255,.16)';   // segmento non ancora raggiunto
   function label(sc) {
     const key = ['', 'auth.pw_weak', 'auth.pw_fair', 'auth.pw_good', 'auth.pw_strong'][sc];
     const fb = ['', 'Weak', 'Fair', 'Good', 'Strong'][sc];
@@ -67,19 +68,19 @@
       '<div style="display:flex;gap:4px;margin-bottom:4px">' +
       '<span class="vfa-seg"></span><span class="vfa-seg"></span><span class="vfa-seg"></span><span class="vfa-seg"></span>' +
       '</div><span class="vfa-str-label" aria-live="polite" ' +
-      'style="font:700 10px/1.4 Inter,system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8"></span>';
+      'style="font:700 10.5px/1.4 Inter,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#33505f"></span>';
     const anchor = input.closest('div') || input;
     anchor.parentNode.insertBefore(wrap, anchor.nextSibling);
     const segs = wrap.querySelectorAll('.vfa-seg');
     segs.forEach(function (s) {
-      s.style.cssText = 'height:4px;flex:1;border-radius:9999px;background:#e2e8f0;transition:background .2s';
+      s.style.cssText = 'height:3px;flex:1;border-radius:9999px;background:' + EMPTY + ';transition:background .2s';
     });
     const lab = wrap.querySelector('.vfa-str-label');
     function upd() {
       const sc = scorePw(input.value);
-      segs.forEach(function (s, i) { s.style.background = i < sc ? COLORS[sc] : '#e2e8f0'; });
+      segs.forEach(function (s, i) { s.style.background = i < sc ? COLORS[sc] : EMPTY; });
       lab.textContent = input.value ? label(sc) : '';
-      lab.style.color = input.value ? COLORS[sc] : '#94a3b8';
+      lab.style.color = input.value ? COLORS[sc] : '#33505f';
     }
     input.addEventListener('input', upd);
     upd();

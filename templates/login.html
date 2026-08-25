@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html class="dark" lang="en">
 
 <head>
   <meta charset="utf-8" />
@@ -9,83 +9,94 @@
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
   <link rel="stylesheet" href="/static/vendor/tailwind.css?v=45" />
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-
-    .neural-panel {
-      background: rgba(255, 255, 255, 0.8);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.08);
-    }
-
-    body {
-      background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
-    }
-  </style>
-  <script src="/static/i18n.js?v=38"></script>
-  <script src="/static/vfa-auth.js?v=1" defer></script>
+  <!-- DEEP FIELD: guscio comune alle schermate di accesso (vedi vfa-field.css) -->
+  <link rel="stylesheet" href="/static/vfa-field.css?v=6" />
+  <script src="/static/i18n.js?v=42"></script>
+  <script src="/static/vfa-field.js?v=2" defer></script>
+  <script src="/static/vfa-auth.js?v=3" defer></script>
 </head>
 
-<body class="font-body-md text-body-md text-slate-900 antialiased min-h-screen flex items-center justify-center p-4">
-  <div class="neural-panel rounded-2xl p-8 w-full max-w-sm">
-    <div class="flex flex-col items-center mb-8">
-      <img src="/static/logo-icon-animated.svg" class="w-16 h-16 mb-3" alt="VUL.SCAN.O" />
+<body class="antialiased">
+  <canvas id="sky"></canvas>
+  <div class="fx"></div>
+  <div class="horizon"></div>
+  <div class="vig"></div>
+  <div class="corner c-tl"></div>
+  <div class="corner c-br"></div>
+
+  <main class="wrap">
+    <div class="col">
+      <div class="mark" aria-hidden="true">&lt; <b>VUL<i></i><em>S</em>CAN<i></i>O</b> /&gt;</div>
       <h1 class="sr-only">VUL.SCAN.O</h1>
-      {% set wm_class = 'text-3xl' %}{% include 'partials/wordmark.html' %}
-      <p class="font-label-caps text-label-caps text-slate-500 mt-2" data-i18n="login.title">SIGN IN</p>
-    </div>
-    <form id="loginForm" class="space-y-4" autocomplete="on">
-      <div>
-        <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="username"
-          data-i18n="login.username">USERNAME</label>
-        <input id="username" name="username" type="text" required autofocus autocomplete="username"
-          class="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
-      </div>
-      <div>
-        <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="password"
-          data-i18n="login.password">PASSWORD</label>
-        <input id="password" name="password" type="password" required autocomplete="current-password"
-          class="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
-      </div>
-      <p id="error"
-        class="hidden font-code-sm text-code-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+
+      <h1 class="display" data-i18n="login.headline">Describe the software.<br><em>Find the exposure</em>.</h1>
+      <p class="lede" data-i18n="login.lede">
+        Web app for authorized audits: manages an asset inventory, identifies
+        vulnerable software from a free-text description (even without an explicit
+        CVE), runs network scans, enriches results with CVE data, and produces
+        AI-driven security posture analysis.
       </p>
-      <p id="info"
-        class="hidden font-code-sm text-code-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-      </p>
-      <button type="submit" id="submitBtn"
-        class="w-full bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-xl font-label-caps text-label-caps transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-40">
-        <span class="material-symbols-outlined text-sm text-cyan-400">login</span> <span data-i18n="login.submit">SIGN
-          IN</span>
-      </button>
-      <p class="text-center">
-        <a href="#" id="forgotLink" class="font-code-sm text-[12px] text-cyan-600 hover:underline"
-          data-i18n="login.forgot">Forgot password?</a>
-      </p>
-    </form>
-    <!-- Recupero password inline (sostituisce window.prompt): coerente col form, con validazione email. -->
-    <div id="forgotBox" class="hidden mt-3">
-      <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="forgotEmail"
-        data-i18n="login.forgot_label">RECOVERY EMAIL</label>
-      <div class="flex gap-2">
-        <input id="forgotEmail" type="email" autocomplete="email" placeholder="you@example.com"
-          class="flex-1 min-w-0 bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
-        <button type="button" id="forgotSend"
-          class="bg-slate-900 text-white hover:bg-slate-800 px-4 rounded-xl font-label-caps text-label-caps transition-all disabled:opacity-40 shrink-0"
-          data-i18n="login.forgot_send">SEND</button>
+
+      <form id="loginForm" autocomplete="on">
+        <div class="fld">
+          <label for="username" data-i18n="login.username">USERNAME</label>
+          <input id="username" name="username" type="text" class="bg-transparent" required autofocus
+            autocomplete="username" />
+        </div>
+
+        <div class="fld">
+          <label for="password" data-i18n="login.password">PASSWORD</label>
+          <input id="password" name="password" type="password" class="bg-transparent" required
+            autocomplete="current-password" />
+        </div>
+
+        <p id="error" class="msg bad hidden" role="alert" aria-live="assertive"></p>
+        <p id="info" class="msg good hidden" role="status" aria-live="polite"></p>
+
+        <div class="row">
+          <button type="submit" id="submitBtn" class="cta" data-i18n="login.submit">SIGN IN</button>
+          <a href="#" id="forgotLink" class="link" data-i18n="login.forgot">Forgot password?</a>
+        </div>
+      </form>
+
+      <!-- Recupero password inline (sostituisce window.prompt): coerente col form, con validazione email. -->
+      <div id="forgotBox" class="fld hidden">
+        <label for="forgotEmail" data-i18n="login.forgot_label">RECOVERY EMAIL</label>
+        <div class="row" style="gap:12px">
+          <input id="forgotEmail" type="email" class="bg-transparent" autocomplete="email"
+            placeholder="you@example.com" style="flex:1 1 220px" />
+          <button type="button" id="forgotSend" class="link" data-i18n="login.forgot_send">SEND</button>
+        </div>
       </div>
     </div>
-    <!-- Qui non c'e' sessione, quindi non si puo' chiamare /api/version/check
-         per risolvere la release: si mostra l'identificativo della build, ed e'
-         etichettato come tale invece di sembrare il numero di una release. -->
-    <p class="font-code-sm text-[11px] text-slate-500 mt-6 text-center">
-      Vulnerability Feed Aggregator <span class="text-slate-500" title="build {{ app_version }}">build
-        {{ app_version }}</span>
-    </p>
+
+    <!-- Legenda del campo: spiega la figura, senza dire NULLA sull'istanza.
+         Conteggi di asset o finding qui sarebbero visibili a chiunque, prima
+         di qualunque autenticazione. -->
+    <aside class="side" aria-hidden="true">
+      <div class="cap" data-i18n="login.field_cap">
+        LONG EXPOSURE · ONE POINT PER FINDING<br>COLOUR = STATE · BRIGHTNESS = EXPLOIT PROBABILITY
+      </div>
+      <div class="keys">
+        <div class="key"><span data-i18n="login.k_kev">KEV · exploited in the wild</span><span class="d" style="background:#ff416b;box-shadow:0 0 9px #ff416b"></span></div>
+        <div class="key"><span data-i18n="login.k_sla">SLA breached</span><span class="d" style="background:#ffb038;box-shadow:0 0 9px #ffb038"></span></div>
+        <div class="key"><span data-i18n="login.k_open">open, within SLA</span><span class="d" style="background:#2ee6ff;box-shadow:0 0 9px #2ee6ff"></span></div>
+        <div class="key"><span data-i18n="login.k_fixed">fixed, chain-sealed</span><span class="d" style="background:#3df5b0;box-shadow:0 0 9px #3df5b0"></span></div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Qui non c'e' sessione, quindi non si puo' chiamare /api/version/check
+       per risolvere la release: si mostra l'identificativo della build, ed e'
+       etichettato come tale invece di sembrare il numero di una release. -->
+  <div class="foot">
+    <span class="build" title="build {{ app_version }}">VULNERABILITY FEED AGGREGATOR · <span>BUILD {{ app_version }}</span></span>
+    <div class="langs">
+      <button type="button" class="lang" data-lang="en">EN</button>
+      <button type="button" class="lang" data-lang="it">IT</button>
+    </div>
   </div>
+
   <script>
     const form = document.getElementById('loginForm');
     const errEl = document.getElementById('error');
@@ -111,6 +122,7 @@
           return;
         }
         if (!r.ok) {
+          errEl.classList.remove('wait'); errEl.classList.add('bad');
           errEl.textContent = d.error || t('login.failed');
           errEl.classList.remove('hidden');
           btn.disabled = false;
@@ -118,6 +130,7 @@
         }
         location.href = d.must_change_password ? '/change-password' : '/';
       } catch (_) {
+        errEl.classList.remove('wait'); errEl.classList.add('bad');
         errEl.textContent = t('login.unreachable');
         errEl.classList.remove('hidden');
         btn.disabled = false;
@@ -131,6 +144,8 @@
       let left = Math.max(1, seconds);
       const tick = () => {
         const m = Math.floor(left / 60), s = left % 60;
+        // attesa, non credenziali errate: colore diverso dall'errore
+        errEl.classList.remove('bad'); errEl.classList.add('wait');
         errEl.textContent = t('login.throttled', { time: m ? m + ':' + String(s).padStart(2, '0') : s + 's' });
         errEl.classList.remove('hidden');
         btn.disabled = true;
@@ -167,6 +182,7 @@
         info.classList.remove('hidden');
         forgotBox.classList.add('hidden');
       } catch (_) {
+        errEl.classList.remove('wait'); errEl.classList.add('bad');
         errEl.textContent = t('login.unreachable');
         errEl.classList.remove('hidden');
       } finally { sendBtn.disabled = false; }

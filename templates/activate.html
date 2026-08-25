@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="light" lang="en">
+<html class="dark" lang="en">
 
 <head>
   <meta charset="utf-8" />
@@ -9,64 +9,79 @@
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
   <link rel="stylesheet" href="/static/vendor/tailwind.css?v=45" />
-  <style>
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
-
-    .neural-panel {
-      background: rgba(255, 255, 255, .8);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, .5);
-      box-shadow: 0 4px 24px -1px rgba(0, 0, 0, .08);
-    }
-
-    body {
-      background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
-    }
-  </style>
-  <script src="/static/i18n.js?v=38"></script>
-  <script src="/static/vfa-auth.js?v=1" defer></script>
+  <!-- Stesso guscio della login: invito, attivazione e primo accesso sono un
+       unico percorso, e cambiare ambiente a meta' strada lo farebbe sembrare
+       un altro sito proprio mentre si sceglie una password. -->
+  <link rel="stylesheet" href="/static/vfa-field.css?v=6" />
+  <script src="/static/i18n.js?v=42"></script>
+  <script src="/static/vfa-field.js?v=2" defer></script>
+  <script src="/static/vfa-auth.js?v=3" defer></script>
 </head>
 
-<body class="font-body-md text-body-md text-slate-900 antialiased min-h-screen flex items-center justify-center p-4">
-  <div class="neural-panel rounded-2xl p-8 w-full max-w-sm">
-    <div class="flex flex-col items-center mb-8">
-      <img src="/static/logo-icon-animated.svg" class="w-16 h-16 mb-3" alt="VUL.SCAN.O" />
+<body class="antialiased">
+  <canvas id="sky"></canvas>
+  <div class="fx"></div>
+  <div class="horizon"></div>
+  <div class="vig"></div>
+  <div class="corner c-tl"></div>
+  <div class="corner c-br"></div>
+
+  <main class="wrap">
+    <div class="col">
+      <div class="mark" aria-hidden="true">&lt; <b>VUL<i></i><em>S</em>CAN<i></i>O</b> /&gt;</div>
       <h1 class="sr-only">VUL.SCAN.O</h1>
-      {% set wm_class = 'text-3xl' %}{% include 'partials/wordmark.html' %}
-      <p class="font-label-caps text-label-caps text-slate-500 mt-2" data-i18n="act.title">SET YOUR PASSWORD</p>
+
+      <h1 class="display" data-i18n="act.headline">Your account is waiting.<br><em>Choose a password</em>.</h1>
+      <p class="lede" data-i18n="act.lede">
+        Nobody else knows it, and nobody else can set it: the invitation link
+        opens this page once, and opening it also confirms your email address.
+      </p>
+
+      <form id="activateForm">
+        <div class="fld">
+          <label for="password" data-i18n="act.new_pw">NEW PASSWORD</label>
+          <input id="password" type="password" class="bg-transparent" required autofocus autocomplete="new-password"
+            data-vfa-strength />
+        </div>
+
+        <div class="fld">
+          <label for="password2" data-i18n="act.confirm_pw">CONFIRM PASSWORD</label>
+          <input id="password2" type="password" class="bg-transparent" required autocomplete="new-password" />
+        </div>
+
+        <p id="error" class="msg bad hidden" role="alert" aria-live="assertive"></p>
+        <p id="okmsg" class="msg good hidden" role="status" aria-live="polite"></p>
+
+        <div class="row">
+          <button type="submit" id="submitBtn" class="cta" data-i18n="act.submit">SET PASSWORD</button>
+          <a href="/login" class="link" data-i18n="act.goto_login">Go to login</a>
+        </div>
+      </form>
+
+      <p class="note" data-i18n="act.note">The link can be used only once.</p>
     </div>
-    <form id="activateForm" class="space-y-4">
-      <div>
-        <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="password"
-          data-i18n="act.new_pw">NEW PASSWORD</label>
-        <input id="password" type="password" required autofocus autocomplete="new-password" data-vfa-strength
-          class="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+
+    <aside class="side" aria-hidden="true">
+      <div class="cap" data-i18n="login.field_cap">
+        LONG EXPOSURE · ONE POINT PER FINDING<br>COLOUR = STATE · BRIGHTNESS = EXPLOIT PROBABILITY
       </div>
-      <div>
-        <label class="font-label-caps text-label-caps text-slate-500 block mb-1.5" for="password2"
-          data-i18n="act.confirm_pw">CONFIRM PASSWORD</label>
-        <input id="password2" type="password" required autocomplete="new-password"
-          class="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-2.5 font-code-sm text-code-sm focus:outline-none focus:border-cyan-300 focus:ring-1 focus:ring-cyan-200 transition" />
+      <div class="keys">
+        <div class="key"><span data-i18n="login.k_kev">KEV · exploited in the wild</span><span class="d" style="background:#ff416b;box-shadow:0 0 9px #ff416b"></span></div>
+        <div class="key"><span data-i18n="login.k_sla">SLA breached</span><span class="d" style="background:#ffb038;box-shadow:0 0 9px #ffb038"></span></div>
+        <div class="key"><span data-i18n="login.k_open">open, within SLA</span><span class="d" style="background:#2ee6ff;box-shadow:0 0 9px #2ee6ff"></span></div>
+        <div class="key"><span data-i18n="login.k_fixed">fixed, chain-sealed</span><span class="d" style="background:#3df5b0;box-shadow:0 0 9px #3df5b0"></span></div>
       </div>
-      <p id="error"
-        class="hidden font-code-sm text-code-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
-      </p>
-      <p id="okmsg"
-        class="hidden font-code-sm text-code-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
-      </p>
-      <button type="submit" id="submitBtn"
-        class="w-full bg-slate-900 text-white hover:bg-slate-800 px-6 py-3 rounded-xl font-label-caps text-label-caps transition-all flex items-center justify-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-40">
-        <span class="material-symbols-outlined text-sm text-cyan-400">key</span> <span data-i18n="act.submit">SET
-          PASSWORD</span>
-      </button>
-    </form>
-    <p class="font-code-sm text-[11px] text-slate-500 mt-6 text-center">
-      <span data-i18n="act.note">The link can be used only once.</span>
-      <a href="/login" class="text-cyan-600 hover:underline" data-i18n="act.goto_login">Go to login</a>
-    </p>
+    </aside>
+  </main>
+
+  <div class="foot">
+    <span class="build" title="build {{ app_version }}">VULNERABILITY FEED AGGREGATOR · <span>BUILD {{ app_version }}</span></span>
+    <div class="langs">
+      <button type="button" class="lang" data-lang="en">EN</button>
+      <button type="button" class="lang" data-lang="it">IT</button>
+    </div>
   </div>
+
   <script>
     const TOKEN = {{ token | tojson }};
     const form = document.getElementById('activateForm');
