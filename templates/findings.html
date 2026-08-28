@@ -24,7 +24,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=42"></script>
+  <script src="/static/i18n.js?v=43"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -552,6 +552,11 @@
       ['fStatus', 'fSev', 'fSource', 'fNis2'].forEach((id) => $(id).addEventListener('change', render));
       $('fSearch').addEventListener('input', render);
       window.addEventListener('langchange', render);
+
+      // '?q=' preimposta la ricerca: e' il modo in cui la dashboard passa qui
+      // gia' filtrata su un pacchetto (grafo delle dipendenze -> findings).
+      const q0 = new URLSearchParams(location.search).get('q');
+      if (q0) $('fSearch').value = q0;
 
       load();
     })();

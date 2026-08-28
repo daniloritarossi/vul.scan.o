@@ -98,13 +98,56 @@
     .dark .bg-white\/60 { background-color: rgba(30, 41, 59, .5) !important; }
     .dark .hover\:bg-white:hover { background-color: rgba(51, 65, 85, .55) !important; }
     .dark .bg-white\/40 { background-color: rgba(30, 41, 59, .4) !important; }
+
+    /* ── DEPENDENCY ORBIT ────────────────────────────────────────────────
+       The stage grows with the panel instead of forcing a square that the
+       panel then clips. Everything inside is positioned against it. */
+    .orbit-grid {
+      display: grid; grid-template-columns: minmax(0, 1fr) 244px; gap: 1.5rem;
+    }
+    @media (max-width: 1023px) { .orbit-grid { grid-template-columns: 1fr; } }
+    .orbit-stage { height: 250px; }
+    .orbit-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; }
+    .orbit-head {
+      position: absolute; left: 0; top: 0; pointer-events: none;
+      font-size: 10px; letter-spacing: .14em;
+    }
+    .orbit-head b { font-weight: 600; letter-spacing: .04em; }
+    .orbit-key {
+      position: absolute; left: 0; bottom: 0; pointer-events: none;
+      font-size: 9px; line-height: 1.85; letter-spacing: .12em;
+    }
+    .orbit-key b { font-weight: 500; }
+    /* One fixed readout instead of a tooltip that chases the pointer. */
+    .orbit-read { position: absolute; right: 2px; bottom: 0; width: 46%; max-width: 210px;
+      text-align: right; pointer-events: none; }
+    .orbit-read .k { font-size: 8.5px; letter-spacing: .2em; }
+    .orbit-read .v { font-size: 14px; margin: 3px 0 6px; letter-spacing: .01em; }
+    .orbit-read .ln { display: flex; justify-content: flex-end; gap: 10px;
+      font-size: 10px; line-height: 1.8; }
+    .orbit-read .ln b { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .orbit-badge { position: absolute; top: 0; right: 0; }
+
+    #graph-legend { max-height: 258px; overflow-y: auto; scrollbar-width: thin; }
+    .orbit-list { display: flex; flex-direction: column; gap: 1px; }
+    .orbit-lh { font-size: 8.5px; letter-spacing: .2em; padding: 0 6px 7px;
+      border-bottom: 1px solid rgba(148, 163, 184, .25); }
+    .orbit-row { display: grid; grid-template-columns: 8px minmax(0, 1fr) auto; gap: 8px;
+      align-items: center; padding: 6px; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent; background: none; width: 100%; text-align: left;
+      font-family: inherit; }
+    .orbit-row .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .orbit-row .nm { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .orbit-row .nm i { font-style: normal; font-size: 8.5px; letter-spacing: .1em; margin-left: 6px; }
+    .orbit-row .n { font-size: 10.5px; font-variant-numeric: tabular-nums; }
+    .orbit-more { font-size: 9.5px; letter-spacing: .08em; padding: 8px 6px 0; }
   </style>
   <style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=42"></script>
+  <script src="/static/i18n.js?v=43"></script>
 </head>
 
 <body
@@ -545,15 +588,16 @@
                   data-i18n="dash.network_tooltip">How the dependency graph is computed.</span>
               </span>
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-              <div class="flex items-center justify-center w-full">
-                <div id="graph-canvas"
-                  class="relative w-full max-w-md aspect-square flex items-center justify-center transition-opacity duration-500 ease-in-out">
-                </div>
+            <!-- DEPENDENCY ORBIT — linkage depth is distance from the product,
+                 CVE count is the body radius, exploit probability is its light.
+                 Fixed stage height: the old square canvas was taller than the
+                 panel and the lower nodes were clipped away by overflow-hidden. -->
+            <div class="orbit-grid">
+              <div id="graph-canvas"
+                class="orbit-stage relative w-full transition-opacity duration-500 ease-in-out">
               </div>
-              <div id="graph-legend" class="w-full space-y-4 transition-opacity duration-500 ease-in-out">
-                <div
-                  class="flex items-center justify-center h-full min-h-[12rem] text-slate-500 font-code-sm text-code-sm text-center px-4"
+              <div id="graph-legend" class="w-full transition-opacity duration-500 ease-in-out">
+                <div class="flex items-center justify-center h-full min-h-[12rem] text-slate-500 font-code-sm text-code-sm text-center px-4"
                   data-i18n="dash.network_hint">Run a scan to map the product dependency graph.</div>
               </div>
             </div>
@@ -718,40 +762,102 @@
     let lastTarget = null;
     let lastAssets = [];   // ultimo inventario caricato (per ri-render al cambio lingua)
 
-    // Palette ciclica per i nodi dipendenza.
-    const NODE_COLORS = [
-      { dot: 'bg-blue-400', ring: 'border-blue-400', bg: 'bg-blue-50', text: 'text-blue-700', chip: 'bg-blue-50' },
-      { dot: 'bg-purple-400', ring: 'border-purple-400', bg: 'bg-purple-50', text: 'text-purple-700', chip: 'bg-purple-50' },
-      { dot: 'bg-emerald-400', ring: 'border-emerald-400', bg: 'bg-emerald-50', text: 'text-emerald-700', chip: 'bg-emerald-50' },
-      { dot: 'bg-amber-400', ring: 'border-amber-400', bg: 'bg-amber-50', text: 'text-amber-700', chip: 'bg-amber-50' },
-      { dot: 'bg-rose-400', ring: 'border-rose-400', bg: 'bg-rose-50', text: 'text-rose-700', chip: 'bg-rose-50' },
-    ];
+    // ── DEPENDENCY ORBIT ────────────────────────────────────────────────
+    // Il grafo radiale precedente disegnava i nodi su un cerchio a raggio fisso
+    // con una palette CICLICA: il colore non voleva dire nulla, la figura veniva
+    // tagliata dal pannello e non diceva quale dipendenza costa davvero qualcosa.
+    //
+    // Qui la geometria porta informazione: l'orbita interna sono i pacchetti
+    // linkati DIRETTAMENTE, quella esterna quelli tirati dentro da un'altra
+    // dipendenza (arco reale pkgA->pkgB misurato dallo scanner); il raggio del
+    // corpo e' il numero di CVE note, la sua luminosita' la probabilita' di
+    // sfruttamento, il colore la severita' peggiore — le stesse convenzioni del
+    // resto del prodotto.
+    const ORBIT_PAL = {
+      dark: {
+        crit: '#ff416b', warn: '#ffb038', med: '#2ee6ff', ok: '#3df5b0', mute: '#5f7f92',
+        ring: 'rgba(46,230,255,.18)', ringOut: 'rgba(255,215,106,.15)',
+        spoke: 'rgba(46,230,255,.32)', spokeDim: 'rgba(46,230,255,.08)',
+        via: 'rgba(255,215,106,.6)', viaDim: 'rgba(255,215,106,.12)',
+        core: 'rgba(10,16,24,.95)', coreEdge: 'rgba(46,230,255,.8)',
+        label: '#cfeef8', labelDim: '#5f7f92', body: 'rgba(8,12,18,.92)',
+      },
+      light: {
+        crit: '#e11d48', warn: '#d97706', med: '#0891b2', ok: '#059669', mute: '#94a3b8',
+        ring: 'rgba(8,145,178,.22)', ringOut: 'rgba(180,83,9,.2)',
+        spoke: 'rgba(8,145,178,.38)', spokeDim: 'rgba(8,145,178,.12)',
+        via: 'rgba(180,83,9,.55)', viaDim: 'rgba(180,83,9,.14)',
+        core: '#ffffff', coreEdge: 'rgba(8,145,178,.85)',
+        label: '#0f172a', labelDim: '#64748b', body: '#ffffff',
+      },
+    };
+    const orbitPal = () =>
+      ORBIT_PAL[document.documentElement.classList.contains('dark') ? 'dark' : 'light'];
 
-    // Loader "skeleton" mostrato nel canvas mentre la scansione è in corso:
-    // riprende lo stile del grafo reale (nodo centrale cyan, anelli, nodi su
-    // cerchio) così l'utente capisce che l'attività è in corso.
+    // Indice di rischio per pacchetto, da /api/risk: e' gia' il posto dove il
+    // prodotto tiene KEV, EPSS e severita' per pacchetto. Se un pacchetto del
+    // linkage non compare li' dentro NON vale zero: vale "non misurato", ed e'
+    // disegnato come tale — dire "0 CVE" di un pacchetto mai analizzato sarebbe
+    // la sola affermazione davvero sbagliata che questo pannello puo' fare.
+    const orbitRisk = new Map();
+    let orbitRiskLoaded = false;
+    async function loadOrbitRisk() {
+      try {
+        const r = await fetch('/api/risk?probe=false');
+        if (!r.ok) return;
+        const assets = ((await r.json()).risk || {}).assets || [];
+        const acc = new Map();
+        assets.forEach((a) => (a.findings || []).forEach((f) => {
+          const k = (f.package || '').toLowerCase();
+          if (!k) return;
+          const cur = acc.get(k) || { cves: new Set(), kev: false, epss: 0, assets: new Set(), sev: '' };
+          (f.cve_ids || []).forEach((c) => cur.cves.add(c));
+          cur.kev = cur.kev || !!f.kev;
+          cur.epss = Math.max(cur.epss, f.epss || 0);
+          cur.assets.add(a.ip);
+          const order = ['', 'UNKNOWN', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+          if (order.indexOf(f.max_severity || '') > order.indexOf(cur.sev)) cur.sev = f.max_severity || '';
+          acc.set(k, cur);
+        }));
+        acc.forEach((v, k) => orbitRisk.set(k, {
+          cve: v.cves.size, kev: v.kev, epss: v.epss, assets: v.assets.size, sev: v.sev,
+        }));
+        orbitRiskLoaded = true;
+        if (lastTarget) renderGraph(lastTarget);
+      } catch (_) { /* best-effort: senza indice i corpi restano "non misurati" */ }
+    }
+
+    function orbitStat(pkg) {
+      const hit = orbitRisk.get((pkg || '').toLowerCase());
+      if (!hit) return { known: false, cve: null, kev: false, epss: 0, assets: 0, sev: '' };
+      return { known: true, ...hit };
+    }
+    function orbitColor(st, P) {
+      if (!st.known) return P.mute;
+      if (st.kev || st.sev === 'CRITICAL') return P.crit;
+      if (st.sev === 'HIGH') return P.warn;
+      if (st.cve > 0) return P.med;
+      return P.ok;
+    }
+
+    // Loader: gli stessi due anelli del grafo reale, cosi' l'attesa somiglia a
+    // cio' che sta per comparire invece che a un altro widget.
     function graphLoaderCanvas() {
-      const cx = 50, cy = 50, R = 40;
-      const pts = [0, 1, 2, 3].map((i) => {
-        const a = (2 * Math.PI * i) / 4 - Math.PI / 2;
-        return { x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
-      });
-      const lines = pts.map((p) =>
-        `<line x1="50%" y1="50%" x2="${p.x}%" y2="${p.y}%" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3 4" class="opacity-50"/>`
-      ).join('');
-      const nodes = pts.map((p, i) =>
-        `<div class="absolute w-8 h-8 rounded-full bg-slate-100 border-2 border-slate-200 animate-pulse"
-          style="left:calc(${p.x}% - 16px);top:calc(${p.y}% - 16px);animation-delay:${(i * 0.18).toFixed(2)}s"></div>`
-      ).join('');
+      const P = orbitPal();
+      const dots = [0, 1, 2, 3, 4].map((i) => {
+        const a = (2 * Math.PI * i) / 5;
+        return `<span style="position:absolute;left:calc(50% + ${(Math.cos(a) * 32).toFixed(1)}% - 5px);
+          top:calc(50% + ${(Math.sin(a) * 20).toFixed(1)}% - 5px);width:10px;height:10px;border-radius:50%;
+          border:1.5px solid ${P.spoke};animation:pulse 1.6s ease-in-out ${(i * .18).toFixed(2)}s infinite"></span>`;
+      }).join('');
       return `
-        <svg class="absolute inset-0 w-full h-full z-0">${lines}</svg>
-        <div class="absolute inset-[8%] rounded-full border-2 border-dashed border-cyan-200/70 animate-spin" style="animation-duration:7s"></div>
-        <div class="absolute inset-[20%] rounded-full border border-indigo-200/60 animate-spin" style="animation-duration:5s;animation-direction:reverse"></div>
-        ${nodes}
-        <div class="absolute z-10" style="left:calc(50% - 28px);top:calc(50% - 28px)">
-          <div class="absolute inset-0 rounded-full border-2 border-cyan-300 animate-ping opacity-60"></div>
-          <div class="relative w-14 h-14 bg-white rounded-full border-2 border-cyan-400 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.25)]">
-            <span class="material-symbols-outlined text-cyan-500 text-lg animate-spin" style="animation-duration:1.4s">progress_activity</span>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div style="position:absolute;width:64%;height:40%;border:1px solid ${P.ring};border-radius:50%"></div>
+          <div style="position:absolute;width:96%;height:60%;border:1px dashed ${P.ringOut};border-radius:50%"></div>
+          ${dots}
+          <div style="width:44px;height:44px;border-radius:50%;border:1.5px solid ${P.coreEdge};
+            display:flex;align-items:center;justify-content:center;background:${P.core}">
+            <span class="material-symbols-outlined animate-spin" style="font-size:18px;color:${P.med};animation-duration:1.4s">progress_activity</span>
           </div>
         </div>`;
     }
@@ -759,10 +865,10 @@
       const skel = (w) => `
         <div class="flex items-center justify-between p-2 rounded-lg">
           <div class="flex items-center gap-3">
-            <div class="w-3 h-3 rounded-full bg-slate-200 animate-pulse"></div>
-            <div class="h-3 ${w} rounded bg-slate-200 animate-pulse"></div>
+            <div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 animate-pulse"></div>
+            <div class="h-3 ${w} rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
           </div>
-          <div class="h-3 w-10 rounded bg-slate-100 animate-pulse"></div>
+          <div class="h-3 w-8 rounded bg-slate-100 dark:bg-slate-800 animate-pulse"></div>
         </div>`;
       return `
         <div class="flex items-center gap-2 px-2 pb-1 text-cyan-600">
@@ -774,6 +880,7 @@
 
     function resetGraph() {
       if (graphFadeTimer) { clearTimeout(graphFadeTimer); graphFadeTimer = null; }
+      stopOrbit();
       graphCanvas.style.opacity = '1';
       graphLegend.style.opacity = '1';
       graphCanvas.innerHTML = graphLoaderCanvas();
@@ -793,127 +900,272 @@
       }, 320); // ~ durata fade-out (duration-500 -> taglio a 320ms per ritmo a 3s)
     }
 
+    // Animazione attiva: un solo rAF per volta, fermato a ogni nuovo render e
+    // quando la pagina non e' visibile (niente lavoro in un tab in background).
+    let orbitRAF = null;
+    function stopOrbit() { if (orbitRAF) { cancelAnimationFrame(orbitRAF); orbitRAF = null; } }
+
     function renderGraph(t) {
+      stopOrbit();
       graphCanvas.innerHTML = '';
       if (!t || !t.product) {
         graphLegend.innerHTML =
           `<div class="flex items-center justify-center h-full text-slate-500 font-code-sm text-code-sm text-center px-4">${i18n.t('dash.graph_empty')}</div>`;
         return;
       }
+      const P = orbitPal();
+      const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
       const deps = t.deps || [];
-      const cx = 50, cy = 50, R = 40; // percentuali nel box quadrato
-
-      // Posizioni dei nodi dipendenza su un cerchio.
-      const pos = deps.map((_, i) => {
-        const ang = (2 * Math.PI * i) / deps.length - Math.PI / 2;
-        return { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
-      });
-
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('class', 'absolute inset-0 w-full h-full z-0');
-      function line(x1, y1, x2, y2, attrs) {
-        const ln = document.createElementNS(svgNS, 'line');
-        ln.setAttribute('x1', x1); ln.setAttribute('y1', y1);
-        ln.setAttribute('x2', x2); ln.setAttribute('y2', y2);
-        for (const k in attrs) ln.setAttribute(k, attrs[k]);
-        svg.appendChild(ln);
-      }
-
-      // 1. Archi radiali: centro -> dipendenza.
-      pos.forEach((p) => line('50%', '50%', p.x + '%', p.y + '%',
-        { stroke: '#cbd5e1', 'stroke-width': '2', class: 'opacity-70' }));
-
-      // 2. Archi inter-dipendenza: solo collegamenti REALI passati dal backend
-      //    (coppie di pacchetti dove uno linka l'altro). Nessuna relazione
-      //    presunta: assenti -> nessun arco.
-      let relCount = 0;
       const edges = t.edges || [];
+
+      // 'via': un pacchetto e' in orbita esterna quando un'ALTRA dipendenza lo
+      // linka. L'arco arriva dal backend gia' verificato (DT_NEEDED), qui si
+      // sceglie solo il genitore da cui farlo pendere.
+      const parentOf = {};
       edges.forEach(([a, b]) => {
-        const i = deps.indexOf(a), j = deps.indexOf(b);
-        if (i < 0 || j < 0) return;
-        relCount++;
-        line(pos[i].x + '%', pos[i].y + '%', pos[j].x + '%', pos[j].y + '%',
-          { stroke: '#a5b4fc', 'stroke-width': '1.5', 'stroke-dasharray': '4 3', class: 'opacity-60' });
-      });
-      graphCanvas.appendChild(svg);
-
-      // Nodi dipendenza.
-      deps.forEach((d, i) => {
-        const c = NODE_COLORS[i % NODE_COLORS.length];
-        const node = document.createElement('div');
-        const live = t.demo ? ' animate-pulse' : '';
-        node.className = `absolute w-8 h-8 ${c.bg} rounded-full border-2 ${c.ring} z-10 flex items-center justify-center shadow-sm transition-all duration-700${live}`;
-        node.style.left = `calc(${pos[i].x}% - 16px)`;
-        node.style.top = `calc(${pos[i].y}% - 16px)`;
-        node.style.animationDelay = (i * 0.2) + 's';
-        node.title = d;
-        graphCanvas.appendChild(node);
+        if (deps.indexOf(a) < 0 || deps.indexOf(b) < 0) return;
+        if (!parentOf[b] && b !== a) parentOf[b] = a;
       });
 
-      // Nodo centrale = prodotto identificato.
-      const center = document.createElement('div');
-      center.className = 'absolute w-14 h-14 bg-white rounded-full border-2 border-cyan-400 z-20 flex items-center justify-center shadow-[0_0_15px_rgba(6,182,212,0.2)]';
-      center.style.left = 'calc(50% - 28px)';
-      center.style.top = 'calc(50% - 28px)';
-      center.innerHTML = `<span class="font-code-sm text-[10px] font-bold text-cyan-700 text-center leading-tight px-1">${t.product}</span>`;
-      center.title = t.product + (t.version ? ' ' + t.version : '');
-      graphCanvas.appendChild(center);
+      const nodes = deps.map((pkg, i) => {
+        // La demo mostra la FORMA del linkage: attaccarle i conteggi reali di
+        // openssl o zlib presi dall'inventario farebbe leggere come misura di
+        // questa istanza un grafo che e' inventato.
+        const st = t.demo ? { known: false, cve: null, kev: false, epss: 0, assets: 0, sev: '' }
+                          : orbitStat(pkg);
+        return { pkg, via: parentOf[pkg] || null, st, colour: orbitColor(st, P) };
+      });
+      const inner = nodes.filter((n) => !n.via);
+      const outer = nodes.filter((n) => n.via);
+      inner.forEach((n, i) => { n.ring = 0; n.phase = (i / Math.max(inner.length, 1)) * 6.283; n.spd = 0.000042; });
+      outer.forEach((n, i) => { n.ring = 1; n.phase = (i / Math.max(outer.length, 1)) * 6.283 + .5; n.spd = -0.00003; });
+      const maxCve = Math.max(1, ...nodes.map((n) => n.st.cve || 0));
+      const labelled = new Set(
+        nodes.slice().sort((a, b) => (b.st.cve || 0) - (a.st.cve || 0))
+             .slice(0, nodes.length <= 4 ? nodes.length : 3).map((n) => n.pkg));
 
-      // Badge "LIVE DEMO" finche' non parte una scansione reale.
+      // ── stage ──
+      const cv = document.createElement('canvas');
+      graphCanvas.appendChild(cv);
+      const ctx = cv.getContext('2d');
+
+      const head = document.createElement('div');
+      head.className = 'orbit-head';
+      head.style.color = P.labelDim;
+      head.innerHTML = `${i18n.t('dash.orbit_product')} <b style="color:${P.coreEdge}">${t.product}</b>` +
+        (t.version ? ` <span style="color:${P.labelDim}">${t.version}</span>` : '');
+      graphCanvas.appendChild(head);
+
+      const key = document.createElement('div');
+      key.className = 'orbit-key';
+      key.style.color = P.labelDim;
+      key.innerHTML =
+        `${i18n.t('dash.orbit_inner')}<br>${i18n.t('dash.orbit_outer')}<br>${i18n.t('dash.orbit_light')}`;
+      graphCanvas.appendChild(key);
+
+      const read = document.createElement('div');
+      read.className = 'orbit-read';
+      graphCanvas.appendChild(read);
+
       if (t.demo) {
         const badge = document.createElement('div');
-        badge.className = 'absolute top-0 right-0 z-30 flex items-center gap-1.5 font-label-caps text-[9px] text-cyan-600 bg-cyan-50 border border-cyan-100 px-2 py-0.5 rounded-full';
+        badge.className = 'orbit-badge flex items-center gap-1.5 font-label-caps text-[9px] text-cyan-600 bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-100 dark:border-cyan-900 px-2 py-0.5 rounded-full';
         badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>LIVE DEMO';
         graphCanvas.appendChild(badge);
       }
 
-      // Legenda.
-      let rows = `
-      <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50/50 transition-colors">
-        <div class="flex items-center gap-3">
-          <div class="w-3 h-3 rounded-full bg-cyan-400"></div>
-          <span class="font-code-sm text-code-sm text-slate-900 font-semibold">${t.product}</span>
-        </div>
-        <span class="font-code-sm text-code-sm font-semibold bg-cyan-50 px-2 py-0.5 rounded text-cyan-700">${t.demo ? i18n.t('dash.legend_sample') : (t.version ? 'v' + t.version : i18n.t('dash.legend_product'))}</span>
-      </div>`;
-      rows += deps.map((d, i) => {
-        const c = NODE_COLORS[i % NODE_COLORS.length];
-        return `
-      <div class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50/50 transition-colors">
-        <div class="flex items-center gap-3">
-          <div class="w-3 h-3 rounded-full ${c.dot}"></div>
-          <span class="font-code-sm text-code-sm text-slate-600 font-medium">${d}</span>
-        </div>
-        <span class="font-code-sm text-code-sm font-semibold ${c.chip} px-2 py-0.5 rounded ${c.text}">${t.demo ? i18n.t('dash.legend_dependency') : i18n.t('dash.legend_runtime_dep')}</span>
-      </div>`;
-      }).join('');
-      if (!deps.length) {
-        rows += `<p class="font-code-sm text-[11px] text-slate-500 px-2 leading-relaxed">${i18n.t('dash.legend_no_deps')}</p>`;
-      } else {
-        // Provenienza: nodi reali derivati dal linkage runtime sugli asset.
-        if (!t.demo) {
-          rows += `
-      <div class="pt-3 mt-1 border-t border-slate-100/70 flex items-center justify-between px-2">
-        <span class="font-code-sm text-[11px] text-slate-500 flex items-center gap-1.5">
-          <span class="material-symbols-outlined text-[13px] text-emerald-500">link</span> ${i18n.t('dash.legend_source')}
-        </span>
-        <span class="font-code-sm text-[11px] font-semibold text-emerald-600">${i18n.t('dash.legend_source_val', { n: deps.length, a: t.deps_assets || 0 })}</span>
-      </div>`;
-        }
-        if (relCount > 0) {
-          rows += `
-      <div class="${t.demo ? 'pt-3 mt-1 border-t border-slate-100/70 ' : 'pt-2 '}flex items-center justify-between px-2">
-        <span class="font-code-sm text-[11px] text-slate-500 flex items-center gap-2">
-          <span class="inline-block w-4 border-t border-dashed border-indigo-300"></span> ${i18n.t('dash.legend_links')}
-        </span>
-        <span class="font-code-sm text-[11px] font-semibold text-indigo-500">${relCount}</span>
-      </div>`;
-        }
+      let hover = null, frozen = 0, W = 0, H = 0, cx = 0, cy = 0, R0 = 0, R1 = 0;
+      const DPR = Math.min(devicePixelRatio || 1, 2);
+
+      function resize() {
+        W = graphCanvas.clientWidth; H = graphCanvas.clientHeight;
+        cv.width = W * DPR; cv.height = H * DPR;
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        cx = W * 0.42; cy = H * 0.44;
+        R0 = Math.min(W * 0.34, H * 0.32);
+        R1 = R0 * (outer.length ? 1.55 : 1);
       }
-      graphLegend.innerHTML = rows;
+      const posOf = (n, now) => {
+        const a = n.phase + (reduce ? 0 : now * n.spd);
+        const R = n.ring ? R1 : R0;
+        return { x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R * 0.62 };
+      };
+      const bodyR = (n) => 4.5 + ((n.st.cve || 0) / maxCve) * 7.5;
+
+      function paintReadout() {
+        const st = hover ? hover.st : null;
+        if (hover) {
+          const rel = hover.via
+            ? i18n.t('dash.orbit_via', { p: hover.via })
+            : i18n.t('dash.orbit_direct');
+          read.innerHTML =
+            `<div class="k" style="color:${P.labelDim}">${rel}</div>
+             <div class="v" style="color:${P.label}">${hover.pkg}</div>` +
+            (st.known
+              ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_cve')}</span><b style="color:${hover.colour}">${st.cve}</b></div>
+                 <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_epss')}</span><b style="color:${P.label}">${st.epss ? (st.epss * 100).toFixed(0) + '%' : '—'}</b></div>
+                 <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_seen')}</span><b style="color:${P.label}">${st.assets}</b></div>`
+              : `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_unmeasured')}</span></div>`);
+        } else {
+          const known = nodes.filter((n) => n.st.known);
+          const totalCve = known.reduce((s, n) => s + (n.st.cve || 0), 0);
+          const kev = known.filter((n) => n.st.kev).length;
+          read.innerHTML =
+            `<div class="k" style="color:${P.labelDim}">${i18n.t('dash.orbit_hover')}</div>
+             <div class="v" style="color:${P.labelDim}">${t.product}${t.version ? ' ' + t.version : ''}</div>
+             <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_linked')}</span><b style="color:${P.label}">${nodes.length}</b></div>
+             <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_inherited')}</span><b style="color:${P.label}">${known.length ? totalCve : '—'}</b></div>
+             <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_kev')}</span><b style="color:${kev ? P.crit : P.label}">${known.length ? kev : '—'}</b></div>`;
+        }
+        graphLegend.querySelectorAll('.orbit-row').forEach((el) => {
+          const on = !!hover && el.dataset.pkg === hover.pkg;
+          el.style.background = on ? (document.documentElement.classList.contains('dark')
+            ? 'rgba(46,230,255,.08)' : 'rgba(8,145,178,.07)') : 'none';
+          el.style.borderColor = on ? P.spoke : 'transparent';
+        });
+      }
+
+      function frame(now) {
+        const clock = hover ? frozen : (frozen = now);   // il puntatore ferma la deriva
+        resize();
+        ctx.clearRect(0, 0, W, H);
+
+        // orbite
+        [[R0, P.ring, false], [R1, P.ringOut, true]].forEach(([R, col, dash]) => {
+          if (!R || (dash && !outer.length)) return;
+          ctx.beginPath(); ctx.ellipse(cx, cy, R, R * 0.62, 0, 0, 6.283);
+          ctx.strokeStyle = col; ctx.lineWidth = 1;
+          ctx.setLineDash(dash ? [4, 4] : []); ctx.stroke(); ctx.setLineDash([]);
+        });
+
+        // archi
+        nodes.forEach((n) => {
+          const p = posOf(n, clock);
+          const lit = !hover || hover === n || hover.pkg === n.via || n.pkg === hover.via;
+          if (!n.via) {
+            ctx.strokeStyle = lit ? P.spoke : P.spokeDim; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p.x, p.y); ctx.stroke();
+          } else {
+            const par = nodes.find((x) => x.pkg === n.via);
+            if (!par) return;
+            const q = posOf(par, clock);
+            ctx.strokeStyle = lit ? P.via : P.viaDim; ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath(); ctx.moveTo(q.x, q.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        });
+
+        // prodotto identificato
+        ctx.beginPath(); ctx.arc(cx, cy, 21, 0, 6.283);
+        ctx.fillStyle = P.core; ctx.fill();
+        ctx.strokeStyle = P.coreEdge; ctx.lineWidth = 1.6;
+        ctx.shadowBlur = 14; ctx.shadowColor = P.coreEdge; ctx.stroke(); ctx.shadowBlur = 0;
+
+
+        // corpi
+        const pending = [];
+        nodes.forEach((n) => {
+          const p = posOf(n, clock), r = bodyR(n);
+          const lit = !hover || hover === n || hover.pkg === n.via || n.pkg === hover.via;
+          const glow = 0.3 + (n.st.epss || 0) * 0.7;
+          ctx.globalAlpha = lit ? 1 : .25;
+          if (n.st.kev && !reduce) {
+            ctx.globalAlpha = (lit ? 1 : .25) * (.3 + .25 * Math.sin(now * 0.004));
+            ctx.beginPath(); ctx.arc(p.x, p.y, r + 5.5, 0, 6.283);
+            ctx.strokeStyle = n.colour; ctx.lineWidth = 1; ctx.stroke();
+            ctx.globalAlpha = lit ? 1 : .25;
+          }
+          ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 6.283);
+          ctx.fillStyle = P.body; ctx.fill();
+          ctx.strokeStyle = n.colour; ctx.lineWidth = hover === n ? 2.2 : 1.5;
+          ctx.shadowBlur = lit ? 4 + glow * 12 : 0; ctx.shadowColor = n.colour;
+          ctx.stroke(); ctx.shadowBlur = 0;
+          ctx.globalAlpha = 1;
+          // il nome resta a schermo per i corpi che pesano, e per quello puntato
+          if (hover === n || labelled.has(n.pkg)) pending.push({ n, p, r, lit });
+        });
+
+        // Le etichette si disegnano DOPO tutti i corpi, con un alone del colore
+        // di fondo: altrimenti un corpo disegnato piu' tardi le copre a meta'.
+        pending.forEach(({ n, p, r, lit }) => {
+          ctx.globalAlpha = lit ? .95 : .2;
+          ctx.font = '9px ui-monospace,"JetBrains Mono",monospace';
+          ctx.textBaseline = 'middle';
+          const right = p.x >= cx;
+          ctx.textAlign = right ? 'left' : 'right';
+          const x = p.x + (right ? r + 6 : -r - 6);
+          ctx.lineWidth = 3; ctx.strokeStyle = P.body;
+          ctx.strokeText(n.pkg, x, p.y);
+          ctx.fillStyle = hover === n ? P.label : P.labelDim;
+          ctx.fillText(n.pkg, x, p.y);
+          ctx.globalAlpha = 1;
+        });
+
+        orbitRAF = requestAnimationFrame(frame);
+      }
+      resize();
+      orbitRAF = requestAnimationFrame(frame);
+
+      cv.addEventListener('pointermove', (e) => {
+        const b = cv.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top;
+        let best = null, bd = 18;
+        nodes.forEach((n) => {
+          const p = posOf(n, frozen), d = Math.hypot(p.x - mx, p.y - my);
+          if (d < bd) { bd = d; best = n; }
+        });
+        if (best !== hover) { hover = best; paintReadout(); }
+        cv.style.cursor = best ? 'pointer' : 'crosshair';
+      });
+      cv.addEventListener('pointerleave', () => { hover = null; paintReadout(); });
+      cv.addEventListener('click', () => { if (hover && !t.demo) openFindingsFor(hover.pkg); });
+
+      // ── elenco: il pannello deve rispondere anche senza passare il mouse ──
+      const ranked = nodes.slice().sort((a, b) => {
+        if (a.st.kev !== b.st.kev) return a.st.kev ? -1 : 1;
+        return (b.st.cve || 0) - (a.st.cve || 0) || (b.st.epss || 0) - (a.st.epss || 0);
+      });
+      const shown = ranked.filter((n) => !n.st.known || n.st.cve > 0).slice(0, 6);
+      const restCount = nodes.length - shown.length;
+
+      let html = `<div class="orbit-lh text-slate-500">${i18n.t('dash.orbit_worst')}</div>`;
+      html += shown.map((n) => `
+        <button type="button" class="orbit-row" data-pkg="${n.pkg}">
+          <span class="dot" style="background:${n.colour};box-shadow:0 0 7px ${n.colour}"></span>
+          <span class="nm text-slate-700 dark:text-slate-200">${n.pkg}${n.st.kev ? ' <span class="text-rose-500 text-[8px] tracking-wider border border-rose-300 dark:border-rose-800 rounded px-1 py-px">KEV</span>' : ''}<i class="text-slate-400">${n.via ? i18n.t('dash.orbit_via_short', { p: n.via }) : i18n.t('dash.orbit_direct_short')}</i></span>
+          <span class="n" style="color:${n.st.known ? n.colour : P.mute}">${n.st.known ? n.st.cve : '—'}</span>
+        </button>`).join('');
+      if (restCount > 0) {
+        html += `<div class="orbit-more text-slate-400">${i18n.t('dash.orbit_rest', { n: restCount })}</div>`;
+      }
+      if (!deps.length) {
+        html = `<div class="orbit-lh text-slate-500">${i18n.t('dash.orbit_worst')}</div>
+          <p class="font-code-sm text-[11px] text-slate-500 px-2 py-3 leading-relaxed">${i18n.t('dash.legend_no_deps')}</p>`;
+      }
+      // provenienza: da dove viene questo grafo, e su quanti asset e' stato misurato
+      if (!t.demo && deps.length) {
+        html += `<div class="pt-3 mt-2 border-t border-slate-100/70 dark:border-slate-700/50 px-2
+                   flex items-center justify-between font-code-sm text-[10px] text-slate-500">
+            <span>${i18n.t('dash.legend_source')}</span>
+            <span class="text-emerald-600 dark:text-emerald-400">${t.deps_assets || 0}</span>
+          </div>`;
+      }
+      if (!orbitRiskLoaded && deps.length) {
+        html += `<div class="px-2 pt-2 font-code-sm text-[10px] text-slate-400">${i18n.t('dash.orbit_norisk')}</div>`;
+      }
+      graphLegend.innerHTML = html;
+      graphLegend.querySelectorAll('.orbit-row').forEach((el) => {
+        el.addEventListener('mouseenter', () => { hover = nodes.find((n) => n.pkg === el.dataset.pkg) || null; paintReadout(); });
+        el.addEventListener('mouseleave', () => { hover = null; paintReadout(); });
+        el.addEventListener('click', () => { if (!t.demo) openFindingsFor(el.dataset.pkg); });
+      });
+      paintReadout();
     }
 
+    // Dal grafo al lavoro: la pagina findings apre gia' filtrata sul pacchetto.
+    function openFindingsFor(pkg) {
+      location.href = '/findings?q=' + encodeURIComponent(pkg);
+    }
     // --- Demo graph (idle): valori che cambiano ogni 3s --------------------
     const DEMO_PRODUCTS = [
       { product: 'python', deps: ['openssl', 'libffi', 'zlib', 'sqlite'] },
@@ -1917,6 +2169,23 @@
       updateVulnsKpi();
     });
     applyIdleI18n();
+
+    // Indice di rischio per pacchetto (KEV/EPSS/CVE): serve a colorare e
+    // dimensionare i corpi dell'orbita. Best-effort e asincrono — il grafo si
+    // disegna comunque, e si ridisegna da solo quando l'indice arriva.
+    loadOrbitRisk();
+
+    // Il canvas non e' stilizzabile via CSS: al cambio tema va ridisegnato,
+    // altrimenti resterebbe con la palette di quello precedente.
+    window.addEventListener('themechange', () => {
+      if (lastTarget) renderGraph(lastTarget);
+    });
+
+    // Un tab in secondo piano non deve far girare l'animazione dell'orbita.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopOrbit();
+      else if (lastTarget) renderGraph(lastTarget);
+    });
 
     // Avvia il grafo demo finche' l'utente non lancia una scansione reale.
     startDemo();
