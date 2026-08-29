@@ -152,7 +152,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=44"></script>
+  <script src="/static/i18n.js?v=45"></script>
 </head>
 
 <body
@@ -832,10 +832,41 @@
       } catch (_) { /* best-effort: senza indice i corpi restano "non misurati" */ }
     }
 
+    // Il linkage restituisce nomi di PACCHETTO della distribuzione (libssl3t64
+    // su Noble, libssl1.1 su Focal, zlib1g ovunque); l'indice di rischio ragiona
+    // per nome di PRODOTTO (openssl, zlib). Senza un ponte fra i due ogni corpo
+    // dell'orbita resta "non misurato" anche quando la posture ha misurato
+    // esattamente quel software, con la stessa versione, sullo stesso host.
+    const ORBIT_PRODUCT_ALIAS = {
+      ssl: 'openssl', crypto: 'openssl',
+      z: 'zlib', c: 'glibc', pthread: 'glibc', dl: 'glibc', m: 'glibc',
+    };
+    function orbitProduct(pkg) {
+      const raw = (pkg || '').toLowerCase();
+      if (orbitRisk.has(raw)) return raw;
+      // Coda soname: libssl3t64 -> libssl, zlib1g -> zlib, libpcre2-8-0 -> libpcre2.
+      const soname = /[-_.]?\d[\d.]*(t\d+)?g?$/;
+      const one = raw.replace(soname, '');
+      const bases = [one, one.replace(soname, '')];
+      for (const b of bases) {
+        for (const c of [b, b.replace(/^lib/, '')]) {
+          if (!c) continue;
+          if (orbitRisk.has(c)) return c;
+          const a = ORBIT_PRODUCT_ALIAS[c];
+          if (a && orbitRisk.has(a)) return a;
+        }
+      }
+      return raw;
+    }
+
     function orbitStat(pkg) {
-      const hit = orbitRisk.get((pkg || '').toLowerCase());
-      if (!hit) return { known: false, cve: null, kev: false, epss: 0, assets: 0, sev: '' };
-      return { known: true, ...hit };
+      const raw = (pkg || '').toLowerCase();
+      const key = orbitProduct(raw);
+      const hit = orbitRisk.get(key);
+      if (!hit) return { known: false, cve: null, kev: false, epss: 0, assets: 0, sev: '', as: '' };
+      // 'as' e' quello che il pannello deve poter dichiarare: queste cifre sono
+      // del prodotto, non del pacchetto, e chi legge ha il diritto di saperlo.
+      return { known: true, ...hit, as: key === raw ? '' : key };
     }
     function orbitColor(st, P) {
       if (!st.known) return P.mute;
@@ -1027,7 +1058,8 @@
             (st.known
               ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_cve')}</span><b style="color:${hover.colour}">${st.cve}</b></div>
                  <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_epss')}</span><b style="color:${P.label}">${st.epss ? (st.epss * 100).toFixed(0) + '%' : '—'}</b></div>
-                 <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_seen')}</span><b style="color:${P.label}">${st.assets}</b></div>`
+                 <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_seen')}</span><b style="color:${P.label}">${st.assets}</b></div>` +
+                (st.as ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_measured_as')}</span><b style="color:${P.label}">${st.as}</b></div>` : '')
               : `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_unmeasured')}</span></div>`);
         } else {
           const known = nodes.filter((n) => n.st.known);

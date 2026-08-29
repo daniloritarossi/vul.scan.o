@@ -1,0 +1,27 @@
+# Test host used to produce the documentation screenshots.
+#
+# The Focal image next door ships OpenSSH 8.2, which is what the dependency
+# panel was measured against until now. Noble ships OpenSSH 9.6p1, the version
+# the user manual uses in its examples, and links a wider set of libraries, so
+# the orbit in the screenshots is populated with real measurements instead of
+# the two or three packages Focal resolves.
+FROM ubuntu:24.04
+ENV DEBIAN_FRONTEND=noninteractive
+
+# binutils gives objdump, which the scanner uses to read DT_NEEDED and draw the
+# edges between dependencies; without it the orbit has bodies but no links.
+RUN apt-get update && apt-get install -y \
+      openssh-server sudo binutils \
+      python3 curl nginx openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash admin && \
+    echo 'admin:admin' | chpasswd && \
+    adduser admin sudo
+
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    echo 'PermitRootLogin no' >> /etc/ssh/sshd_config
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]

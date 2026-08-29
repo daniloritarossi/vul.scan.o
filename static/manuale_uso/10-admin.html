@@ -276,10 +276,12 @@
         <figure>
           <img src="img/admin-users.webp" alt="Users table" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>The users table</b> — status badges, inline role editing, group membership and the per-row
-              actions.</span>
-            <span lang="it"><b>La tabella utenti</b> — badge di stato, modifica del ruolo in linea, appartenenza ai gruppi e le
-              azioni per riga.</span>
+            <span lang="en"><b>The users table</b> — status badges, the ACCESS padlock with its countdown, inline role
+              editing, group membership and the per-row actions. Email addresses are blurred in this manual's
+              screenshots.</span>
+            <span lang="it"><b>La tabella utenti</b> — badge di stato, il lucchetto ACCESSO con il suo conto alla rovescia,
+              modifica del ruolo in linea, appartenenza ai gruppi e le azioni per riga. Gli indirizzi email sono sfocati
+              negli screenshot di questo manuale.</span>
           </figcaption>
         </figure>
         <div class="scroll-x">
@@ -294,6 +296,13 @@
                 <td>
                   <span lang="en"><span class="badge b-warn">PENDING</span> — invited, link not yet used. <span class="badge b-ok">ACTIVE</span> — password set. Plus three informative badges: <em>Email verified</em>, <em>Email NOT verified</em>, and <em>Password change forced at next login</em>.</span>
                   <span lang="it"><span class="badge b-warn">PENDING</span> — invitato, link non ancora usato. <span class="badge b-ok">ACTIVE</span> — password impostata. Più tre badge informativi: <em>Email verified</em>, <em>Email NOT verified</em> e <em>Password change forced at next login</em>.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ACCESS</strong></td>
+                <td>
+                  <span lang="en">The sign-in throttle, made visible. An <b>open padlock</b> means the account is free; its tooltip still reports how many failed sign-ins are inside the current window. A <b>closed red padlock with a countdown</b> means the account is locked and the countdown is what is left of the block. Clicking it asks for confirmation and calls <code>POST /api/users/{id}/unlock</code>, which clears the failures immediately and writes an <code>auth.unlock</code> entry to the audit ledger — an administrator lifting a security control is itself an auditable act. The lock is per username and the block is never silent: the sign-in page returns <code>429</code> with its own countdown.</span>
+                  <span lang="it">Il freno agli accessi, reso visibile. Un <b>lucchetto aperto</b> indica un account libero; il tooltip riporta comunque quanti accessi falliti ci sono nella finestra corrente. Un <b>lucchetto rosso chiuso con conto alla rovescia</b> indica un account bloccato, e il conto è ciò che resta del blocco. Cliccandolo viene chiesta conferma e viene chiamato <code>POST /api/users/{id}/unlock</code>, che azzera subito i fallimenti e scrive una voce <code>auth.unlock</code> nel registro di audit — un amministratore che rimuove un controllo di sicurezza è a sua volta un atto verificabile. Il blocco è per username e non è mai silenzioso: la pagina di accesso risponde <code>429</code> con il proprio conto alla rovescia.</span>
                 </td>
               </tr>
               <tr>

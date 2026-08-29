@@ -94,12 +94,37 @@
         <figure class="mid">
           <img src="img/login-page.webp" alt="Sign-in page" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>The sign-in page</b> — centred card on the dark background. The version string at the bottom
-              identifies the running build.</span>
-            <span lang="it"><b>La pagina di accesso</b> — card centrata su sfondo scuro. La stringa di versione in fondo
-              identifica la build in esecuzione.</span>
+            <span lang="en"><b>The sign-in page</b> — the form sits on the left of a generated star field; the legend on
+              the right explains what the field means. The version string at the bottom identifies the running
+              build.</span>
+            <span lang="it"><b>La pagina di accesso</b> — il modulo sta a sinistra di un campo stellare generato; la legenda a
+              destra spiega che cosa rappresenta. La stringa di versione in fondo identifica la build in
+              esecuzione.</span>
           </figcaption>
         </figure>
+
+        <p lang="en">
+          The background is not decoration and not data: it is a <b>generated</b> star field with a fixed seed, where
+          every point stands for a finding, the colour for its state and the brightness for its exploit probability.
+          The page makes no request before you sign in, precisely so that nobody without a session can count how many
+          assets or how many findings this installation holds. The legend on the right reads the picture; it says
+          nothing about your fleet.
+        </p>
+        <p lang="it">
+          Lo sfondo non è decorazione e non è un dato: è un campo stellare <b>generato</b> con seme fisso, dove ogni
+          punto rappresenta un finding, il colore il suo stato e la luminosità la sua probabilità di sfruttamento. La
+          pagina non effettua alcuna richiesta prima dell'accesso, proprio perché nessuno senza sessione possa contare
+          quanti asset o quanti finding contiene questa installazione. La legenda a destra spiega la figura; non dice
+          nulla del tuo parco macchine.
+        </p>
+        <p lang="en">
+          These three pages ignore the light/dark preference of the rest of the interface and are always dark: the
+          figure only exists on black, and invitation → activation → first sign-in has to feel like one room.
+        </p>
+        <p lang="it">
+          Queste tre pagine ignorano la preferenza chiaro/scuro del resto dell'interfaccia e sono sempre scure: la
+          figura esiste solo sul nero, e il percorso invito → attivazione → primo accesso deve essere un unico ambiente.
+        </p>
 
         <h3><span lang="en">Features Breakdown</span><span lang="it">Dettaglio funzionalità</span></h3>
 
@@ -313,9 +338,9 @@
         <figure class="mid">
           <img src="img/activate-page.webp" alt="Set your password page" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>SET YOUR PASSWORD</b> — the same screen serves both activation and reset; the token's stored
+            <span lang="en"><b>SET PASSWORD</b> — the same screen serves both activation and reset; the token's stored
               purpose decides which flow runs.</span>
-            <span lang="it"><b>SET YOUR PASSWORD</b> — la stessa schermata serve sia l'attivazione sia il reset; è lo scopo
+            <span lang="it"><b>SET PASSWORD</b> — la stessa schermata serve sia l'attivazione sia il reset; è lo scopo
               memorizzato nel token a decidere quale flusso venga eseguito.</span>
           </figcaption>
         </figure>
