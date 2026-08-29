@@ -337,10 +337,14 @@
         <figure>
           <img src="img/settings-ticketing.webp" alt="Ticketing settings" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>Ticketing</b> — choose GitHub or Jira (or leave it off) and supply the credentials the findings page
-              will use.</span>
-            <span lang="it"><b>Ticketing</b> — scegli GitHub o Jira (o lascia disattivato) e fornisci le credenziali che userà la
-              pagina findings.</span>
+            <span lang="en"><b>Ticketing</b> — choose GitHub or Jira (or leave it off), supply the credentials the findings page
+              will use, and press CHECK CONNECTION to see whether they actually work. Here the credentials are valid and
+              the project exists, but it has no <em>Task</em> issue type, so ticket creation would fail: the offending
+              field is outlined in red.</span>
+            <span lang="it"><b>Ticketing</b> — scegli GitHub o Jira (o lascia disattivato), fornisci le credenziali che userà la
+              pagina findings e premi VERIFICA CONNESSIONE per sapere se funzionano davvero. Qui le credenziali sono
+              valide e il progetto esiste, ma non ha il tipo di issue <em>Task</em>, quindi la creazione del ticket
+              fallirebbe: il campo responsabile è evidenziato in rosso.</span>
           </figcaption>
         </figure>
 
@@ -356,6 +360,13 @@
               <tr><td><strong>Jira URL</strong></td><td><code>https://org.atlassian.net</code></td></tr>
               <tr><td><strong>Project Key</strong></td><td><span lang="en">The target Jira project.</span><span lang="it">Il progetto Jira di destinazione.</span></td></tr>
               <tr><td><strong>Email / API Token</strong></td><td><span lang="en">Jira Cloud credentials; the token is masked on read.</span><span lang="it">Credenziali Jira Cloud; il token è mascherato in lettura.</span></td></tr>
+              <tr>
+                <td><span class="badge b-acc">CHECK CONNECTION</span></td>
+                <td>
+                  <span lang="en">Answers one question — <em>if I press CREATE in /findings now, does it work?</em> — without creating anything. It walks the same chain the real call would: settings complete → credentials accepted → repository or project reachable → issues can actually be created. The first broken link stops it, and the message names <b>which field</b> to correct rather than reporting a generic failure: a domain that does not resolve, a token rejected, a project key that does not exist, a repository whose issues are disabled, a Jira project without the <em>Task</em> issue type. It checks what is currently <b>in the form</b>, not what was saved, so you can fix a wrong domain without writing it to disk first. Admin only, and every run is recorded in the audit ledger as <code>settings.ticketing_check</code>.</span>
+                  <span lang="it">Risponde a una domanda sola — <em>se premo CREATE in /findings adesso, funziona?</em> — senza creare nulla. Percorre la stessa catena della chiamata vera: impostazioni complete → credenziali accettate → repository o progetto raggiungibile → le issue si possono davvero creare. Il primo anello rotto la interrompe, e il messaggio nomina <b>quale campo</b> correggere invece di segnalare un errore generico: un dominio che non si risolve, un token rifiutato, una chiave progetto inesistente, un repository con le issue disabilitate, un progetto Jira senza il tipo di issue <em>Task</em>. Verifica ciò che è <b>nella form</b> in quel momento, non ciò che è stato salvato, così puoi correggere un dominio sbagliato senza prima scriverlo su disco. Solo admin, e ogni esecuzione è registrata nel registro di audit come <code>settings.ticketing_check</code>.</span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -379,6 +390,7 @@
         <ol class="steps">
           <li><span lang="en">Create a GitHub personal access token with issue-write scope, or a Jira Cloud API token.</span><span lang="it">Crea un personal access token GitHub con permesso di scrittura sulle issue, oppure un token API di Jira Cloud.</span></li>
           <li><span lang="en">In <strong>TICKETING</strong> pick the provider and fill its fields — <code>owner/repo</code>, or Jira URL plus project key, email and token.</span><span lang="it">In <strong>TICKETING</strong> scegli il provider e compila i campi — <code>owner/repo</code>, oppure URL Jira più project key, email e token.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CHECK CONNECTION</span> and read the chain. Do this <em>before</em> saving: a wrong domain or a missing issue type is cheaper to find here than on a finding you were trying to triage.</span><span lang="it">Premi <span class="badge b-acc">VERIFICA CONNESSIONE</span> e leggi la catena. Fallo <em>prima</em> di salvare: un dominio sbagliato o un tipo di issue mancante costa meno scoprirlo qui che su un finding che stavi cercando di gestire.</span></li>
           <li><span lang="en">Press <span class="badge b-acc">SAVE</span>.</span><span lang="it">Premi <span class="badge b-acc">SAVE</span>.</span></li>
           <li><span lang="en">Open <a href="07-findings.html">/findings</a> and press <span class="badge b-acc">CREATE</span> in the TICKET column of any finding.</span><span lang="it">Apri <a href="07-findings.html">/findings</a> e premi <span class="badge b-acc">CREATE</span> nella colonna TICKET di un qualsiasi finding.</span></li>
           <li><span lang="en">Confirm <em>“Ticket created: {ref}”</em> and that the cell became a link to the real issue.</span><span lang="it">Verifica <em>«Ticket created: {ref}»</em> e che la cella sia diventata un link all'issue reale.</span></li>

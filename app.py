@@ -60,7 +60,7 @@ from findings import (fingerprint, merge_findings, posture_findings,
                       summarize, is_breached, STATUSES,
                       lifecycle_events, parse_as_of, reconstruct_as_of,
                       compare_states)
-from ticketing import create_ticket, TicketError
+from ticketing import create_ticket, check_connection, TicketError
 from localscan import run_gitleaks, run_trivy_image, LocalScanError
 from compliance import derive_compliance, compliance_summary
 from db import fetch_finding, set_finding_ticket
@@ -1180,6 +1180,51 @@ async def api_settings_post(request: Request,
     if "msrc" in body:
         msrc.clear_cache()
     return {"ok": True}
+
+
+@app.post("/api/settings/ticketing/check")
+async def api_ticketing_check(request: Request,
+                              user: CurrentUser = Depends(_admin_only)):
+    """
+    Verifica la configurazione ticketing SENZA creare alcun ticket.
+
+    Il body puo' contenere i valori attualmente nella form, cosi' che la
+    verifica si possa fare PRIMA di salvare: chi sta correggendo un dominio
+    sbagliato non deve essere costretto a scriverlo nel file per scoprire che
+    era sbagliato. I campi mascherati ("••••••••") vengono risolti dal file,
+    con la stessa regola di POST /api/settings.
+
+    Solo admin: la verifica usa le credenziali salvate e le spende verso un
+    servizio esterno.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    stored = (load_config().get("ticketing") or {})
+    cfg = dict(stored)
+    for key, val in (body or {}).items():
+        if key not in stored:
+            continue
+        if isinstance(val, str) and "••••" in val:
+            continue          # placeholder: tieni il valore salvato
+        cfg[key] = val
+
+    result = check_connection(cfg)
+
+    # Un amministratore che spende le credenziali del prodotto verso un
+    # servizio esterno e' un'azione da registrare; il registro annota l'esito
+    # e la diagnosi, mai il token ne' l'esito di una risposta remota completa.
+    _audit("settings.ticketing_check", request, user,
+           outcome="success" if result.get("ok") else "failure",
+           target={"type": "config", "id": "ticketing",
+                   "label": cfg.get("provider") or "off"},
+           detail={"provider": cfg.get("provider") or "",
+                   "ok": bool(result.get("ok")),
+                   "code": result.get("code") or None,
+                   "field": result.get("field") or None})
+    return result
 
 
 @app.get("/api/ollama/models")
