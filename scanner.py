@@ -445,12 +445,18 @@ if ! command -v objdump >/dev/null 2>&1; then
   needed() { readelf -d "$1" 2>/dev/null | sed -n 's/.*NEEDED.*\[\(.*\)\].*/\1/p'; }
 fi
 pkgof() {
-  # Risolve symlink e usr-merge (/lib -> /usr/lib, libX.so.N -> libX.so.N.M):
-  # il DB di dpkg registra solo il path reale versionato, quindi senza
-  # readlink -f 'dpkg -S' fallisce con "no path found".
-  R=$(readlink -f "$1" 2>/dev/null); [ -z "$R" ] && R="$1"
-  p=$(dpkg -S "$R" 2>/dev/null | head -1 | cut -d: -f1)
-  [ -z "$p" ] && p=$(rpm -qf --queryformat '%{NAME}\n' "$R" 2>/dev/null | head -1)
+  # Il DB di dpkg NON registra tutte le librerie allo stesso modo: su una stessa
+  # Ubuntu 20.04 libexpat1 e zlib1g sono registrati col path NON risolto
+  # (/lib/x86_64-linux-gnu/libexpat.so.1), mentre libssl1.1 e libwrap0 lo sono
+  # col path risolto (/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1). Interrogando
+  # solo uno dei due, meta' delle dipendenze risultava priva di pacchetto e
+  # spariva dal grafo: openssh veniva mappato, python no.
+  # Si provano entrambi, nell'ordine in cui ldd li ha dati.
+  R=$(readlink -f "$1" 2>/dev/null)
+  p=$(dpkg -S "$1" 2>/dev/null | head -1 | cut -d: -f1)
+  [ -z "$p" ] && [ -n "$R" ] && p=$(dpkg -S "$R" 2>/dev/null | head -1 | cut -d: -f1)
+  [ -z "$p" ] && p=$(rpm -qf --queryformat '%{NAME}\n' "$1" 2>/dev/null | head -1)
+  [ -z "$p" ] && [ -n "$R" ] && p=$(rpm -qf --queryformat '%{NAME}\n' "$R" 2>/dev/null | head -1)
   printf '%s' "$p"
 }
 # Risoluzione robusta del binario: prova ogni nome candidato via PATH, poi nelle
