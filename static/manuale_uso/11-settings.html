@@ -405,6 +405,20 @@
           <li><span lang="en"><strong>Permissions.</strong> That account needs <b>Browse projects</b> and <b>Create issues</b> on the space. On Service Management it must also be an <em>agent</em>, not just a customer — <code>https://SITE.atlassian.net/jira/people</code>.</span><span lang="it"><strong>Permessi.</strong> Quell'account deve avere <b>Esplora progetti</b> e <b>Crea issue</b> sullo spazio. Su Service Management deve inoltre essere un <em>agente</em>, non solo un cliente — <code>https://SITO.atlassian.net/jira/people</code>.</span></li>
           <li><span lang="en">Press <span class="badge b-acc">CHECK CONNECTION</span>. It resolves the issue type against the project and, if yours is not there, lists the names it did find.</span><span lang="it">Premi <span class="badge b-acc">VERIFICA CONNESSIONE</span>: risolve il tipo di issue sul progetto e, se il tuo non c'è, elenca i nomi che ha trovato.</span></li>
         </ol>
+        <div class="note">
+          <span lang="en"><b>One address that no longer exists.</b> Guides written before Jira Cloud still send you to
+            <code>/secure/CreateProject!default.jspa</code> to create a project. It answers <b>404</b>. The
+            <code>/plugins/servlet/project-config/KEY/…</code> family, on the other hand, is alive and deliberately
+            product-agnostic: Jira answers it with a redirect to the right page for whichever product and management
+            style the space uses, which is why this guide points there instead of at a product-specific address that
+            would be wrong for half the readers.</span>
+          <span lang="it"><b>Un indirizzo che non esiste più.</b> Le guide scritte prima di Jira Cloud mandano ancora a
+            <code>/secure/CreateProject!default.jspa</code> per creare un progetto. Risponde <b>404</b>. La famiglia
+            <code>/plugins/servlet/project-config/CHIAVE/…</code>, invece, è viva e deliberatamente indipendente dal
+            prodotto: Jira le risponde con un redirect alla pagina giusta per il prodotto e lo stile di gestione dello
+            spazio, ed è il motivo per cui questa guida indica quella invece di un indirizzo specifico che sarebbe
+            sbagliato per metà dei lettori.</span>
+        </div>
       </section>
 
       <!-- ======================================= HOWTO -->

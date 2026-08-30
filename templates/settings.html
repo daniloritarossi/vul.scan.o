@@ -60,7 +60,11 @@
     .tk-guide > summary:hover { color: #0e7490; }
     .tk-guide[open] > summary { border-bottom: 1px solid #e2e8f0; }
     .tk-guide .body { padding: 0.9rem; font-size: 12.5px; line-height: 1.75; color: #334155; }
-    .tk-guide .body ol { margin: 0; padding-left: 1.15rem; }
+    /* Tailwind preflight azzera list-style: senza questo i passi di una
+       procedura perdono i numeri, che sono meta' dell'informazione. */
+    .tk-guide .body ol { margin: 0; padding-left: 1.35rem; list-style: decimal; }
+    .tk-guide .body ol::marker, .tk-guide .body li::marker { color: #0e7490; font-weight: 600; }
+    .dark .tk-guide .body li::marker { color: #22d3ee; }
     .tk-guide .body li { margin-bottom: 0.5rem; }
     .tk-guide .body li:last-child { margin-bottom: 0; }
     .tk-guide .body code {
@@ -68,6 +72,17 @@
       font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
     }
     .tk-guide .body b { color: #0f172a; font-weight: 600; }
+    /* Nota introduttiva e avvertenza finale: si leggono prima e dopo i passi,
+       quindi non devono essere una voce numerata dell'elenco. */
+    .tk-guide .body .lead { margin: 0 0 0.7rem; color: #0f172a; }
+    .tk-guide .body .warn {
+      margin: 0.8rem 0 0; padding: 0.5rem 0.7rem; border-radius: 0.5rem;
+      background: #fef3c7; border: 1px solid #fde68a; color: #78350f;
+    }
+    .dark .tk-guide .body .lead { color: #e2e8f0; }
+    .dark .tk-guide .body .warn {
+      background: rgba(120, 53, 15, .25); border-color: #78350f; color: #fcd34d;
+    }
     .tk-guide .body a { color: #0e7490; text-decoration: underline; }
     .dark .tk-guide { border-color: #1e293b; background: #0b1220; }
     .dark .tk-guide > summary { color: #e2e8f0; }
@@ -84,7 +99,7 @@
     }
   </style>
   <style>body { min-height: max(884px, 100dvh); }</style>
-  <script src="/static/i18n.js?v=48"></script>
+  <script src="/static/i18n.js?v=49"></script>
 </head>
 
 <body

@@ -708,6 +708,8 @@ Replace `SITE` with your Atlassian site and `KEY` with the project key throughou
 
 The settings page builds links 1–3 and 7 for *your* site as soon as **Jira URL** and **Project Key** are filled in, under the **i** panel in the TICKETING block.
 
+> Guides written before Jira Cloud still send you to `/secure/CreateProject!default.jspa` to create a project. It answers **404**. The `/plugins/servlet/project-config/KEY/…` family is alive and deliberately product-agnostic — Jira answers it with a redirect to the right page for whichever product and management style the space uses — which is why the steps above point there instead of at a product-specific address that would be wrong for half the readers.
+
 </details>
 
 **Fingerprint dedup** — stable identity computed from (asset, package, primary CVE) — or location for findings without a CVE. Source is NOT part of the key: the same defect reported by Trivy **and** Grype is a single finding (source `trivy+grype`, `times_seen` incremented). Internal posture (SCA) findings also flow automatically into the same lifecycle on every run.
