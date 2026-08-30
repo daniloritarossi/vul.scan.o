@@ -338,13 +338,14 @@
           <img src="img/settings-ticketing.webp" alt="Ticketing settings" loading="lazy" />
           <figcaption>
             <span lang="en"><b>Ticketing</b> — choose GitHub or Jira (or leave it off), supply the credentials the findings page
-              will use, and press CHECK CONNECTION to see whether they actually work. Here the credentials are valid and
-              the project exists, but it has no <em>Task</em> issue type, so ticket creation would fail: the offending
-              field is outlined in red.</span>
+              will use, and press CHECK CONNECTION to see whether they actually work. The <b>i</b> panel at the top holds
+              the setup steps. Here the target is a Jira Service Management project, which has no <em>Task</em>: the
+              issue type is set to the name that project really offers, and the check resolves it to its id.</span>
             <span lang="it"><b>Ticketing</b> — scegli GitHub o Jira (o lascia disattivato), fornisci le credenziali che userà la
-              pagina findings e premi VERIFICA CONNESSIONE per sapere se funzionano davvero. Qui le credenziali sono
-              valide e il progetto esiste, ma non ha il tipo di issue <em>Task</em>, quindi la creazione del ticket
-              fallirebbe: il campo responsabile è evidenziato in rosso.</span>
+              pagina findings e premi VERIFICA CONNESSIONE per sapere se funzionano davvero. Il pannello <b>i</b> in alto
+              contiene i passi di configurazione. Qui la destinazione è un progetto Jira Service Management, che non ha
+              <em>Task</em>: il tipo di issue è impostato al nome che quel progetto offre davvero, e la verifica lo
+              risolve nel suo id.</span>
           </figcaption>
         </figure>
 
@@ -361,6 +362,13 @@
               <tr><td><strong>Project Key</strong></td><td><span lang="en">The target Jira project.</span><span lang="it">Il progetto Jira di destinazione.</span></td></tr>
               <tr><td><strong>Email / API Token</strong></td><td><span lang="en">Jira Cloud credentials; the token is masked on read.</span><span lang="it">Credenziali Jira Cloud; il token è mascherato in lettura.</span></td></tr>
               <tr>
+                <td><strong>Issue Type</strong></td>
+                <td>
+                  <span lang="en">The exact name of the issue type to create. A <b>Jira Software</b> project ships <code>Task</code>; a <b>Jira Service Management</b> project has no <code>Task</code> at all and offers request types such as <code>Email request</code>, so the value cannot be assumed. Empty means <code>Task</code>. Before creating, the name is resolved to its <b>id</b> through <code>createmeta</code>: the issue types of a Service Management project are defined inside the project (<code>scope: PROJECT</code>), and the id is the only reference that identifies them without ambiguity.</span>
+                  <span lang="it">Il nome esatto del tipo di issue da creare. Un progetto <b>Jira Software</b> nasce con <code>Task</code>; un progetto <b>Jira Service Management</b> non ha affatto <code>Task</code> e offre tipi di richiesta come <code>Email request</code>, quindi il valore non si può dare per scontato. Vuoto significa <code>Task</code>. Prima della creazione il nome viene risolto nel suo <b>id</b> tramite <code>createmeta</code>: i tipi di issue di un progetto Service Management sono definiti dentro il progetto (<code>scope: PROJECT</code>), e l'id è l'unico riferimento che li identifica senza ambiguità.</span>
+                </td>
+              </tr>
+              <tr>
                 <td><span class="badge b-acc">CHECK CONNECTION</span></td>
                 <td>
                   <span lang="en">Answers one question — <em>if I press CREATE in /findings now, does it work?</em> — without creating anything. It walks the same chain the real call would: settings complete → credentials accepted → repository or project reachable → issues can actually be created. The first broken link stops it, and the message names <b>which field</b> to correct rather than reporting a generic failure: a domain that does not resolve, a token rejected, a project key that does not exist, a repository whose issues are disabled, a Jira project without the <em>Task</em> issue type. It checks what is currently <b>in the form</b>, not what was saved, so you can fix a wrong domain without writing it to disk first. Admin only, and every run is recorded in the audit ledger as <code>settings.ticketing_check</code>.</span>
@@ -370,6 +378,30 @@
             </tbody>
           </table>
         </div>
+
+        <h3><span lang="en">Setting up GitHub Issues — step by step</span><span lang="it">Configurare GitHub Issues — passo per passo</span></h3>
+        <p lang="en">The same steps are available inside the page: the <b>i</b> disclosure at the top of the GITHUB block opens them next to the fields they fill.</p>
+        <p lang="it">Gli stessi passi sono disponibili nella pagina: il pannello <b>i</b> in cima al blocco GITHUB li apre accanto ai campi che riempiono.</p>
+        <ol class="steps">
+          <li><span lang="en"><strong>Repository.</strong> On github.com press <b>New</b>, or use one you already have. What goes in <b>Repository</b> is <code>owner/repo</code> — the two segments after <code>github.com/</code> in the address bar. No <code>https://</code>, no <code>.git</code>.</span><span lang="it"><strong>Repository.</strong> Su github.com premi <b>New</b>, oppure usane uno che hai già. In <b>Repository</b> va <code>owner/repo</code> — i due segmenti dopo <code>github.com/</code> nella barra degli indirizzi. Niente <code>https://</code>, niente <code>.git</code>.</span></li>
+          <li><span lang="en"><strong>Issues must be on.</strong> Repository → <b>Settings</b> → <b>General</b> → <b>Features</b> → tick <b>Issues</b>. On a repository created from a template they are sometimes off, and that stays invisible until a ticket fails.</span><span lang="it"><strong>Le issue devono essere attive.</strong> Repository → <b>Settings</b> → <b>General</b> → <b>Features</b> → spunta <b>Issues</b>. Su un repository creato da un template a volte sono spente, e non si vede finché un ticket non fallisce.</span></li>
+          <li><span lang="en"><strong>Token.</strong> github.com → avatar → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b>. Either kind works: <b>fine-grained</b> — <em>Repository access</em> → that repository, <em>Permissions</em> → <em>Repository permissions</em> → <b>Issues: Read and write</b>; or <b>classic</b> — scope <code>repo</code> (<code>public_repo</code> if the repository is public).</span><span lang="it"><strong>Token.</strong> github.com → avatar → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b>. Vanno bene entrambi i tipi: <b>fine-grained</b> — <em>Repository access</em> → quel repository, <em>Permissions</em> → <em>Repository permissions</em> → <b>Issues: Read and write</b>; oppure <b>classic</b> — scope <code>repo</code> (<code>public_repo</code> se il repository è pubblico).</span></li>
+          <li><span lang="en"><strong>Copy it once.</strong> GitHub shows the token only at creation. It goes in <b>GitHub Token</b> and is read back masked.</span><span lang="it"><strong>Copialo subito.</strong> GitHub mostra il token solo alla creazione. Va in <b>GitHub Token</b> e viene riletto mascherato.</span></li>
+          <li><span lang="en"><strong>Write access.</strong> The account owning the token must be able to write to the repository: a read-only collaborator gets a token that authenticates fine and still cannot open issues.</span><span lang="it"><strong>Permesso di scrittura.</strong> L'account a cui appartiene il token deve poter scrivere sul repository: un collaboratore in sola lettura ottiene un token che si autentica correttamente e non riesce comunque ad aprire issue.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CHECK CONNECTION</span>. It walks all of the above and tells you which step fails.</span><span lang="it">Premi <span class="badge b-acc">VERIFICA CONNESSIONE</span>: percorre tutti i punti sopra e ti dice quale non torna.</span></li>
+        </ol>
+
+        <h3><span lang="en">Setting up Jira — step by step (Software and Service Management)</span><span lang="it">Configurare Jira — passo per passo (Software e Service Management)</span></h3>
+        <ol class="steps">
+          <li><span lang="en"><strong>Project.</strong> Jira → <b>Projects</b> → <b>Create project</b>. The template decides what you can create later: a <b>Jira Software</b> project (Scrum/Kanban) ships <code>Task</code>, <code>Bug</code>, <code>Story</code>; a <b>Jira Service Management</b> project has no <code>Task</code> at all — it has request types such as <code>Email request</code>.</span><span lang="it"><strong>Progetto.</strong> Jira → <b>Progetti</b> → <b>Crea progetto</b>. Il template decide che cosa potrai creare: un progetto <b>Jira Software</b> (Scrum/Kanban) nasce con <code>Task</code>, <code>Bug</code>, <code>Story</code>; un progetto <b>Jira Service Management</b> non ha affatto <code>Task</code> — ha tipi di richiesta come <code>Email request</code>.</span></li>
+          <li><span lang="en"><strong>Project Key.</strong> The short prefix of the issue numbers — <code>SEC</code> in <code>SEC-104</code>. Project settings → <b>Details</b>, or read it off any issue. It is not the project name.</span><span lang="it"><strong>Chiave progetto.</strong> Il prefisso breve dei numeri di issue — <code>SEC</code> in <code>SEC-104</code>. Impostazioni progetto → <b>Dettagli</b>, oppure leggila da una qualsiasi issue. Non è il nome del progetto.</span></li>
+          <li><span lang="en"><strong>Issue Type.</strong> Project settings → <b>Issue types</b> (Service Management: <b>Request types</b>). Copy the name exactly as written there. Case does not matter; the wording does.</span><span lang="it"><strong>Tipo di issue.</strong> Impostazioni progetto → <b>Tipi di issue</b> (in Service Management: <b>Tipi di richiesta</b>). Copia il nome esattamente come è scritto lì. Maiuscole e minuscole non contano; le parole sì.</span></li>
+          <li><span lang="en"><strong>Jira URL.</strong> The site address, <code>https://yourorg.atlassian.net</code> — everything before the first <code>/</code> after the domain, no trailing path.</span><span lang="it"><strong>URL Jira.</strong> L'indirizzo del sito, <code>https://tuaorg.atlassian.net</code> — tutto ciò che precede la prima <code>/</code> dopo il dominio, nessun percorso finale.</span></li>
+          <li><span lang="en"><strong>Email.</strong> The Atlassian account the token will belong to — the same account, not a colleague's.</span><span lang="it"><strong>Email.</strong> L'account Atlassian a cui apparterrà il token — lo stesso account, non quello di un collega.</span></li>
+          <li><span lang="en"><strong>API Token.</strong> <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com</a> → <b>Security</b> → <b>Create and manage API tokens</b> → <b>Create API token</b>. Copy it once. It is <b>not</b> the account password: Jira Cloud rejects passwords over the API.</span><span lang="it"><strong>Token API.</strong> <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com</a> → <b>Sicurezza</b> → <b>Crea e gestisci token API</b> → <b>Crea token API</b>. Copialo subito. <b>Non</b> è la password dell'account: Jira Cloud rifiuta le password via API.</span></li>
+          <li><span lang="en"><strong>Permissions.</strong> That account needs <b>Browse projects</b> and <b>Create issues</b> on the project. On Service Management it must also be an <em>agent</em>, not just a customer.</span><span lang="it"><strong>Permessi.</strong> Quell'account deve avere <b>Esplora progetti</b> e <b>Crea issue</b> sul progetto. Su Service Management deve inoltre essere un <em>agente</em>, non solo un cliente.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">CHECK CONNECTION</span>. It resolves the issue type against the project and, if yours is not there, lists the names it did find.</span><span lang="it">Premi <span class="badge b-acc">VERIFICA CONNESSIONE</span>: risolve il tipo di issue sul progetto e, se il tuo non c'è, elenca i nomi che ha trovato.</span></li>
+        </ol>
       </section>
 
       <!-- ======================================= HOWTO -->

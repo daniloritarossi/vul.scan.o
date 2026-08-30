@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=47" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=48" />
   <style>
     .material-symbols-outlined {
       font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -48,6 +48,34 @@
       width: 44px; height: 24px; border-radius: 9999px; cursor: pointer;
       transition: background 0.2s;
     }
+    /* Guida informativa per provider: un <details> invece di un tooltip,
+       perche' sono istruzioni da leggere con calma, non un'etichetta. */
+    .tk-guide { grid-column: 1 / -1; border: 1px solid #e2e8f0; border-radius: 0.75rem; background: #f8fafc; }
+    .tk-guide > summary {
+      cursor: pointer; list-style: none; padding: 0.6rem 0.9rem;
+      display: flex; align-items: center; gap: 0.5rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0f172a;
+    }
+    .tk-guide > summary::-webkit-details-marker { display: none; }
+    .tk-guide > summary:hover { color: #0e7490; }
+    .tk-guide[open] > summary { border-bottom: 1px solid #e2e8f0; }
+    .tk-guide .body { padding: 0.9rem; font-size: 12.5px; line-height: 1.75; color: #334155; }
+    .tk-guide .body ol { margin: 0; padding-left: 1.15rem; }
+    .tk-guide .body li { margin-bottom: 0.5rem; }
+    .tk-guide .body li:last-child { margin-bottom: 0; }
+    .tk-guide .body code {
+      background: #e2e8f0; border-radius: 3px; padding: 0 4px;
+      font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    }
+    .tk-guide .body b { color: #0f172a; font-weight: 600; }
+    .tk-guide .body a { color: #0e7490; text-decoration: underline; }
+    .dark .tk-guide { border-color: #1e293b; background: #0b1220; }
+    .dark .tk-guide > summary { color: #e2e8f0; }
+    .dark .tk-guide[open] > summary { border-bottom-color: #1e293b; }
+    .dark .tk-guide .body { color: #94a3b8; }
+    .dark .tk-guide .body b { color: #e2e8f0; }
+    .dark .tk-guide .body code { background: #1e293b; color: #cbd5e1; }
+    .dark .tk-guide .body a { color: #22d3ee; }
     .toggle-thumb {
       position: absolute; left: 3px; width: 18px; height: 18px;
       border-radius: 9999px; background: white;
@@ -56,7 +84,7 @@
     }
   </style>
   <style>body { min-height: max(884px, 100dvh); }</style>
-  <script src="/static/i18n.js?v=46"></script>
+  <script src="/static/i18n.js?v=47"></script>
 </head>
 
 <body
@@ -338,6 +366,13 @@
           </div>
 
           <div id="githubBlock" class="hidden grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <details class="tk-guide">
+              <summary>
+                <span class="material-symbols-outlined text-[16px] text-cyan-500">info</span>
+                <span data-i18n="settings.gh_guide_title">How to set up GitHub issues — step by step</span>
+              </summary>
+              <div class="body" data-i18n="settings.gh_guide">…</div>
+            </details>
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.gh_token">GitHub Token (PAT)</label>
               <input id="ghToken" type="password" class="setting-input" placeholder="ghp_…" />
@@ -358,6 +393,13 @@
           </div>
 
           <div id="jiraBlock" class="hidden grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <details class="tk-guide">
+              <summary>
+                <span class="material-symbols-outlined text-[16px] text-cyan-500">info</span>
+                <span data-i18n="settings.jira_guide_title">How to set up Jira — step by step</span>
+              </summary>
+              <div class="body" data-i18n="settings.jira_guide">…</div>
+            </details>
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.jira_url">Jira URL</label>
               <input id="jiraUrl" type="text" class="setting-input" placeholder="https://org.atlassian.net" />
@@ -373,6 +415,11 @@
             <div class="space-y-1">
               <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.jira_token">API Token</label>
               <input id="jiraToken" type="password" class="setting-input" />
+            </div>
+            <div class="space-y-1 sm:col-span-2">
+              <label class="font-code-sm text-code-sm text-slate-600 font-semibold" data-i18n="settings.jira_issue_type">Issue Type</label>
+              <input id="jiraIssueType" type="text" class="setting-input" placeholder="Task" />
+              <p class="font-code-sm text-code-sm text-slate-500" data-i18n="settings.jira_issue_type_hint">Exact name of the issue type to create. Jira Software projects have <code>Task</code>; a Jira Service Management project does not — use the name its own settings show (e.g. <code>Email request</code>).</p>
             </div>
             <div class="sm:col-span-2 flex flex-wrap items-center gap-3">
               <button id="jiraCheck" type="button"
@@ -602,6 +649,7 @@
       github_token: 'ghToken', github_repo: 'ghRepo',
       jira_url: 'jiraUrl', jira_email: 'jiraEmail',
       jira_api_token: 'jiraToken', jira_project_key: 'jiraProject',
+      jira_issue_type: 'jiraIssueType',
     };
 
     function tkClearMarks() {
@@ -638,7 +686,7 @@
       }
       // La diagnosi tradotta e' il messaggio; il dettaglio grezzo del provider
       // resta sotto, perche' a volte e' l'unica cosa che spiega davvero.
-      const msg = window.t ? t('settings.tk_err_' + res.code) : res.code;
+      const msg = window.t ? t('settings.tk_err_' + res.code, res.params || {}) : res.code;
       const fieldId = TK_FIELD_INPUT[res.field];
       if (fieldId && $(fieldId)) $(fieldId).classList.add('ring-2', 'ring-rose-400');
       const fieldName = res.field
@@ -646,7 +694,9 @@
         : '';
       // Il dettaglio grezzo del provider senza etichetta si legge come rumore:
       // "Email request" da solo non dice di essere la lista dei tipi disponibili.
-      const detail = res.detail
+      // Quando la diagnosi e' parametrica il dettaglio e' gia' dentro la frase,
+      // e ripeterlo sotto la farebbe leggere due volte.
+      const detail = (res.detail && !res.params)
         ? `<div class="font-code-sm text-code-sm text-slate-500 mt-1 break-all">${window.t ? t('settings.tk_detail') : 'Details'}: ${escHtml(res.detail)}</div>`
         : '';
       out.className = 'sm:col-span-2 rounded-xl border border-rose-200 bg-rose-50 p-4 space-y-1';
@@ -669,6 +719,7 @@
         : {
           provider: 'jira', jira_url: $('jiraUrl').value, jira_email: $('jiraEmail').value,
           jira_api_token: $('jiraToken').value, jira_project_key: $('jiraProject').value,
+          jira_issue_type: $('jiraIssueType').value,
         };
       try {
         const r = await fetch('/api/settings/ticketing/check', {
@@ -783,6 +834,7 @@
         $('jiraEmail').value = cfg.ticketing?.jira_email || '';
         $('jiraToken').value = cfg.ticketing?.jira_api_token || '';
         $('jiraProject').value = cfg.ticketing?.jira_project_key || '';
+        $('jiraIssueType').value = cfg.ticketing?.jira_issue_type || '';
 
         // SMTP + auth policy
         $('smtpHost').value = cfg.smtp?.host || '';
@@ -844,6 +896,7 @@
           jira_email: $('jiraEmail').value,
           jira_api_token: $('jiraToken').value,
           jira_project_key: $('jiraProject').value,
+          jira_issue_type: $('jiraIssueType').value,
         },
         smtp: {
           host: $('smtpHost').value.trim(),

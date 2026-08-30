@@ -670,6 +670,38 @@ If the binary is missing, the endpoint returns 400 with installation instruction
 
 **Ticketing** — `POST /api/findings/{id}/ticket` creates a remediation ticket on **GitHub Issues** or **Jira Cloud** (provider and credentials in Settings → TICKETING section) and stores the reference on the finding (TICKET column → link). Title, severity, asset, CVE, SLA and fingerprint go in the ticket body.
 
+`POST /api/settings/ticketing/check` (button **CHECK CONNECTION**, admin only) walks the same chain read-only — settings complete → credentials accepted → repository/project reachable → issues can actually be created — and names the field at fault instead of returning a generic failure. It checks the values currently in the form, not the saved ones, so a wrong domain can be corrected without writing it to disk first. Audited as `settings.ticketing_check`; the token never appears in the response or in the ledger.
+
+The Jira issue type is **configurable** (`jira_issue_type`, default `Task`) and resolved to its **id** through `createmeta` before creating. Resolving by name only works while that name exists globally; the issue types of a Jira Service Management project are defined *inside* the project (`scope: PROJECT`), so the id is the only unambiguous reference. This is what makes the same code work against Jira Software (`Task`, `Bug`, `Story`) and against JSM (`Email request`, `Service Request`, …) with no hardcoded assumption. When `createmeta` is not readable — some instances gate it behind a permission that does not block creation — the call falls back to the name rather than refusing to try.
+
+<details>
+<summary><b>Setting up GitHub Issues — step by step</b></summary>
+
+1. **Repository.** On github.com press **New**, or use one you already have. What goes in `github_repo` is `owner/repo` — the two segments after `github.com/` in the address bar. No `https://`, no `.git`.
+2. **Issues must be on.** Repository → **Settings** → **General** → **Features** → tick **Issues**. On a repository created from a template it is sometimes off, and that stays invisible until a ticket fails.
+3. **Token.** github.com → avatar → **Settings** → **Developer settings** → **Personal access tokens**. Either kind works:
+   - **Fine-grained** — *Repository access* → that repository; *Permissions* → *Repository permissions* → **Issues: Read and write**.
+   - **Classic** — scope **`repo`**, or **`public_repo`** if the repository is public.
+4. **Copy it once.** GitHub shows the token only at creation. It goes in `github_token` and is read back masked.
+5. **Write access.** The account owning the token must be able to write to the repository: a read-only collaborator gets a token that authenticates fine and still cannot open issues.
+6. Press **CHECK CONNECTION** — it walks all of the above and tells you which step fails.
+
+</details>
+
+<details>
+<summary><b>Setting up Jira — step by step (Software and Service Management)</b></summary>
+
+1. **Project.** Jira → **Projects** → **Create project**. The template decides what you can create later: a **Jira Software** project (Scrum/Kanban) ships `Task`, `Bug`, `Story`; a **Jira Service Management** project has no `Task` at all — it has request types such as `Email request`.
+2. **`jira_project_key`.** The short prefix of the issue numbers — `SEC` in `SEC-104`. Project settings → **Details**, or read it off any issue. It is not the project name.
+3. **`jira_issue_type`.** Project settings → **Issue types** (Service Management: **Request types**). Copy the name exactly as written there. Case does not matter; the wording does. Leave it empty to mean `Task`.
+4. **`jira_url`.** The site address, `https://yourorg.atlassian.net` — everything before the first `/` after the domain, no trailing path.
+5. **`jira_email`.** The Atlassian account the token will belong to — the same account, not a colleague's.
+6. **`jira_api_token`.** [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens) → **Security** → **Create and manage API tokens** → **Create API token**. Copy it once. It is **not** the account password: Jira Cloud rejects passwords over the API.
+7. **Permissions.** That account needs **Browse projects** and **Create issues** on the project. On Service Management it must also be an *agent*, not just a customer.
+8. Press **CHECK CONNECTION** — it resolves the issue type against the project and, if yours is not there, lists the names it did find.
+
+</details>
+
 **Fingerprint dedup** — stable identity computed from (asset, package, primary CVE) — or location for findings without a CVE. Source is NOT part of the key: the same defect reported by Trivy **and** Grype is a single finding (source `trivy+grype`, `times_seen` incremented). Internal posture (SCA) findings also flow automatically into the same lifecycle on every run.
 
 **Workflow states** — `open → triaged → accepted | fixed` (free transitions via `PATCH /api/findings/{id}/status`, inline change in the UI). A `fixed` finding that reappears in a later report is **automatically reopened** (`reopened` incremented). Posture findings no longer observed in the asset's latest run are **auto-closed** (`fixed`).
@@ -1114,7 +1146,8 @@ Visual states: `idle` (gray) → `running` (pulsing cyan) → `done` (green ✓)
     "jira_url": "",                 // "https://org.atlassian.net"
     "jira_email": "",
     "jira_api_token": "",
-    "jira_project_key": ""
+    "jira_project_key": "",
+    "jira_issue_type": "Task"       // exact name; a JSM project has no "Task"
   }
 }
 ```

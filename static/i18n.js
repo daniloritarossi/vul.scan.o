@@ -783,6 +783,30 @@
       'settings.jira_project': 'Project Key',
       'settings.jira_email': 'Email',
       'settings.jira_token': 'API Token',
+      'settings.jira_issue_type': 'Issue Type',
+      'settings.jira_issue_type_hint': 'Exact name of the issue type to create. Jira Software projects have <code>Task</code>; a Jira Service Management project does not — use the name shown in its own settings (e.g. <code>Email request</code>). Empty means <code>Task</code>.',
+      'settings.gh_guide_title': 'How to set this up — repository, token, permissions',
+      'settings.gh_guide': '<ol>' +
+        '<li><b>Repository.</b> On github.com press <b>New</b> (or use one you already have). What goes in <b>Repository</b> is <code>owner/repo</code> — the two segments after <code>github.com/</code> in the address bar, nothing else: no <code>https://</code>, no <code>.git</code>.</li>' +
+        '<li><b>Issues must be on.</b> Repository → <b>Settings</b> → <b>General</b> → <b>Features</b> → tick <b>Issues</b>. On a repository created from a template it is sometimes off, and that is invisible until a ticket fails.</li>' +
+        '<li><b>Token.</b> github.com → your avatar → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b>. Two kinds work:<br>' +
+        '· <b>Fine-grained</b>: <i>Repository access</i> → select that repository; <i>Permissions</i> → <i>Repository permissions</i> → <b>Issues: Read and write</b>.<br>' +
+        '· <b>Classic</b>: scope <b>repo</b> (or <b>public_repo</b> if the repository is public).</li>' +
+        '<li><b>Copy it once.</b> GitHub shows the token only at creation. Paste it into <b>GitHub Token</b>; from then on this page reads it back masked.</li>' +
+        '<li><b>Write access.</b> The account the token belongs to must be able to write to that repository — a read-only collaborator gets a token that passes authentication and still cannot open issues.</li>' +
+        '<li>Press <b>CHECK CONNECTION</b>. It walks all of the above and names the one that is wrong.</li>' +
+        '</ol>',
+      'settings.jira_guide_title': 'How to set this up — project, issue type, API token',
+      'settings.jira_guide': '<ol>' +
+        '<li><b>Project.</b> Jira → <b>Projects</b> → <b>Create project</b>. The template decides what you can create later: a <b>Jira Software</b> project (Scrum/Kanban) comes with <code>Task</code>, <code>Bug</code>, <code>Story</code>; a <b>Jira Service Management</b> project does not have <code>Task</code> at all — it has request types such as <code>Email request</code>.</li>' +
+        '<li><b>Project Key.</b> The short prefix of the issue numbers — <code>SEC</code> in <code>SEC-104</code>. Project settings → <b>Details</b>, or just read it off any issue. It is not the project name.</li>' +
+        '<li><b>Issue Type.</b> Project settings → <b>Issue types</b> (Service Management: <b>Request types</b>). Copy the name <b>exactly as written there</b> into the <b>Issue Type</b> field. Capitalisation does not matter; the wording does.</li>' +
+        '<li><b>Jira URL.</b> Your site address, <code>https://yourorg.atlassian.net</code> — the part of the browser address before the first <code>/</code> after the domain. No trailing path.</li>' +
+        '<li><b>Email.</b> The Atlassian account the token will belong to. It must be the same account, not a colleague’s.</li>' +
+        '<li><b>API token.</b> <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com</a> → <b>Security</b> → <b>Create and manage API tokens</b> → <b>Create API token</b>. Copy it once and paste it into <b>API Token</b>. It is <b>not</b> your account password: Jira Cloud rejects passwords over the API.</li>' +
+        '<li><b>Permissions.</b> That account needs <b>Browse projects</b> and <b>Create issues</b> on the project. On Service Management it also has to be an <i>agent</i>, not just a customer.</li>' +
+        '<li>Press <b>CHECK CONNECTION</b>. It resolves the issue type against the project and tells you which name it did find if yours is not there.</li>' +
+        '</ol>',
       'settings.tk_check': 'CHECK CONNECTION',
       'settings.tk_check_hint': 'Verifies the settings without creating any ticket',
       'settings.tk_checking': 'Checking…',
@@ -794,7 +818,7 @@
       'settings.tk_step_repo': 'Repository reachable',
       'settings.tk_step_issues': 'Issues can be created',
       'settings.tk_step_project': 'Project found',
-      'settings.tk_step_issuetype': 'Issue type “Task” available',
+      'settings.tk_step_issuetype': 'Issue type resolved',
       'settings.tk_err_provider_off': 'Ticketing is off. Pick GitHub or Jira first.',
       'settings.tk_err_missing_token': 'The API token is empty.',
       'settings.tk_err_missing_repo': 'The repository is empty. Expected owner/repo.',
@@ -827,7 +851,7 @@
       'settings.tk_err_project_forbidden': 'The account cannot see that project.',
       'settings.tk_err_project_not_found': 'No project with that key. Check the key — it is the prefix of the issue numbers, not the project name.',
       'settings.tk_err_project_error': 'The project could not be read.',
-      'settings.tk_err_no_task_type': 'The project has no “Task” issue type, which is the one used to create tickets.',
+      'settings.tk_err_issue_type_not_found': 'The project has no issue type called “{w}”. It offers: {n}. Copy one of those into the Issue Type field.',
     },
     it: {
       // common
@@ -1595,6 +1619,30 @@
       'settings.jira_project': 'Project Key',
       'settings.jira_email': 'Email',
       'settings.jira_token': 'API Token',
+      'settings.jira_issue_type': 'Tipo di issue',
+      'settings.jira_issue_type_hint': 'Nome esatto del tipo di issue da creare. I progetti Jira Software hanno <code>Task</code>; un progetto Jira Service Management no — usa il nome che compare nelle sue impostazioni (es. <code>Email request</code>). Vuoto significa <code>Task</code>.',
+      'settings.gh_guide_title': 'Come configurarlo — repository, token, permessi',
+      'settings.gh_guide': '<ol>' +
+        '<li><b>Repository.</b> Su github.com premi <b>New</b> (o usane uno che hai già). In <b>Repository</b> va <code>owner/repo</code> — i due segmenti dopo <code>github.com/</code> nella barra degli indirizzi, nient’altro: niente <code>https://</code>, niente <code>.git</code>.</li>' +
+        '<li><b>Le issue devono essere attive.</b> Repository → <b>Settings</b> → <b>General</b> → <b>Features</b> → spunta <b>Issues</b>. Su un repository creato da un template a volte sono spente, e non si vede finché un ticket non fallisce.</li>' +
+        '<li><b>Token.</b> github.com → il tuo avatar → <b>Settings</b> → <b>Developer settings</b> → <b>Personal access tokens</b>. Vanno bene entrambi i tipi:<br>' +
+        '· <b>Fine-grained</b>: <i>Repository access</i> → seleziona quel repository; <i>Permissions</i> → <i>Repository permissions</i> → <b>Issues: Read and write</b>.<br>' +
+        '· <b>Classic</b>: scope <b>repo</b> (oppure <b>public_repo</b> se il repository è pubblico).</li>' +
+        '<li><b>Copialo subito.</b> GitHub mostra il token solo alla creazione. Incollalo in <b>GitHub Token</b>; da lì in poi questa pagina lo rilegge mascherato.</li>' +
+        '<li><b>Permesso di scrittura.</b> L’account a cui appartiene il token deve poter scrivere su quel repository — un collaboratore in sola lettura ottiene un token che supera l’autenticazione e non riesce comunque ad aprire issue.</li>' +
+        '<li>Premi <b>VERIFICA CONNESSIONE</b>: percorre tutti i punti sopra e ti dice quale non torna.</li>' +
+        '</ol>',
+      'settings.jira_guide_title': 'Come configurarlo — progetto, tipo di issue, token API',
+      'settings.jira_guide': '<ol>' +
+        '<li><b>Progetto.</b> Jira → <b>Progetti</b> → <b>Crea progetto</b>. Il template decide che cosa potrai creare: un progetto <b>Jira Software</b> (Scrum/Kanban) nasce con <code>Task</code>, <code>Bug</code>, <code>Story</code>; un progetto <b>Jira Service Management</b> non ha affatto <code>Task</code> — ha tipi di richiesta come <code>Email request</code>.</li>' +
+        '<li><b>Chiave progetto.</b> È il prefisso breve dei numeri di issue — <code>SEC</code> in <code>SEC-104</code>. Impostazioni progetto → <b>Dettagli</b>, oppure leggila da una qualsiasi issue. Non è il nome del progetto.</li>' +
+        '<li><b>Tipo di issue.</b> Impostazioni progetto → <b>Tipi di issue</b> (in Service Management: <b>Tipi di richiesta</b>). Copia il nome <b>esattamente come scritto lì</b> nel campo <b>Tipo di issue</b>. Maiuscole e minuscole non contano; le parole sì.</li>' +
+        '<li><b>URL Jira.</b> L’indirizzo del tuo sito, <code>https://tuaorg.atlassian.net</code> — la parte dell’indirizzo prima della prima <code>/</code> dopo il dominio. Nessun percorso finale.</li>' +
+        '<li><b>Email.</b> L’account Atlassian a cui apparterrà il token. Deve essere lo stesso account, non quello di un collega.</li>' +
+        '<li><b>Token API.</b> <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener">id.atlassian.com</a> → <b>Sicurezza</b> → <b>Crea e gestisci token API</b> → <b>Crea token API</b>. Copialo subito e incollalo in <b>API Token</b>. <b>Non</b> è la password dell’account: Jira Cloud rifiuta le password via API.</li>' +
+        '<li><b>Permessi.</b> Quell’account deve avere <b>Esplora progetti</b> e <b>Crea issue</b> sul progetto. Su Service Management deve inoltre essere un <i>agente</i>, non solo un cliente.</li>' +
+        '<li>Premi <b>VERIFICA CONNESSIONE</b>: risolve il tipo di issue sul progetto e, se il tuo non c’è, ti dice quali nomi ha trovato.</li>' +
+        '</ol>',
       'settings.tk_check': 'VERIFICA CONNESSIONE',
       'settings.tk_check_hint': 'Verifica le impostazioni senza creare alcun ticket',
       'settings.tk_checking': 'Verifica in corso…',
@@ -1606,7 +1654,7 @@
       'settings.tk_step_repo': 'Repository raggiungibile',
       'settings.tk_step_issues': 'Le issue si possono creare',
       'settings.tk_step_project': 'Progetto trovato',
-      'settings.tk_step_issuetype': 'Tipo di issue «Task» disponibile',
+      'settings.tk_step_issuetype': 'Tipo di issue risolto',
       'settings.tk_err_provider_off': 'Il ticketing è disattivato. Scegli prima GitHub o Jira.',
       'settings.tk_err_missing_token': 'Il token API è vuoto.',
       'settings.tk_err_missing_repo': 'Il repository è vuoto. Atteso owner/repo.',
@@ -1639,7 +1687,7 @@
       'settings.tk_err_project_forbidden': 'L\'account non vede quel progetto.',
       'settings.tk_err_project_not_found': 'Nessun progetto con quella chiave. Controlla la chiave: è il prefisso dei numeri di issue, non il nome del progetto.',
       'settings.tk_err_project_error': 'Non è stato possibile leggere il progetto.',
-      'settings.tk_err_no_task_type': 'Il progetto non ha il tipo di issue «Task», che è quello usato per creare i ticket.',
+      'settings.tk_err_issue_type_not_found': 'Il progetto non ha un tipo di issue chiamato «{w}». Offre: {n}. Copia uno di quelli nel campo Tipo di issue.',
     },
   };
 

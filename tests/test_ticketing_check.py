@@ -162,19 +162,46 @@ def test_jira_unknown_project_key(fake_get):
     assert (out["code"], out["field"]) == ("project_not_found", "jira_project_key")
 
 
-def test_jira_project_without_task_issue_type(fake_get):
-    """create_jira_issue() chiede un issue type 'Task': senza, la
-    configurazione e' valida e la creazione fallisce comunque."""
-    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK,
-             FakeResponse(200, {"projects": [{"issuetypes": [{"name": "Email request"}]}]}))
-    out = ticketing.check_jira(JIRA_CFG)
-    assert out["code"] == "no_task_type"
-    assert "Email request" in out["detail"]      # dice quali tipi ci sono
+def _types(*names):
+    """Risposta dell'endpoint createmeta per progetto (formato attuale)."""
+    return FakeResponse(200, {"issueTypes": [
+        {"id": str(10000 + i), "name": n, "subtask": False}
+        for i, n in enumerate(names)]})
+
+
+def test_jira_project_without_the_configured_issue_type(fake_get):
+    """Un progetto Service Management non ha 'Task': la configurazione e'
+    valida in ogni altro senso e la creazione fallirebbe comunque."""
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, _types("Email request"))
+    out = ticketing.check_jira(JIRA_CFG)          # jira_issue_type non impostato -> Task
+    assert out["code"] == "issue_type_not_found"
+    assert out["field"] == "jira_issue_type"
+    # Il messaggio deve poter dire sia il tipo chiesto sia quelli disponibili.
+    assert out["params"] == {"w": "Task", "n": "Email request"}
+
+
+def test_jira_accepts_a_service_management_issue_type(fake_get):
+    """E' il caso che ha motivato il campo: nessun 'Task' in vista, e la
+    configurazione e' comunque corretta."""
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, _types("Email request"))
+    out = ticketing.check_jira({**JIRA_CFG, "jira_issue_type": "Email request"})
+    assert out["ok"] is True
+    assert [s["key"] for s in out["steps"]] == ["config", "auth", "project", "issuetype"]
+    assert "10000" in out["steps"][-1]["info"]    # riporta l'id risolto
+
+
+def test_jira_issue_type_match_ignores_case(fake_get):
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, _types("Email request"))
+    assert ticketing.check_jira({**JIRA_CFG, "jira_issue_type": "email REQUEST"})["ok"] is True
+
+
+def test_jira_empty_issue_type_falls_back_to_task(fake_get):
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, _types("Task", "Bug"))
+    assert ticketing.check_jira({**JIRA_CFG, "jira_issue_type": ""})["ok"] is True
 
 
 def test_jira_all_good(fake_get):
-    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK,
-             FakeResponse(200, {"projects": [{"issuetypes": [{"name": "Task"}]}]}))
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, _types("Task"))
     out = ticketing.check_jira(JIRA_CFG)
     assert out["ok"] is True
     assert [s["key"] for s in out["steps"]] == ["config", "auth", "project", "issuetype"]
@@ -182,9 +209,86 @@ def test_jira_all_good(fake_get):
 
 def test_jira_createmeta_denied_is_not_a_failure(fake_get):
     """Su alcune istanze createmeta richiede un permesso che l'utente non ha,
-    mentre la creazione resta consentita: non e' una bocciatura."""
-    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK, FakeResponse(403, {"message": "no"}))
-    assert ticketing.check_jira(JIRA_CFG)["ok"] is True
+    mentre la creazione resta consentita: non e' una bocciatura. Entrambi gli
+    endpoint vanno consumati prima di rinunciare."""
+    fake_get(JIRA_ME_OK, JIRA_PROJECT_OK,
+             FakeResponse(403, {"message": "no"}), FakeResponse(403, {"message": "no"}))
+    out = ticketing.check_jira(JIRA_CFG)
+    assert out["ok"] is True
+    assert [s["key"] for s in out["steps"]] == ["config", "auth", "project"]
+
+
+# ── Risoluzione del tipo di issue ─────────────────────────────────────────
+
+def test_issue_types_read_from_the_per_project_endpoint(fake_get):
+    fake_get(_types("Task", "Bug"))
+    got = ticketing._jira_issue_types("https://acme.atlassian.net", ("a", "b"), "SEC")
+    assert [t["name"] for t in got] == ["Task", "Bug"]
+    assert got[0]["id"] == "10000"
+
+
+def test_issue_types_fall_back_to_the_deprecated_endpoint(fake_get):
+    """Le istanze piu' vecchie non hanno l'endpoint per progetto."""
+    fake_get(FakeResponse(404, {"message": "gone"}),
+             FakeResponse(200, {"projects": [{"issuetypes": [
+                 {"id": "3", "name": "Task", "subtask": False}]}]}))
+    got = ticketing._jira_issue_types("https://acme.atlassian.net", ("a", "b"), "SEC")
+    assert got == [{"id": "3", "name": "Task", "subtask": False}]
+
+
+def test_issue_types_unreadable_is_none_not_empty(fake_get):
+    """None significa 'non lo so'; [] significherebbe 'non ce ne sono', e
+    boccerebbe una configurazione valida."""
+    fake_get(FakeResponse(403, {}), FakeResponse(403, {}))
+    assert ticketing._jira_issue_types("https://acme.atlassian.net", ("a", "b"), "SEC") is None
+
+
+def test_subtask_types_are_not_selectable():
+    types = [{"id": "1", "name": "Sub-task", "subtask": True},
+             {"id": "2", "name": "Task", "subtask": False}]
+    assert ticketing._pick_issue_type(types, "Sub-task") is None
+    assert ticketing._pick_issue_type(types, "Task")["id"] == "2"
+
+
+# ── Creazione: il tipo viaggia come ID ────────────────────────────────────
+
+def _capture_post(monkeypatch):
+    sent = {}
+
+    def _post(url, **kwargs):
+        sent["json"] = kwargs.get("json")
+        return FakeResponse(201, {"key": "SEC-1"})
+
+    monkeypatch.setattr(ticketing.requests, "post", _post)
+    return sent
+
+
+def test_create_sends_the_resolved_id_not_the_name(fake_get, monkeypatch):
+    """I tipi di un progetto Service Management sono definiti nel progetto
+    (scope PROJECT): l'id e' l'unico riferimento non ambiguo."""
+    fake_get(_types("Email request"))
+    sent = _capture_post(monkeypatch)
+    out = ticketing.create_jira_issue(
+        {**JIRA_CFG, "jira_issue_type": "Email request"}, {"id": 1, "severity": "HIGH"})
+    assert sent["json"]["fields"]["issuetype"] == {"id": "10000"}
+    assert out["ref"] == "SEC-1"
+
+
+def test_create_falls_back_to_the_name_when_createmeta_is_unreadable(fake_get, monkeypatch):
+    fake_get(FakeResponse(403, {}), FakeResponse(403, {}))
+    sent = _capture_post(monkeypatch)
+    ticketing.create_jira_issue({**JIRA_CFG, "jira_issue_type": "Task"}, {"id": 1})
+    assert sent["json"]["fields"]["issuetype"] == {"name": "Task"}
+
+
+def test_create_refuses_a_type_the_project_does_not_have(fake_get, monkeypatch):
+    """Meglio un errore che nomina i tipi disponibili di un HTTP 400 di Jira."""
+    fake_get(_types("Email request"))
+    monkeypatch.setattr(ticketing.requests, "post",
+                        lambda *a, **k: pytest.fail("non deve nemmeno provare"))
+    with pytest.raises(ticketing.TicketError) as exc:
+        ticketing.create_jira_issue({**JIRA_CFG, "jira_issue_type": "Task"}, {"id": 1})
+    assert "Email request" in str(exc.value)
 
 
 # ── Rete ──────────────────────────────────────────────────────────────────

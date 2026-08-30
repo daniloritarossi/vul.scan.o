@@ -59,6 +59,64 @@ def _ticket_title(f: dict) -> str:
     return f"[{sev}] {f.get('title') or 'Security finding'}"[:200]
 
 
+DEFAULT_JIRA_ISSUE_TYPE = "Task"
+
+
+def _jira_issue_types(base: str, auth, project: str):
+    """
+    Tipi di issue creabili in quel progetto: [{"id", "name", "subtask"}].
+
+    None (non lista vuota) quando l'istanza non lascia leggere il createmeta:
+    su alcune configurazioni richiede un permesso che l'utente non ha, mentre
+    la creazione resta consentita. La differenza conta — "non lo so" non e'
+    "non ce ne sono", e trattarli allo stesso modo boccerebbe configurazioni
+    valide.
+    """
+    head = {"Accept": "application/json"}
+    # L'endpoint per progetto e' quello attuale; il createmeta globale e'
+    # deprecato ma vive ancora sulle istanze piu' vecchie.
+    attempts = (
+        (f"{base}/rest/api/3/issue/createmeta/{project}/issuetypes", None),
+        (f"{base}/rest/api/3/issue/createmeta",
+         {"projectKeys": project, "expand": "projects"}),
+    )
+    for url, params in attempts:
+        try:
+            r = requests.get(url, params=params, auth=auth, headers=head,
+                             timeout=CHECK_TIMEOUT)
+        except requests.RequestException:
+            return None
+        if r.status_code != 200:
+            continue
+        data = _json_or_none(r)
+        if data is None:
+            continue
+        # La risposta per progetto usa "issueTypes" (o "values" su alcune
+        # versioni); quella globale annida i tipi dentro "projects".
+        raw = data.get("issueTypes") or data.get("values")
+        if raw is None:
+            raw = [t for p in (data.get("projects") or [])
+                   for t in (p.get("issuetypes") or [])]
+        return [{"id": str(t.get("id") or ""), "name": t.get("name") or "",
+                 "subtask": bool(t.get("subtask"))}
+                for t in raw if t.get("name")]
+    return None
+
+
+def _pick_issue_type(types, wanted: str):
+    """Il tipo che corrisponde al nome chiesto, o None. I sotto-task sono
+    esclusi: non esistono come issue di primo livello."""
+    want = (wanted or "").strip().lower()
+    for t in types:
+        if not t["subtask"] and t["name"].strip().lower() == want:
+            return t
+    return None
+
+
+def _issue_type_names(types) -> str:
+    return ", ".join(t["name"] for t in types if not t["subtask"])
+
+
 def create_github_issue(cfg: dict, f: dict) -> dict:
     token = (cfg.get("github_token") or "").strip()
     repo = (cfg.get("github_repo") or "").strip()
@@ -95,6 +153,7 @@ def create_jira_issue(cfg: dict, f: dict) -> dict:
     email = (cfg.get("jira_email") or "").strip()
     token = (cfg.get("jira_api_token") or "").strip()
     project = (cfg.get("jira_project_key") or "").strip()
+    wanted = (cfg.get("jira_issue_type") or DEFAULT_JIRA_ISSUE_TYPE).strip()
     if not (base and email and token and project):
         raise TicketError("Ticketing Jira non configurato (url/email/token/project)")
     # Corpo in Atlassian Document Format (richiesto dalla API v3).
@@ -104,13 +163,28 @@ def create_jira_issue(cfg: dict, f: dict) -> dict:
                      "content": [{"type": "text",
                                   "text": _finding_body(f).replace("**", "")}]}],
     }
+    # Il tipo si risolve in ID prima di creare. Per nome funziona solo finche'
+    # quel nome esiste globalmente: i tipi di un progetto Jira Service
+    # Management sono definiti NEL progetto (scope PROJECT), e l'ID e' l'unico
+    # riferimento che li identifica senza ambiguita'. Se il createmeta non e'
+    # leggibile si ripiega sul nome, che e' comunque meglio di non provare.
+    types = _jira_issue_types(base, (email, token), project)
+    if types is not None:
+        hit = _pick_issue_type(types, wanted)
+        if hit is None:
+            raise TicketError(
+                f"Il progetto {project} non ha un tipo di issue '{wanted}'. "
+                f"Disponibili: {_issue_type_names(types) or 'nessuno'}")
+        issuetype = {"id": hit["id"]}
+    else:
+        issuetype = {"name": wanted}
     try:
         resp = requests.post(
             f"{base}/rest/api/3/issue",
             auth=(email, token),
             json={"fields": {
                 "project": {"key": project},
-                "issuetype": {"name": "Task"},
+                "issuetype": issuetype,
                 "summary": _ticket_title(f),
                 "description": body_adf,
                 "labels": ["security", (f.get("severity") or "unknown").lower()],
@@ -276,6 +350,7 @@ def check_jira(cfg: dict) -> dict:
     email = (cfg.get("jira_email") or "").strip()
     token = (cfg.get("jira_api_token") or "").strip()
     project = (cfg.get("jira_project_key") or "").strip()
+    wanted = (cfg.get("jira_issue_type") or DEFAULT_JIRA_ISSUE_TYPE).strip()
 
     if not base:
         return _fail("missing_url", "jira_url", steps=steps)
@@ -344,26 +419,26 @@ def check_jira(cfg: dict) -> dict:
     steps.append({"key": "project", "ok": True,
                   "info": pdata.get("name") or project})
 
-    # 3. create_jira_issue() chiede un issue type "Task": se quel progetto non
-    #    ce l'ha, la configurazione e' valida e la creazione fallisce comunque.
-    try:
-        r = requests.get(f"{base}/rest/api/3/issue/createmeta",
-                         params={"projectKeys": project, "expand": "projects"},
-                         auth=(email, token), headers=head, timeout=CHECK_TIMEOUT)
-    except requests.RequestException as exc:
-        return _net_failure(exc, "jira_project_key", steps)
-    if r.status_code == 200:
-        meta = _json_or_none(r) or {}
-        projects = meta.get("projects") or []
-        types = [t.get("name") for p in projects for t in (p.get("issuetypes") or [])]
-        if types and not any((t or "").lower() == "task" for t in types):
-            return _fail("no_task_type", "jira_project_key",
-                         ", ".join(t for t in types if t)[:120], steps)
-        if projects:
-            steps.append({"key": "issuetype", "ok": True, "info": "Task"})
-    # Un createmeta negato non e' una bocciatura: su alcune istanze richiede un
-    # permesso che l'utente non ha, mentre la creazione resta consentita. Si
-    # tace, invece di dichiarare un errore che non c'e'.
+    # 3. il tipo di issue configurato esiste in QUEL progetto? E' la
+    #    condizione che manda a vuoto la creazione anche con credenziali,
+    #    progetto e permessi perfetti — un progetto Jira Service Management
+    #    non ha "Task", offre "Email request" o simili.
+    types = _jira_issue_types(base, (email, token), project)
+    if types is not None:
+        hit = _pick_issue_type(types, wanted)
+        if hit is None:
+            # Il messaggio deve dire sia che cosa e' stato chiesto sia che cosa
+            # c'e': senza la seconda meta' l'utente non sa cosa scrivere.
+            out = _fail("issue_type_not_found", "jira_issue_type",
+                        _issue_type_names(types) or "-", steps)
+            out["params"] = {"w": wanted,
+                             "n": _issue_type_names(types) or "-"}
+            return out
+        steps.append({"key": "issuetype", "ok": True,
+                      "info": f"{hit['name']} (id {hit['id']})"})
+    # Un createmeta illeggibile non e' una bocciatura: su alcune istanze
+    # richiede un permesso che l'utente non ha, mentre la creazione resta
+    # consentita. Si tace, invece di dichiarare un errore che non c'e'.
 
     return {"ok": True, "provider": "jira", "steps": steps,
             "account": who, "target": f"{project} · {pdata.get('name') or ''}".strip(" ·")}

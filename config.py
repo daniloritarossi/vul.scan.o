@@ -69,6 +69,11 @@ _DEFAULTS: dict = {
         "jira_email": "",
         "jira_api_token": "",
         "jira_project_key": "",
+        # Nome del tipo di issue da creare. "Task" e' il default dei progetti
+        # Jira Software; un progetto Jira Service Management non ce l'ha
+        # affatto (offre "Email request", "Service Request", ...), quindi il
+        # valore non puo' essere cablato nel codice.
+        "jira_issue_type": "Task",
     },
     # SMTP per email di invito/attivazione e reset password.
     "smtp": {
