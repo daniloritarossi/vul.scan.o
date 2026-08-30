@@ -677,28 +677,36 @@ The Jira issue type is **configurable** (`jira_issue_type`, default `Task`) and 
 <details>
 <summary><b>Setting up GitHub Issues — step by step</b></summary>
 
-1. **Repository.** On github.com press **New**, or use one you already have. What goes in `github_repo` is `owner/repo` — the two segments after `github.com/` in the address bar. No `https://`, no `.git`.
-2. **Issues must be on.** Repository → **Settings** → **General** → **Features** → tick **Issues**. On a repository created from a template it is sometimes off, and that stays invisible until a ticket fails.
-3. **Token.** github.com → avatar → **Settings** → **Developer settings** → **Personal access tokens**. Either kind works:
-   - **Fine-grained** — *Repository access* → that repository; *Permissions* → *Repository permissions* → **Issues: Read and write**.
-   - **Classic** — scope **`repo`**, or **`public_repo`** if the repository is public.
-4. **Copy it once.** GitHub shows the token only at creation. It goes in `github_token` and is read back masked.
-5. **Write access.** The account owning the token must be able to write to the repository: a read-only collaborator gets a token that authenticates fine and still cannot open issues.
-6. Press **CHECK CONNECTION** — it walks all of the above and tells you which step fails.
+1. **Repository** — <https://github.com/new>, or use one you already have. What goes in `github_repo` is `owner/repo`: the two segments after `github.com/` in the address bar. No `https://`, no `.git`.
+2. **Issues must be on** — `https://github.com/OWNER/REPO/settings` → **General** → **Features** → tick **Issues**. On a repository created from a template it is sometimes off, and that stays invisible until a ticket fails.
+3. **Token, fine-grained (recommended)** — [open the form already filled in](https://github.com/settings/personal-access-tokens/new?name=VUL.SCAN.O+ticketing&description=Creates+remediation+issues+from+findings&expires_in=90&issues=write): name, 90-day expiry and **Issues: Read and write** are pre-set, you only pick the repository under *Repository access*. Blank form: <https://github.com/settings/personal-access-tokens/new>
+4. **Token, classic** (alternative) — <https://github.com/settings/tokens/new>, scope **`repo`** (or **`public_repo`** for a public repository).
+5. **Copy it once.** GitHub shows the token only at creation. It goes in `github_token` and is read back masked.
+6. **Write access.** The account owning the token must be able to write to the repository: a read-only collaborator gets a token that authenticates fine and still cannot open issues.
+7. Press **CHECK CONNECTION** — it walks all of the above and tells you which step fails.
 
 </details>
 
 <details>
 <summary><b>Setting up Jira — step by step (Software and Service Management)</b></summary>
 
-1. **Project.** Jira → **Projects** → **Create project**. The template decides what you can create later: a **Jira Software** project (Scrum/Kanban) ships `Task`, `Bug`, `Story`; a **Jira Service Management** project has no `Task` at all — it has request types such as `Email request`.
-2. **`jira_project_key`.** The short prefix of the issue numbers — `SEC` in `SEC-104`. Project settings → **Details**, or read it off any issue. It is not the project name.
-3. **`jira_issue_type`.** Project settings → **Issue types** (Service Management: **Request types**). Copy the name exactly as written there. Case does not matter; the wording does. Leave it empty to mean `Task`.
-4. **`jira_url`.** The site address, `https://yourorg.atlassian.net` — everything before the first `/` after the domain, no trailing path.
-5. **`jira_email`.** The Atlassian account the token will belong to — the same account, not a colleague's.
-6. **`jira_api_token`.** [id.atlassian.com](https://id.atlassian.com/manage-profile/security/api-tokens) → **Security** → **Create and manage API tokens** → **Create API token**. Copy it once. It is **not** the account password: Jira Cloud rejects passwords over the API.
-7. **Permissions.** That account needs **Browse projects** and **Create issues** on the project. On Service Management it must also be an *agent*, not just a customer.
-8. Press **CHECK CONNECTION** — it resolves the issue type against the project and, if yours is not there, lists the names it did find.
+Replace `SITE` with your Atlassian site and `KEY` with the project key throughout.
+
+1. **Create the space** — `https://SITE.atlassian.net/jira/projects` → **Create**. Jira Cloud [renamed projects to *spaces*](https://community.atlassian.com/forums/Jira-articles/Jira-Spaces-have-landed/ba-p/3117620) from September 2025; the REST API still says `project`, which is why these settings do too. The template decides what you can create later: a **Jira Software** space (Scrum/Kanban) ships `Task`, `Bug`, `Story`; a **Jira Service Management** space has no `Task` at all — it has request types such as `Email request`.
+2. **`jira_project_key`** — the short prefix of the issue numbers, `SEC` in `SEC-104`, not the space name.
+   `https://SITE.atlassian.net/plugins/servlet/project-config/KEY/details`
+3. **`jira_issue_type`** — the exact name, copied from
+   `https://SITE.atlassian.net/plugins/servlet/project-config/KEY/issuetypes`
+   That address is product-agnostic: Jira 302s it to the right page for Software, Business or Service Management, team-managed or company-managed. On Service Management also check
+   `https://SITE.atlassian.net/jira/servicedesk/projects/KEY/settings/request-types`
+   Case does not matter; the wording does. Empty means `Task`.
+4. **`jira_url`** — `https://SITE.atlassian.net`, everything before the first `/` after the domain. No trailing path.
+5. **`jira_email`** — the Atlassian account the token will belong to; the same account, not a colleague's.
+6. **`jira_api_token`** — <https://id.atlassian.com/manage-profile/security/api-tokens> → **Create API token**. Copy it once. It is **not** the account password: Jira Cloud rejects passwords over the API.
+7. **Permissions** — that account needs **Browse projects** and **Create issues** on the space. On Service Management it must also be an *agent*, not just a customer: `https://SITE.atlassian.net/jira/people`
+8. Press **CHECK CONNECTION** — it resolves the issue type against the space and, if yours is not there, lists the names it did find.
+
+The settings page builds links 1–3 and 7 for *your* site as soon as **Jira URL** and **Project Key** are filled in, under the **i** panel in the TICKETING block.
 
 </details>
 

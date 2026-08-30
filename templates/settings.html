@@ -84,7 +84,7 @@
     }
   </style>
   <style>body { min-height: max(884px, 100dvh); }</style>
-  <script src="/static/i18n.js?v=47"></script>
+  <script src="/static/i18n.js?v=48"></script>
 </head>
 
 <body
@@ -637,6 +637,38 @@
     $('tkGithub').addEventListener('click', () => applyTkProvider('github'));
     $('tkJira').addEventListener('click', () => applyTkProvider('jira'));
 
+    // ── Link della guida Jira, risolti sull'istanza in uso ─────────
+    // Gli indirizzi di Jira dipendono dal sito e dalla chiave progetto: una
+    // guida che scrive <site> obbliga a ricopiare a mano. Se i due campi sono
+    // compilati i link diventano cliccabili su QUELLA istanza; se non lo sono
+    // restano il pattern, che e' comunque l'informazione esatta.
+    // /plugins/servlet/project-config/{KEY}/... e' l'indirizzo buono per tutti
+    // i prodotti: Jira reindirizza da solo alla pagina del prodotto giusto
+    // (software, servicedesk o business), team-managed o company-managed.
+    function refreshJiraLinks() {
+      const site = ($('jiraUrl').value || '').trim().replace(/\/+$/, '');
+      const key = ($('jiraProject').value || '').trim().toUpperCase();
+      document.querySelectorAll('#jiraBlock .jira-lnk').forEach((a) => {
+        const path = (a.dataset.path || '').replace('{KEY}', key || 'KEY');
+        if (site && /^https?:\/\//.test(site) && (key || !path.includes('KEY'))) {
+          a.href = site + path;
+          a.removeAttribute('aria-disabled');
+          a.style.opacity = '';
+        } else {
+          // Senza sito o senza chiave il link non porterebbe da nessuna parte:
+          // meglio spento e leggibile che rotto e cliccabile.
+          a.removeAttribute('href');
+          a.setAttribute('aria-disabled', 'true');
+          a.style.opacity = '.65';
+        }
+      });
+    }
+    ['jiraUrl', 'jiraProject'].forEach((id) =>
+      $(id).addEventListener('input', refreshJiraLinks));
+    // i testi della guida sono ridisegnati a ogni cambio lingua: gli href
+    // vanno riapplicati dopo, altrimenti tornerebbero quelli del dizionario.
+    window.addEventListener('langchange', () => setTimeout(refreshJiraLinks, 0));
+
     // ── Verifica connessione ticketing ─────────────────────────────
     // Il pulsante risponde a "se premo crea ticket, funziona?" senza creare
     // nulla. I valori inviati sono quelli NELLA FORM, non quelli salvati:
@@ -835,6 +867,7 @@
         $('jiraToken').value = cfg.ticketing?.jira_api_token || '';
         $('jiraProject').value = cfg.ticketing?.jira_project_key || '';
         $('jiraIssueType').value = cfg.ticketing?.jira_issue_type || '';
+        refreshJiraLinks();
 
         // SMTP + auth policy
         $('smtpHost').value = cfg.smtp?.host || '';
