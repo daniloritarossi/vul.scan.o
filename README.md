@@ -1318,10 +1318,12 @@ omitted for scoped roles for the same reason.
 | `POST /api/findings/import` | ✅ | ✅ | ✅ out-of-scope rows skipped (with count) | 403 | 403 | 403 |
 | `PATCH /api/findings/{id}/status` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
 | `POST /api/findings/{id}/ticket` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
+| `POST /api/findings/tickets/refresh` | ✅ | ✅ | ✅ own cone only | 403 | 403 | 403 |
 | `POST /api/findings/scan-local` | ✅ | ✅ | ✅ `asset_ip` required and in scope | 403 | 403 | 403 |
 | `GET /api/scan`, `/api/posture/scan` | ✅ | ✅ | only assigned assets | 403 | 403 | 403 |
 | `GET /api/settings` | ✅ | ✅ read | 403 | 403 | 403 | 403 |
 | `POST /api/settings` (app configuration) | ✅ **admin only** | 403 | 403 | 403 | 403 | 403 |
+| `POST /api/settings/ticketing/check` | ✅ **admin only** | 403 | 403 | 403 | 403 | 403 |
 | `GET /api/risk`, `/api/risk/trend` | all | all | recomputed on the cone only | all | all | recomputed on the cone only |
 | `GET /api/sbom` | full | full | cone only | full | full | cone only |
 | `GET /api/sbom/export` | full | full | cone only | **full** | 403 | 403 |

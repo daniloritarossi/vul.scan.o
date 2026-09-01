@@ -452,7 +452,18 @@ def test_status_of_nothing_costs_no_call(monkeypatch):
     assert ticketing.fetch_ticket_status({"provider": "jira"}, []) == {}
 
 
-def test_ticket_refresh_is_writer_only(role_clients):
+def test_ticket_refresh_is_writer_only(role_clients, monkeypatch):
+    """La matrice RBAC del manuale dichiara writer si', lettori no: qui la si
+    verifica invece di fidarsene."""
     for role in ("auditor", "viewer", "stakeholder"):
         r = role_clients[role].post("/api/findings/tickets/refresh")
         assert r.status_code == 403, f"{role} non deve poter aggiornare"
+    # I ruoli che scrivono passano il controllo di ruolo. Il provider e'
+    # neutralizzato: qui si verifica il permesso, non la rete.
+    monkeypatch.setattr(ticketing.requests, "post",
+                        lambda *a, **k: FakeResponse(200, {"issues": []}))
+    monkeypatch.setattr(ticketing.requests, "get",
+                        lambda *a, **k: FakeResponse(200, {"state": "open"}))
+    for role in ("admin", "manager", "editor"):
+        r = role_clients[role].post("/api/findings/tickets/refresh")
+        assert r.status_code == 200, f"{role} deve poter aggiornare ({r.text[:80]})"
