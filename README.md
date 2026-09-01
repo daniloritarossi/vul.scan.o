@@ -720,7 +720,7 @@ The settings page builds links 1–3 and 7 for *your* site as soon as **Jira URL
 
 **Remediation SLA** — due date computed at first observation based on severity (default: critical 7d, high 30d, medium 90d, low 180d; configurable in `config.json`, `sla` section). `BREACHED` badge in the UI if past due and not fixed/accepted.
 
-The `/findings` page shows KPIs (open, SLA breached, triaged, accepted, fixed), filters by status/severity/source/text, and a table with inline status changes.
+The `/findings` page shows KPIs (open, SLA breached, triaged, accepted, fixed), filters by status/severity/source/**ticket**/text, and a table with inline status changes. The ticket filter separates three questions that look like one: whether a ticket exists, where it got to (`to do` / `in progress` / `done` / `unknown`), and whether it has been read back at all (`not read yet`) — `with ticket · done` next to a finding still open is the pair worth looking for.
 
 ### 4-quater · Point-in-time audit evidence
 

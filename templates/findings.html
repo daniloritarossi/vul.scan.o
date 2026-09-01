@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=49" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=50" />
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -24,7 +24,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=50"></script>
+  <script src="/static/i18n.js?v=51"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -220,21 +220,36 @@
             <option value="21.2.i">21.2.i — Access control &amp; asset mgmt</option>
             <option value="21.2.j">21.2.j — MFA &amp; secured comms</option>
           </select>
+          <select id="fTicket"
+            class="font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300">
+            <option value="" data-i18n="find.f_ticket">ALL TICKETS</option>
+            <option value="none" data-i18n="find.f_ticket_none">NO TICKET</option>
+            <option value="any" data-i18n="find.f_ticket_any">WITH TICKET</option>
+            <option value="todo" data-i18n="find.f_ticket_todo">TICKET · TO DO</option>
+            <option value="in_progress" data-i18n="find.f_ticket_doing">TICKET · IN PROGRESS</option>
+            <option value="done" data-i18n="find.f_ticket_done">TICKET · DONE</option>
+            <option value="unknown" data-i18n="find.f_ticket_unknown">TICKET · UNKNOWN</option>
+            <option value="unread" data-i18n="find.f_ticket_unread">TICKET · NOT READ YET</option>
+          </select>
           <div class="relative flex-1 min-w-[220px] max-w-md">
             <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-base">search</span>
             <input id="fSearch" type="text" data-i18n-ph="find.search_ph" placeholder="Search package, CVE, asset…"
               class="w-full font-code-sm text-[12px] text-slate-700 bg-white border border-slate-200 rounded-lg pl-9 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-300" />
           </div>
-          <button id="tkRefreshBtn" type="button"
-            class="ml-auto px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-cyan-400 hover:text-cyan-700 font-label-caps text-[10px] inline-flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title="">
-            <span id="tkRefreshIcon" class="material-symbols-outlined text-[15px]">sync</span>
-            <span data-i18n="find.tk_refresh">REFRESH TICKET STATUS</span>
-          </button>
-          <span id="tkRefreshMsg" class="font-code-sm text-[11px] text-slate-500"></span>
-          <span id="rowCount" class="font-code-sm text-[11px] text-slate-500 ml-3"></span>
+          <span id="rowCount" class="font-code-sm text-[11px] text-slate-500 ml-auto"></span>
           <!-- Chip filtri attivi (rimovibili) -->
           <div id="activeChips" class="w-full flex flex-wrap items-center gap-2 empty:hidden"></div>
+          <!-- Azione sulla colonna TICKET: sta sotto i filtri perche' non
+               filtra nulla — riscrive dati — e va distinta da essi. -->
+          <div class="w-full flex flex-wrap items-center gap-3 pt-2 border-t border-slate-200/60">
+            <button id="tkRefreshBtn" type="button"
+              class="bg-slate-900 text-white hover:bg-slate-800 px-5 py-2.5 rounded-lg font-label-caps text-label-caps transition-all flex items-center gap-2 shadow-lg shadow-slate-900/10 disabled:opacity-40 disabled:cursor-not-allowed">
+              <span id="tkRefreshIcon" class="material-symbols-outlined text-sm text-cyan-400">sync</span>
+              <span data-i18n="find.tk_refresh">REFRESH TICKET STATUS</span>
+            </button>
+            <span id="tkRefreshMsg" class="font-code-sm text-[12px] text-slate-500"></span>
+            <span class="font-code-sm text-[11px] text-slate-400 ml-auto" data-i18n="find.tk_hint">Re-reads every linked ticket from GitHub / Jira</span>
+          </div>
         </section>
 
         <!-- Table -->
@@ -333,21 +348,27 @@
       function ticketStatusLabel(r) {
         if (!r.ticket_status && !r.ticket_state) {
           // Mai riletto: dirlo, invece di lasciare la cella muta come prima.
-          return `<div class="mt-1 text-[10px] text-slate-400 font-code-sm">${esc(tr('find.tk_never'))}</div>`;
+          return `<span class="text-[10px] text-slate-400 font-code-sm">${esc(tr('find.tk_never'))}</span>`;
         }
         const st = r.ticket_state || 'unknown';
         const when = r.ticket_checked_at
           ? ` title="${esc(tr('find.tk_checked', { t: new Date(r.ticket_checked_at).toLocaleString() }))}"` : '';
-        return `<div class="mt-1"${when}><span class="px-1.5 py-0.5 rounded border ${TK_STATE_STYLE[st] || TK_STATE_STYLE.unknown} text-[10px] font-code-sm inline-flex items-center gap-1">
-          <span class="material-symbols-outlined text-[12px]">${TK_STATE_ICON[st] || TK_STATE_ICON.unknown}</span>${esc(r.ticket_status || tr('find.tk_state_' + st))}</span></div>`;
+        return `<span class="px-1.5 py-0.5 rounded border ${TK_STATE_STYLE[st] || TK_STATE_STYLE.unknown} text-[10px] font-code-sm inline-flex items-center gap-1"${when}>
+          <span class="material-symbols-outlined text-[12px]">${TK_STATE_ICON[st] || TK_STATE_ICON.unknown}</span>${esc(r.ticket_status || tr('find.tk_state_' + st))}</span>`;
       }
 
       function ticketCell(r) {
         if (r.ticket_url)
-          return `<a href="${esc(r.ticket_url)}" target="_blank" rel="noopener"
-            class="px-2 py-1 rounded-lg border border-slate-200 bg-white text-slate-600 hover:border-cyan-400 hover:text-cyan-700 text-[11px] font-code-sm inline-flex items-center gap-1">
-            <span class="material-symbols-outlined text-[13px]">open_in_new</span>${esc(r.ticket_ref || 'ticket')}</a>`
-            + ticketStatusLabel(r);
+          // Il riferimento e' un link e deve sembrarlo: colore d'accento,
+          // sottolineatura, icona di uscita. Il chip bordato di prima si
+          // leggeva come un'etichetta, e nessuno prova a cliccare un'etichetta.
+          return `<div class="flex flex-col items-start gap-1.5 justify-center min-h-[3.25rem]">
+            <a href="${esc(r.ticket_url)}" target="_blank" rel="noopener"
+              title="${esc(tr('find.tk_open', { ref: r.ticket_ref || 'ticket' }))}"
+              class="text-cyan-700 hover:text-cyan-900 underline decoration-cyan-400 decoration-dotted underline-offset-2 hover:decoration-solid text-[12px] font-code-sm font-semibold inline-flex items-center gap-1 group">
+              ${esc(r.ticket_ref || 'ticket')}<span class="material-symbols-outlined text-[13px] opacity-60 group-hover:opacity-100">open_in_new</span></a>
+            ${ticketStatusLabel(r)}
+          </div>`;
         return `<button data-fid="${r.id}" class="ticketBtn px-2 py-1 rounded-lg border border-slate-200 bg-white hover:border-cyan-400 text-slate-500 hover:text-cyan-600 text-[11px] font-label-caps inline-flex items-center gap-1"
           title="${esc(tr('find.ticket_create'))}"><span class="material-symbols-outlined text-[13px]">add</span>${esc(tr('find.ticket_btn'))}</button>`;
       }
@@ -367,11 +388,14 @@
           ['fSev', tr('find.f_sev_chip') || 'Severity'],
           ['fSource', tr('find.f_source_chip') || 'Source'],
           ['fNis2', 'NIS2'],
+          ['fTicket', tr('find.f_ticket_chip') || 'Ticket'],
           ['fSearch', tr('find.f_search_chip') || 'Search'],
         ].filter(([id]) => ($(id).value || '').trim() !== '');
         wrap.innerHTML = active.map(([id, label]) => {
           const el = $(id);
-          const val = id === 'fNis2' ? (el.options[el.selectedIndex]?.value || el.value) : el.value;
+          const val = (id === 'fNis2' || id === 'fTicket')
+            ? (el.options[el.selectedIndex]?.textContent || el.value).trim()
+            : el.value;
           return `<span class="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full bg-cyan-50 border border-cyan-200 text-cyan-700 font-code-sm text-[11px]">`
             + `<span class="font-label-caps text-[9px] tracking-wider text-cyan-500">${esc(label)}</span>`
             + `<span>${esc(val)}</span>`
@@ -386,14 +410,30 @@
         }));
         const clearAll = $('clearAllChips');
         if (clearAll) clearAll.addEventListener('click', () => {
-          ['fStatus', 'fSev', 'fSource', 'fNis2', 'fSearch'].forEach((id) => { $(id).value = ''; });
+          ['fStatus', 'fSev', 'fSource', 'fNis2', 'fTicket', 'fSearch'].forEach((id) => { $(id).value = ''; });
           render();
         });
+      }
+
+      // Il filtro ticket lavora su tre domande diverse, non su un solo campo:
+      // se un ticket esista, a che punto sia, e se sia mai stato riletto.
+      // 'unread' e' distinto da 'unknown': il primo vuol dire che nessuno ha
+      // ancora premuto AGGIORNA, il secondo che il tracker ha risposto con
+      // uno stato che non sappiamo collocare.
+      function ticketMatch(r, f) {
+        if (!f) return true;
+        const has = !!(r.ticket_ref || r.ticket_url);
+        if (f === 'none') return !has;
+        if (f === 'any') return has;
+        if (!has) return false;
+        if (f === 'unread') return !r.ticket_state;
+        return (r.ticket_state || '') === f;
       }
 
       function render() {
         const st = $('fStatus').value, sev = $('fSev').value,
           src = $('fSource').value, nis2 = $('fNis2').value,
+          tk = $('fTicket').value,
           q = $('fSearch').value.trim().toLowerCase();
         renderChips();
         const rows = ALL.filter((r) =>
@@ -401,6 +441,7 @@
           (!sev || (r.severity || '').toUpperCase() === sev) &&
           (!src || (r.source || '').includes(src)) &&
           (!nis2 || ((r.compliance || {}).nis2 || []).some((n) => n.startsWith(nis2 + ' '))) &&
+          ticketMatch(r, tk) &&
           (!q || JSON.stringify(r).toLowerCase().includes(q)));
         $('rowCount').textContent = rows.length + ' / ' + ALL.length;
         $('emptyMsg').classList.toggle('hidden', rows.length > 0);
@@ -433,7 +474,7 @@
             <td class="px-4 py-3 whitespace-nowrap text-[11px] text-slate-500" data-label="${esc(tr('find.th_seen'))}">${fmtDate(r.first_seen)}<br/>${fmtDate(r.last_seen)}</td>
             <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_sla'))}">${slaBadge(r)}</td>
             <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_status'))}">${statusSelect(r)}</td>
-            <td class="px-4 py-3 whitespace-nowrap" data-label="${esc(tr('find.th_ticket'))}">${ticketCell(r)}</td>
+            <td class="px-4 py-3 whitespace-nowrap align-middle" data-label="${esc(tr('find.th_ticket'))}">${ticketCell(r)}</td>
           </tr>`;
         }).join('');
         document.querySelectorAll('.ticketBtn').forEach((btn) => {
@@ -622,7 +663,7 @@
         }
       });
 
-      ['fStatus', 'fSev', 'fSource', 'fNis2'].forEach((id) => $(id).addEventListener('change', render));
+      ['fStatus', 'fSev', 'fSource', 'fNis2', 'fTicket'].forEach((id) => $(id).addEventListener('change', render));
       $('fSearch').addEventListener('input', render);
       window.addEventListener('langchange', render);
 
