@@ -356,3 +356,103 @@ def test_masked_token_falls_back_to_the_stored_one(role_clients, monkeypatch):
     role_clients["admin"].post("/api/settings/ticketing/check", json={
         "provider": "jira", "jira_api_token": "••••••••"})
     assert seen["auth"] == ("bot@acme.io", "stored-token")
+
+
+# ── Stato dei ticket gia' aperti ──────────────────────────────────────────
+
+def _jira_search(*pairs):
+    """Risposta di POST /rest/api/3/search/jql per (key, status, category)."""
+    return FakeResponse(200, {"issues": [
+        {"key": k, "fields": {"status": {"name": name,
+                                         "statusCategory": {"key": cat}},
+                              "resolution": None}}
+        for k, name, cat in pairs]})
+
+
+@pytest.fixture
+def fake_post(monkeypatch):
+    def install(*responses):
+        queue = list(responses)
+
+        def _post(url, **kwargs):
+            assert queue, f"richiesta non prevista: {url}"
+            install.last = kwargs
+            return queue.pop(0)
+
+        monkeypatch.setattr(ticketing.requests, "post", _post)
+    install.last = None
+    return install
+
+
+def test_jira_status_maps_the_category_not_the_label(fake_post):
+    """La categoria e' sempre una di tre; il nome dello stato lo decide il
+    workflow e puo' essere in qualunque lingua."""
+    fake_post(_jira_search(("SEC-1", "Pronto per il collaudo", "indeterminate"),
+                           ("SEC-2", "Fatto", "done"),
+                           ("SEC-3", "Da fare", "new")))
+    out = ticketing.fetch_ticket_status({**JIRA_CFG, "provider": "jira"},
+                                        ["SEC-1", "SEC-2", "SEC-3"])
+    assert out["SEC-1"]["state"] == ticketing.STATE_DOING
+    assert out["SEC-2"]["state"] == ticketing.STATE_DONE
+    assert out["SEC-3"]["state"] == ticketing.STATE_TODO
+    # l'etichetta resta quella del provider: e' quella che l'utente riconosce
+    assert out["SEC-1"]["status"] == "Pronto per il collaudo"
+
+
+def test_jira_unknown_category_is_not_guessed(fake_post):
+    fake_post(_jira_search(("SEC-9", "Boh", "weird")))
+    out = ticketing.fetch_ticket_status({**JIRA_CFG, "provider": "jira"}, ["SEC-9"])
+    assert out["SEC-9"]["state"] == ticketing.STATE_UNKNOWN
+
+
+def test_jira_status_is_one_call_per_chunk(fake_post, monkeypatch):
+    """Una JQL con troppe chiavi supera i limiti: si spezza, ma resta una
+    chiamata per blocco e non una per ticket."""
+    monkeypatch.setattr(ticketing, "JIRA_STATUS_CHUNK", 2)
+    fake_post(_jira_search(("A-1", "Done", "done"), ("A-2", "Done", "done")),
+              _jira_search(("A-3", "To Do", "new")))
+    out = ticketing.fetch_ticket_status({**JIRA_CFG, "provider": "jira"},
+                                        ["A-1", "A-2", "A-3"])
+    assert set(out) == {"A-1", "A-2", "A-3"}
+
+
+def test_github_open_and_closed(fake_get):
+    fake_get(FakeResponse(200, {"state": "open", "state_reason": None}),
+             FakeResponse(200, {"state": "closed", "state_reason": "completed"}))
+    out = ticketing.fetch_ticket_status({**GH_CFG, "provider": "github"}, ["#1", "#2"])
+    assert out["#1"]["state"] == ticketing.STATE_TODO
+    assert out["#2"]["state"] == ticketing.STATE_DONE
+
+
+def test_github_not_planned_is_closed_but_not_done(fake_get):
+    """Chiuso non vuol dire risolto: dire 'done' di un 'not planned' sarebbe
+    la lettura che porta a chiudere un finding che nessuno ha corretto."""
+    fake_get(FakeResponse(200, {"state": "closed", "state_reason": "not_planned"}))
+    out = ticketing.fetch_ticket_status({**GH_CFG, "provider": "github"}, ["#3"])
+    assert out["#3"]["state"] == ticketing.STATE_UNKNOWN
+    assert "not planned" in out["#3"]["status"]
+
+
+def test_github_deleted_issue_is_reported_missing_not_fatal(fake_get):
+    fake_get(FakeResponse(404, {"message": "Not Found"}),
+             FakeResponse(200, {"state": "open", "state_reason": None}))
+    out = ticketing.fetch_ticket_status({**GH_CFG, "provider": "github"}, ["#7", "#8"])
+    assert out["#7"]["missing"] is True
+    assert out["#8"]["state"] == ticketing.STATE_TODO
+
+
+def test_status_without_provider_is_refused():
+    with pytest.raises(ticketing.TicketError):
+        ticketing.fetch_ticket_status({"provider": ""}, ["SEC-1"])
+
+
+def test_status_of_nothing_costs_no_call(monkeypatch):
+    monkeypatch.setattr(ticketing.requests, "post",
+                        lambda *a, **k: pytest.fail("non deve chiamare nulla"))
+    assert ticketing.fetch_ticket_status({"provider": "jira"}, []) == {}
+
+
+def test_ticket_refresh_is_writer_only(role_clients):
+    for role in ("auditor", "viewer", "stakeholder"):
+        r = role_clients[role].post("/api/findings/tickets/refresh")
+        assert r.status_code == 403, f"{role} non deve poter aggiornare"

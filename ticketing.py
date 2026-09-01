@@ -458,3 +458,135 @@ def check_connection(cfg_ticketing: dict) -> dict:
         return _fail("provider_off", "provider")
     out.setdefault("provider", provider)
     return out
+
+
+# ---------------------------------------------------------------------------
+# Stato dei ticket gia' aperti
+# ---------------------------------------------------------------------------
+#
+# La pagina findings sapeva dire CHE un ticket esiste, non a che punto sta.
+# Rileggere lo stato dal provider e' l'unico modo onesto di saperlo: il ticket
+# lo muovono le persone nel loro tracker, non questo applicativo, e qualunque
+# stato tenuto solo qui sarebbe una copia che invecchia in silenzio.
+#
+# Due valori tornano per ogni ticket:
+#   status  l'etichetta del provider, come la scrive lui ("Done", "closed")
+#   state   la normalizzazione su cui si decide il colore
+#
+# La normalizzazione serve perche' un workflow Jira puo' chiamare i propri
+# stati come vuole, in qualunque lingua: "Pronto per il collaudo" non si puo'
+# interpretare, ma la sua statusCategory e' sempre una di tre.
+
+STATE_TODO = "todo"
+STATE_DOING = "in_progress"
+STATE_DONE = "done"
+STATE_UNKNOWN = "unknown"
+
+_JIRA_CATEGORY = {
+    "new": STATE_TODO,
+    "indeterminate": STATE_DOING,
+    "done": STATE_DONE,
+}
+
+# Una JQL con troppe chiavi supera i limiti di lunghezza dell'URL/della query.
+JIRA_STATUS_CHUNK = 50
+
+
+def _jira_statuses(cfg: dict, refs) -> dict:
+    base = (cfg.get("jira_url") or "").strip().rstrip("/")
+    email = (cfg.get("jira_email") or "").strip()
+    token = (cfg.get("jira_api_token") or "").strip()
+    if not (base and email and token):
+        raise TicketError("Ticketing Jira non configurato (url/email/token)")
+    out: dict = {}
+    refs = [r for r in refs if r]
+    for i in range(0, len(refs), JIRA_STATUS_CHUNK):
+        chunk = refs[i:i + JIRA_STATUS_CHUNK]
+        keys = ", ".join('"%s"' % k.replace('"', "") for k in chunk)
+        try:
+            # POST /rest/api/3/search/jql: un'unica chiamata per tutto il blocco.
+            # Il vecchio GET /rest/api/3/search e' stato RIMOSSO (HTTP 410).
+            resp = requests.post(
+                f"{base}/rest/api/3/search/jql",
+                auth=(email, token),
+                headers={"Accept": "application/json",
+                         "Content-Type": "application/json"},
+                json={"jql": f"key in ({keys})",
+                      "fields": ["status", "resolution"],
+                      "maxResults": len(chunk)},
+                timeout=TIMEOUT,
+            )
+        except requests.RequestException as exc:
+            raise TicketError(f"Jira non raggiungibile: {exc}") from exc
+        if resp.status_code == 401:
+            raise TicketError("Jira: credenziali rifiutate")
+        if resp.status_code != 200:
+            raise TicketError(f"Jira HTTP {resp.status_code}: {resp.text[:120]}")
+        for issue in (resp.json().get("issues") or []):
+            fields = issue.get("fields") or {}
+            st = fields.get("status") or {}
+            cat = (st.get("statusCategory") or {}).get("key") or ""
+            out[issue.get("key")] = {
+                "status": st.get("name") or "",
+                "state": _JIRA_CATEGORY.get(cat, STATE_UNKNOWN),
+                "resolution": (fields.get("resolution") or {}).get("name") or "",
+            }
+    return out
+
+
+def _github_statuses(cfg: dict, refs) -> dict:
+    token = (cfg.get("github_token") or "").strip()
+    repo = (cfg.get("github_repo") or "").strip().strip("/")
+    if not token or "/" not in repo:
+        raise TicketError("Ticketing GitHub non configurato (token o repo mancanti)")
+    head = {"Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28"}
+    out: dict = {}
+    for ref in refs:
+        num = (ref or "").lstrip("#").strip()
+        if not num.isdigit():
+            continue
+        # GitHub non ha un endpoint che prenda piu' numeri di issue in una
+        # volta: si interroga una per una, ed e' il motivo per cui il
+        # provider Jira costa una chiamata e questo ne costa N.
+        try:
+            r = requests.get(f"https://api.github.com/repos/{repo}/issues/{num}",
+                             headers=head, timeout=TIMEOUT)
+        except requests.RequestException as exc:
+            raise TicketError(f"GitHub non raggiungibile: {exc}") from exc
+        if r.status_code == 401:
+            raise TicketError("GitHub: token rifiutato")
+        if r.status_code == 404:
+            out[ref] = {"status": "", "state": STATE_UNKNOWN, "missing": True}
+            continue
+        if r.status_code != 200:
+            raise TicketError(f"GitHub HTTP {r.status_code}")
+        d = r.json()
+        state = (d.get("state") or "").lower()
+        # 'not_planned' e' chiuso ma NON risolto: dirlo "Done" sarebbe falso.
+        reason = (d.get("state_reason") or "").lower()
+        out[ref] = {
+            "status": ("closed" if state == "closed" else "open")
+                      + (f" · {reason.replace('_', ' ')}" if reason and state == "closed" else ""),
+            "state": STATE_DONE if (state == "closed" and reason != "not_planned")
+                     else (STATE_UNKNOWN if state == "closed" else STATE_TODO),
+            "resolution": reason,
+        }
+    return out
+
+
+def fetch_ticket_status(cfg_ticketing: dict, refs) -> dict:
+    """
+    Stato corrente dei ticket indicati. {ref: {status, state, resolution}}.
+    TicketError se il provider e' spento, non configurato o irraggiungibile.
+    """
+    provider = (cfg_ticketing.get("provider") or "").strip().lower()
+    refs = [r for r in (refs or []) if r]
+    if not refs:
+        return {}
+    if provider == "jira":
+        return _jira_statuses(cfg_ticketing, refs)
+    if provider == "github":
+        return _github_statuses(cfg_ticketing, refs)
+    raise TicketError("Ticketing disabilitato: configura il provider in Settings")

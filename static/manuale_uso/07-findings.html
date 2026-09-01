@@ -433,6 +433,15 @@
                 <td>
                   <span lang="en"><span class="badge b-acc">CREATE</span> opens a remediation ticket through <code>POST /api/findings/{id}/ticket</code>; afterwards the cell becomes a link to the issue. Title, severity, asset, CVE, SLA and fingerprint all go into the ticket body, so the receiving team has the context without opening this application. Requires a provider configured in <a href="11-settings.html#ticketing">Settings → TICKETING</a>. Messages: <em>“Ticket created: {ref}”</em>, <em>“Ticket already linked to this finding”</em>, <em>“Ticket not created: {msg}”</em>.</span>
                   <span lang="it"><span class="badge b-acc">CREATE</span> apre un ticket di remediation tramite <code>POST /api/findings/{id}/ticket</code>; dopo, la cella diventa un link all'issue. Titolo, severità, asset, CVE, SLA e fingerprint finiscono nel corpo del ticket, così il team ricevente ha il contesto senza aprire questa applicazione. Richiede un provider configurato in <a href="11-settings.html#ticketing">Impostazioni → TICKETING</a>. Messaggi: <em>«Ticket created: {ref}»</em>, <em>«Ticket already linked to this finding»</em>, <em>«Ticket not created: {msg}»</em>.</span>
+                  <br><span lang="en">Once a ticket exists the cell also carries <b>its state</b>, read from the tracker: a grey <em>to do</em>, a cyan <em>in progress</em>, a green <em>done</em>, or an amber <em>unknown</em>. The label is the provider's own wording — a Jira workflow may call a status anything, in any language — while the colour comes from the normalised category behind it, which is always one of those. Hovering it tells you when it was last read.</span>
+                  <span lang="it">Quando un ticket esiste, la cella porta anche <b>il suo stato</b>, letto dal tracker: grigio <em>da fare</em>, ciano <em>in corso</em>, verde <em>completato</em>, ambra <em>sconosciuto</em>. L'etichetta è la dicitura del provider — un workflow Jira può chiamare uno stato come vuole, in qualunque lingua — mentre il colore viene dalla categoria normalizzata dietro di essa, che è sempre una di quelle. Passandoci sopra vedi quando è stato letto l'ultima volta.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-acc">REFRESH TICKET STATUS</span></td>
+                <td>
+                  <span lang="en">One button for the whole table, above it on the right. It re-reads every ticket you can see from the tracker and writes the state back on the findings — <code>POST /api/findings/tickets/refresh</code>. It exists because the state is moved by people in <em>their</em> tracker, not here: anything this application remembered on its own would be a copy that ages in silence. On Jira it is a single JQL call for the whole set; on GitHub one call per issue, which is the limit of that API rather than a choice. It reports how many tickets were checked and <b>how many changed</b>, and writes nothing when nothing moved. Scoped roles refresh only the tickets of findings inside their own cone. Recorded in the audit ledger as <code>finding.ticket_refresh</code>.</span>
+                  <span lang="it">Un pulsante solo per l'intera tabella, sopra a destra. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>.</span>
                 </td>
               </tr>
             </tbody>
@@ -442,8 +451,12 @@
         <figure class="mid">
           <img src="img/findings-row.webp" alt="A single finding row" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>A single finding</b> — everything needed to decide, in one line.</span>
-            <span lang="it"><b>Un singolo finding</b> — tutto il necessario per decidere, in una riga.</span>
+            <span lang="en"><b>A single finding</b> — everything needed to decide, in one line. On the right, the linked
+              ticket with the state read back from the tracker; here the ticket is <em>Done</em> while the finding is
+              still <em>open</em>, which is exactly the disagreement worth seeing.</span>
+            <span lang="it"><b>Un singolo finding</b> — tutto il necessario per decidere, in una riga. A destra il ticket
+              collegato con lo stato riletto dal tracker; qui il ticket è <em>Done</em> mentre il finding è ancora
+              <em>open</em>, ed è esattamente la discordanza che vale la pena vedere.</span>
           </figcaption>
         </figure>
 

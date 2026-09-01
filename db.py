@@ -1191,6 +1191,24 @@ def set_finding_ticket(finding_id: int, ref: str, url: str) -> bool:
         return False
 
 
+def set_finding_ticket_status(finding_id: int, status: str, state: str) -> bool:
+    """Aggiorna lo stato del ticket riletto dal provider, con l'istante della
+    lettura: senza timestamp non si distingue 'aperto' da 'non piu' guardato'."""
+    client = _get_client()
+    if client is None:
+        return False
+    try:
+        resp = client.table("findings").update({
+            "ticket_status": status, "ticket_state": state,
+            "ticket_checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }).eq("id", finding_id).execute()
+        return bool(resp.data)
+    except Exception as exc:
+        logger.warning("set_finding_ticket_status fallita (id=%s): %s",
+                       finding_id, exc)
+        return False
+
+
 def close_stale_posture_findings(asset_ip: str, seen_fps: list,
                                  actor: Optional[dict] = None) -> int:
     """

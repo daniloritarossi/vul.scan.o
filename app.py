@@ -60,10 +60,11 @@ from findings import (fingerprint, merge_findings, posture_findings,
                       summarize, is_breached, STATUSES,
                       lifecycle_events, parse_as_of, reconstruct_as_of,
                       compare_states)
-from ticketing import create_ticket, check_connection, TicketError
+from ticketing import (create_ticket, check_connection, fetch_ticket_status,
+                       TicketError)
 from localscan import run_gitleaks, run_trivy_image, LocalScanError
 from compliance import derive_compliance, compliance_summary
-from db import fetch_finding, set_finding_ticket
+from db import fetch_finding, set_finding_ticket, set_finding_ticket_status
 import db
 from auth import (AuthRequired, Forbidden, PasswordChangeRequired, CurrentUser,
                   get_current_user, require_roles, visible_asset_ids,
@@ -1010,6 +1011,63 @@ def api_findings_ticket(finding_id: int, request: Request,
            detail={"ref": ticket.get("ref"), "url": ticket.get("url"),
                    "provider": (load_config().get("ticketing") or {}).get("provider")})
     return {"ok": True, "already": False, **ticket}
+
+
+@app.post("/api/findings/tickets/refresh")
+def api_findings_tickets_refresh(request: Request,
+                                 user: CurrentUser = Depends(_writer)):
+    """
+    Rilegge dal provider lo stato dei ticket gia' aperti e lo salva sui finding.
+
+    Lo stato lo muovono le persone nel loro tracker: qualunque valore tenuto
+    solo qui sarebbe una copia che invecchia in silenzio, quindi si rilegge
+    su richiesta invece di fingere di saperlo. Editor e stakeholder vedono
+    aggiornarsi solo i ticket dei finding nel proprio cono di visibilita'.
+    """
+    rows = fetch_findings()
+    if rows is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    scope_ips = visible_asset_ips(user)
+    if scope_ips is not None:
+        rows = [r for r in rows if (r.get("asset_ip") or "") in scope_ips]
+    ticketed = [r for r in rows if (r.get("ticket_ref") or "").strip()]
+    if not ticketed:
+        return {"ok": True, "checked": 0, "updated": 0, "changed": [], "statuses": {}}
+
+    # Lo stesso ticket puo' essere referenziato da piu' finding: si interroga
+    # una volta sola e si scrive su tutte le righe che lo puntano.
+    refs = sorted({(r.get("ticket_ref") or "").strip() for r in ticketed})
+    cfg = load_config().get("ticketing") or {}
+    try:
+        found = fetch_ticket_status(cfg, refs)
+    except TicketError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+
+    updated, changed = 0, []
+    for r in ticketed:
+        ref = (r.get("ticket_ref") or "").strip()
+        info = found.get(ref)
+        if not info:
+            continue
+        if r.get("ticket_status") == info["status"] \
+                and r.get("ticket_state") == info["state"]:
+            continue          # nessun cambiamento: nessuna scrittura
+        if set_finding_ticket_status(r["id"], info["status"], info["state"]):
+            updated += 1
+            changed.append({"id": r["id"], "ref": ref,
+                            "from": r.get("ticket_status") or None,
+                            "to": info["status"]})
+    # Interrogare il tracker altrui e' un'uscita verso un sistema esterno; il
+    # registro annota quanti ticket e quanti sono cambiati, non il loro
+    # contenuto.
+    _audit("finding.ticket_refresh", request, user,
+           target={"type": "finding", "label": f"{len(refs)} ticket"},
+           detail={"provider": cfg.get("provider") or "", "checked": len(refs),
+                   "resolved": len(found), "updated": updated})
+    return {"ok": True, "checked": len(refs), "resolved": len(found),
+            "updated": updated, "changed": changed,
+            "statuses": {k: {"status": v["status"], "state": v["state"]}
+                         for k, v in found.items()}}
 
 
 @app.post("/api/findings/scan-local")

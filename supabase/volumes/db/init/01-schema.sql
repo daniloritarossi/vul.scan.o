@@ -212,6 +212,17 @@ ALTER TABLE public.findings
   ADD COLUMN IF NOT EXISTS ticket_ref text,   -- '#42' | 'SEC-101'
   ADD COLUMN IF NOT EXISTS ticket_url text;
 
+-- Stato del ticket, riletto dal provider su richiesta. Due colonne e non una:
+-- 'ticket_status' e' l'etichetta cosi' come la scrive il provider ("Done",
+-- "In Progress", "closed"), che e' quello che l'utente riconosce; 'ticket_state'
+-- e' la normalizzazione su cui si decide il colore, perche' un workflow Jira
+-- puo' chiamare i propri stati come vuole e in qualunque lingua, mentre la
+-- categoria (todo | in_progress | done) e' sempre una di tre.
+ALTER TABLE public.findings
+  ADD COLUMN IF NOT EXISTS ticket_status     text,
+  ADD COLUMN IF NOT EXISTS ticket_state      text,   -- todo|in_progress|done|unknown
+  ADD COLUMN IF NOT EXISTS ticket_checked_at timestamptz;
+
 CREATE INDEX IF NOT EXISTS idx_findings_status   ON public.findings(status);
 CREATE INDEX IF NOT EXISTS idx_findings_asset_ip ON public.findings(asset_ip);
 CREATE INDEX IF NOT EXISTS idx_findings_severity ON public.findings(severity);

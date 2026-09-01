@@ -670,6 +670,8 @@ If the binary is missing, the endpoint returns 400 with installation instruction
 
 **Ticketing** — `POST /api/findings/{id}/ticket` creates a remediation ticket on **GitHub Issues** or **Jira Cloud** (provider and credentials in Settings → TICKETING section) and stores the reference on the finding (TICKET column → link). Title, severity, asset, CVE, SLA and fingerprint go in the ticket body.
 
+`POST /api/findings/tickets/refresh` (button **REFRESH TICKET STATUS**, writer roles) re-reads the state of every already-opened ticket the caller can see and stores it on the finding (`ticket_status`, `ticket_state`, `ticket_checked_at`). The state is moved by people in *their* tracker, so anything remembered here on its own would be a copy that ages in silence: it is read on demand rather than assumed. **Jira** answers the whole set in one `POST /rest/api/3/search/jql` call — the older `GET /rest/api/3/search` is gone, HTTP 410 — and **GitHub** costs one call per issue, which is the limit of that API. The row shows the provider's own label (`Done`, `In Progress`, `closed`) while the colour comes from the normalised category behind it (`todo` / `in_progress` / `done` / `unknown`), because a Jira workflow may name a status anything in any language. A GitHub issue closed as `not_planned` is reported closed but **not** done — closed is not the same as fixed. Scoped roles refresh only their own cone; audited as `finding.ticket_refresh`.
+
 `POST /api/settings/ticketing/check` (button **CHECK CONNECTION**, admin only) walks the same chain read-only — settings complete → credentials accepted → repository/project reachable → issues can actually be created — and names the field at fault instead of returning a generic failure. It checks the values currently in the form, not the saved ones, so a wrong domain can be corrected without writing it to disk first. Audited as `settings.ticketing_check`; the token never appears in the response or in the ledger.
 
 The Jira issue type is **configurable** (`jira_issue_type`, default `Task`) and resolved to its **id** through `createmeta` before creating. Resolving by name only works while that name exists globally; the issue types of a Jira Service Management project are defined *inside* the project (`scope: PROJECT`), so the id is the only unambiguous reference. This is what makes the same code work against Jira Software (`Task`, `Bug`, `Story`) and against JSM (`Email request`, `Service Request`, …) with no hardcoded assumption. When `createmeta` is not readable — some instances gate it behind a permission that does not block creation — the call falls back to the name rather than refusing to try.
@@ -980,7 +982,7 @@ ledgers, readable at `/audit` → **ACTIVITY** or `GET /api/audit/events`.
 | `asset` | `create`, `update` (only the changed fields), `enabled_change`, `context_change`, `delete` |
 | `config` | `update` — the changed keys with before/after; **secret values are redacted** |
 | `export` | `sbom` (format, run, scope), `evidence` (dates, format, scope) |
-| `finding` | `status_change` (from → to, severity, host, note), `ticket_create` (data leaving to GitHub/Jira) |
+| `finding` | `status_change` (from → to, severity, host, note), `ticket_create` (data leaving to GitHub/Jira), `ticket_refresh` (state read back from the tracker) |
 | `scan` / `posture` / `ingest` | `scan.run`, `scan.local`, `posture.scan_start`, `posture.scan_complete`, `ingest.import` |
 
 Each row carries the actor (`actor_id`/`actor_name`/`actor_role`), the target,
