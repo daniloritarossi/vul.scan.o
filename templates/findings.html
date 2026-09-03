@@ -9,7 +9,9 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=50" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=51" />
+  <!-- XLSX export (SheetJS), gia' usato da dashboard e audit -->
+  <script src="/static/vendor/xlsx.full.min.js"></script>
   <style>
     .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -24,7 +26,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=51"></script>
+  <script src="/static/i18n.js?v=54"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -247,8 +249,12 @@
               <span id="tkRefreshIcon" class="material-symbols-outlined text-sm text-cyan-400">sync</span>
               <span data-i18n="find.tk_refresh">REFRESH TICKET STATUS</span>
             </button>
-            <span id="tkRefreshMsg" class="font-code-sm text-[12px] text-slate-500"></span>
-            <span class="font-code-sm text-[11px] text-slate-400 ml-auto" data-i18n="find.tk_hint">Re-reads every linked ticket from GitHub / Jira</span>
+            <button id="exportBtn" type="button"
+              class="px-5 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:border-emerald-400 hover:text-emerald-700 font-label-caps text-label-caps transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+              <span id="exportIcon" class="material-symbols-outlined text-sm text-emerald-600">table_view</span>
+              <span data-i18n="find.export_btn">EXPORT FOR AUDIT (XLSX)</span>
+            </button>
+            <span id="actionMsg" class="font-code-sm text-[12px] text-slate-500"></span>
           </div>
         </section>
 
@@ -285,6 +291,9 @@
       const $ = (id) => document.getElementById(id);
       const tr = (k, v) => (typeof t === 'function' ? t(k, v) : k);
       let ALL = [];
+      // Il sottoinsieme attualmente a schermo: l'export deve contenere quello
+      // che l'utente sta guardando, non l'intero dataset.
+      let VISIBLE = [];
 
       // Delega al toast condiviso (vfa-ui.js): stile/posizione/ARIA unificati.
       function showToast(text, ok) {
@@ -443,6 +452,7 @@
           (!nis2 || ((r.compliance || {}).nis2 || []).some((n) => n.startsWith(nis2 + ' '))) &&
           ticketMatch(r, tk) &&
           (!q || JSON.stringify(r).toLowerCase().includes(q)));
+        VISIBLE = rows;
         $('rowCount').textContent = rows.length + ' / ' + ALL.length;
         $('emptyMsg').classList.toggle('hidden', rows.length > 0);
         $('tbody').removeAttribute('aria-busy');
@@ -565,6 +575,159 @@
         }
       }
 
+      // ── Export per audit ───────────────────────────────────────────
+      // Tre fogli, non uno. Un elenco di vulnerabilita' da solo non prova
+      // nulla: chi lo riceve deve poter dire da chi e quando e' stato
+      // estratto, che cosa e' stato ESCLUSO dai filtri, entro quale cono di
+      // visibilita', e se le catene hash erano intatte in quel momento. Il
+      // foglio dati lo costruisce il browser (le righe le ha gia'); il
+      // contesto lo firma il server, che e' l'unico a saperlo.
+
+      function sevRank(v) {
+        return ({ CRITICAL: 1, HIGH: 2, MEDIUM: 3, LOW: 4, UNKNOWN: 5 })[(v || '').toUpperCase()] || 9;
+      }
+
+      function exportRow(r) {
+        const comp = r.compliance || { owasp: [], nis2: [], cwe: [] };
+        const days = r.sla_due ? Math.round((new Date(r.sla_due) - Date.now()) / 86400000) : null;
+        const closed = r.status === 'fixed' || r.status === 'accepted';
+        return {
+          id: r.id,
+          fingerprint: r.fingerprint || '',
+          severity: (r.severity || 'UNKNOWN').toUpperCase(),
+          severity_rank: sevRank(r.severity),
+          title: r.title || '',
+          asset: r.asset_ip || '',
+          package: r.package || '',
+          version: r.version || '',
+          ecosystem: r.ecosystem || '',
+          location: r.location || '',
+          cve_ids: (r.cve_ids || []).join(' '),
+          cve_count: (r.cve_ids || []).length,
+          cwe_ids: (comp.cwe || []).join(' '),
+          owasp: (comp.owasp || []).join(' | '),
+          nis2: (comp.nis2 || []).join(' | '),
+          source: r.source || '',
+          times_seen: r.times_seen ?? '',
+          reopened: r.reopened ?? '',
+          status: r.status || '',
+          status_note: r.status_note || '',
+          status_changed_at: r.status_changed_at || '',
+          first_seen: r.first_seen || '',
+          last_seen: r.last_seen || '',
+          sla_due: r.sla_due || '',
+          // Giorni RESIDUI se aperta, negativi se scaduta; vuoto se chiusa,
+          // perche' una SLA su un finding accettato non vuol dire nulla.
+          sla_days_left: closed || days === null ? '' : days,
+          sla_breached: closed ? '' : (r.sla_breached || (days !== null && days < 0) ? 'YES' : 'NO'),
+          ticket_ref: r.ticket_ref || '',
+          ticket_url: r.ticket_url || '',
+          ticket_status: r.ticket_status || '',
+          ticket_state: r.ticket_state || '',
+          ticket_checked_at: r.ticket_checked_at || '',
+          detail: r.detail || '',
+        };
+      }
+
+      const EXPORT_LEGEND = [
+        ['fingerprint', 'find.lg_fingerprint'],
+        ['severity_rank', 'find.lg_sevrank'],
+        ['cve_ids', 'find.lg_cve'],
+        ['owasp / nis2', 'find.lg_compliance'],
+        ['source', 'find.lg_source'],
+        ['times_seen / reopened', 'find.lg_seen'],
+        ['status', 'find.lg_status'],
+        ['sla_due / sla_days_left / sla_breached', 'find.lg_sla'],
+        ['ticket_status / ticket_state', 'find.lg_ticket'],
+        ['ticket_checked_at', 'find.lg_checked'],
+      ];
+
+      function currentFilters() {
+        const pick = (id) => {
+          const el = $(id);
+          if (!el.value) return '';
+          return el.tagName === 'SELECT'
+            ? (el.options[el.selectedIndex]?.textContent || el.value).trim()
+            : el.value.trim();
+        };
+        return {
+          status: pick('fStatus'), severity: pick('fSev'), source: pick('fSource'),
+          nis2: pick('fNis2'), ticket: pick('fTicket'), search: pick('fSearch'),
+        };
+      }
+
+      $('exportBtn').addEventListener('click', async () => {
+        const btn = $('exportBtn');
+        const msg = $('actionMsg');
+        const rows = VISIBLE.map(exportRow);
+        if (!rows.length) { showToast(tr('find.export_empty'), false); return; }
+        btn.disabled = true;
+        msg.className = 'font-code-sm text-[12px] text-slate-500';
+        msg.textContent = tr('find.export_running');
+        const filters = currentFilters();
+        try {
+          // Il contesto arriva dal server: e' anche il momento in cui l'export
+          // viene registrato nel registro attivita'.
+          const resp = await fetch('/api/findings/export', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rows: rows.length, filters, format: 'xlsx' }),
+          });
+          const data = await resp.json();
+          if (!resp.ok) throw new Error(data.error || ('HTTP ' + resp.status));
+          const c = data.context || {};
+
+          const ctx = [
+            [tr('find.exp_field'), tr('find.exp_value')],
+            [tr('find.exp_generated'), c.exported_at || ''],
+            [tr('find.exp_by'), `${c.exported_by || ''} (${c.exported_by_role || ''})`],
+            [tr('find.exp_build'), c.app_version || ''],
+            [tr('find.exp_scope'), (c.scope || {}).kind === 'cone'
+              ? tr('find.exp_scope_cone', { n: (c.scope || {}).assets })
+              : tr('find.exp_scope_all')],
+            [tr('find.exp_rows'), `${c.rows_exported} / ${c.rows_in_scope}`],
+            [],
+            [tr('find.exp_filters_h'), ''],
+          ];
+          const applied = Object.entries(filters).filter(([, v]) => v);
+          if (applied.length) applied.forEach(([k, v]) => ctx.push([k, v]));
+          else ctx.push([tr('find.exp_nofilter'), '']);
+          ctx.push([]);
+          ctx.push([tr('find.exp_integrity_h'), '']);
+          ctx.push([tr('find.exp_ledger'), tr('find.exp_verdict'), 'verified / total',
+                    tr('find.exp_broken')]);
+          Object.entries(c.integrity || {}).forEach(([k, v]) => ctx.push([
+            k,
+            v.ok === null ? tr('find.exp_unverifiable') : (v.ok ? 'OK' : tr('find.exp_partial')),
+            v.ok === null ? '' : `${v.verified ?? ''} / ${v.total ?? ''}`,
+            v.ok === null ? '' : (v.broken ?? ''),
+          ]));
+          ctx.push([]);
+          ctx.push([tr('find.exp_note'), '']);
+
+          const wb = XLSX.utils.book_new();
+          const wsData = XLSX.utils.json_to_sheet(rows);
+          wsData['!autofilter'] = { ref: wsData['!ref'] };
+          wsData['!freeze'] = { xSplit: 0, ySplit: 1 };
+          XLSX.utils.book_append_sheet(wb, wsData, 'Findings');
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ctx), 'Export context');
+          XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(
+            [[tr('find.exp_column'), tr('find.exp_meaning')]]
+              .concat(EXPORT_LEGEND.map(([col, key]) => [col, tr(key)]))), 'Legend');
+
+          const stamp = (c.exported_at || '').replace(/[:+]/g, '-').slice(0, 19);
+          XLSX.writeFile(wb, `findings_audit_${stamp}.xlsx`);
+          msg.className = 'font-code-sm text-[12px] text-emerald-700';
+          msg.textContent = tr('find.export_ok', { n: rows.length });
+          showToast(tr('find.export_ok', { n: rows.length }), true);
+        } catch (err) {
+          msg.className = 'font-code-sm text-[12px] text-rose-600';
+          msg.textContent = err.message;
+          showToast(tr('find.export_err', { msg: err.message }), false);
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
       // ── Stato dei ticket ───────────────────────────────────────────
       // Un pulsante solo per tutti: lo stato lo muovono le persone nel loro
       // tracker, quindi va riletto, e rileggerlo ticket per ticket sarebbe N
@@ -574,7 +737,7 @@
       $('tkRefreshBtn').addEventListener('click', async () => {
         const btn = $('tkRefreshBtn');
         const icon = $('tkRefreshIcon');
-        const msg = $('tkRefreshMsg');
+        const msg = $('actionMsg');
         btn.disabled = true;
         icon.classList.add('animate-spin');
         msg.className = 'font-code-sm text-[11px] text-slate-500';

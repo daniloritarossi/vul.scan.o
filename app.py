@@ -1013,6 +1013,75 @@ def api_findings_ticket(finding_id: int, request: Request,
     return {"ok": True, "already": False, **ticket}
 
 
+@app.post("/api/findings/export")
+async def api_findings_export(request: Request,
+                              user: CurrentUser = Depends(get_current_user)):
+    """
+    Contesto di audit per l'export della tabella findings.
+
+    Il foglio dei dati lo costruisce il browser, che le righe le ha gia'; qui
+    si aggiunge cio' che il browser NON puo' sapere e senza cui il file non
+    prova nulla: chi lo ha estratto, quando, con quale cono di visibilita' e
+    con quali filtri — cioe' che cosa NON c'e' dentro — e lo stato delle
+    catene hash nello stesso istante. Un elenco di vulnerabilita' senza la
+    verifica dei registri e' un foglio di calcolo, non un'evidenza.
+
+    L'export e' esso stesso un'azione registrata: chi ha portato fuori quali
+    dati, e quanti, e' esattamente cio' che un audit chiede a valle.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    filters = body.get("filters") or {}
+    rows_exported = int(body.get("rows") or 0)
+
+    all_rows = fetch_findings()
+    if all_rows is None:
+        return JSONResponse({"error": "Supabase unreachable"}, status_code=503)
+    scope_ips = visible_asset_ips(user)
+    if scope_ips is not None:
+        all_rows = [r for r in all_rows if (r.get("asset_ip") or "") in scope_ips]
+
+    # La verifica delle catene e' best-effort: se il DB non risponde si dice
+    # "non verificabile", non si tace e non si finge un esito.
+    def _verdict(fn):
+        try:
+            v = fn()
+        except Exception:
+            v = None
+        if not v:
+            return {"ok": None, "note": "not verifiable"}
+        return {"ok": bool(v.get("ok")), "total": v.get("total"),
+                "verified": v.get("verified"), "broken": len(v.get("broken") or [])}
+
+    context = {
+        "exported_at": db._utc_iso(),
+        "exported_by": user.username,
+        "exported_by_role": user.role,
+        "app_version": APP_VERSION,
+        # Forma leggibile dalla macchina: la frase la compone il client, che
+        # sa in che lingua sta scrivendo il foglio.
+        "scope": {"kind": "all" if scope_ips is None else "cone",
+                  "assets": None if scope_ips is None else len(scope_ips)},
+        "rows_exported": rows_exported,
+        "rows_in_scope": len(all_rows),
+        "filters": filters,
+        "integrity": {
+            "scan_ledger": _verdict(db.verify_audit_chain),
+            "finding_events": _verdict(db.verify_findings_chain),
+            "posture_runs": _verdict(db.verify_posture_chain),
+            "activity_ledger": _verdict(db.verify_events_chain),
+        },
+    }
+    _audit("finding.export", request, user,
+           target={"type": "finding", "label": f"{rows_exported} row(s)"},
+           detail={"rows_exported": rows_exported, "rows_in_scope": len(all_rows),
+                   "filters": {k: v for k, v in filters.items() if v},
+                   "format": (body.get("format") or "xlsx")})
+    return {"ok": True, "context": context}
+
+
 @app.post("/api/findings/tickets/refresh")
 def api_findings_tickets_refresh(request: Request,
                                  user: CurrentUser = Depends(_writer)):

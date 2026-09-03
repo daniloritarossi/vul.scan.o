@@ -455,6 +455,21 @@
                   <span lang="it">Un pulsante solo per l'intera tabella, su una riga sua sotto i filtri — non filtra nulla, riscrive dati, ed è posizionato e pesato per dirlo. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>.</span>
                 </td>
               </tr>
+              <tr>
+                <td><span class="badge b-acc">EXPORT FOR AUDIT (XLSX)</span></td>
+                <td>
+                  <span lang="en">Next to it, the same row. Writes a workbook of what is <b>currently on screen</b> — the filters apply — in <b>three sheets</b>, because a list of vulnerabilities on its own proves nothing.<br>
+                  <b>Findings</b> — one row per finding with everything an audit asks for: the fingerprint that makes two scanner reports one finding, severity plus a numeric rank so a spreadsheet can sort by real severity, all CVE identifiers, CWE, OWASP and NIS2, the reporting scanners, how many times it was confirmed and how many times it came back, the workflow state with its note and the moment it changed, first and last observation, the SLA with days left and whether it is breached, and the ticket with its state and when that state was last read.<br>
+                  <b>Export context</b> — who exported, when in UTC, on which build, within which visibility cone, how many rows out of how many exist in that cone, <b>which filters were applied</b> — that is, what is <em>absent</em> from the file — and the verdict of the four hash chains at that instant, each re-checkable independently at its own endpoint.<br>
+                  <b>Legend</b> — what every column means, so the file can be read by someone who has never opened this application.<br>
+                  Any authenticated role can export, an auditor included; each within their own cone. The export is itself recorded in the activity ledger as <code>finding.export</code>, with the row count and the filters.</span>
+                  <span lang="it">Accanto, sulla stessa riga. Scrive un foglio di ciò che è <b>in quel momento a schermo</b> — i filtri valgono — in <b>tre schede</b>, perché un elenco di vulnerabilità da solo non prova nulla.<br>
+                  <b>Findings</b> — una riga per finding con tutto ciò che un audit chiede: il fingerprint che rende un solo finding due segnalazioni di scanner diversi, la severità più un rango numerico perché un foglio di calcolo possa ordinare per severità reale, tutti gli identificativi CVE, CWE, OWASP e NIS2, gli scanner che l'hanno riportato, quante volte è stato confermato e quante è ricomparso, lo stato di workflow con la sua nota e l'istante in cui è cambiato, prima e ultima osservazione, la SLA con i giorni residui e se è scaduta, e il ticket con il suo stato e quando quello stato è stato letto l'ultima volta.<br>
+                  <b>Export context</b> — chi ha esportato, quando in UTC, su quale build, entro quale cono di visibilità, quante righe su quante ne esistono in quel cono, <b>quali filtri erano applicati</b> — cioè che cosa <em>non</em> c'è nel file — e l'esito delle quattro catene hash in quell'istante, ciascuno riverificabile in autonomia sul proprio endpoint.<br>
+                  <b>Legend</b> — che cosa significa ogni colonna, così il file è leggibile da chi non ha mai aperto questa applicazione.<br>
+                  Qualsiasi ruolo autenticato può esportare, auditor compreso; ciascuno dentro il proprio cono. L'export è a sua volta registrato nel registro attività come <code>finding.export</code>, con il numero di righe e i filtri.</span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
