@@ -451,8 +451,10 @@
               <tr>
                 <td><span class="badge b-acc">REFRESH TICKET STATUS</span></td>
                 <td>
-                  <span lang="en">One button for the whole table, on its own row under the filters — it does not filter anything, it rewrites data, and it is placed and weighted to say so. It re-reads every ticket you can see from the tracker and writes the state back on the findings — <code>POST /api/findings/tickets/refresh</code>. It exists because the state is moved by people in <em>their</em> tracker, not here: anything this application remembered on its own would be a copy that ages in silence. On Jira it is a single JQL call for the whole set; on GitHub one call per issue, which is the limit of that API rather than a choice. It reports how many tickets were checked and <b>how many changed</b>, and writes nothing when nothing moved. Scoped roles refresh only the tickets of findings inside their own cone. Recorded in the audit ledger as <code>finding.ticket_refresh</code>.</span>
-                  <span lang="it">Un pulsante solo per l'intera tabella, su una riga sua sotto i filtri — non filtra nulla, riscrive dati, ed è posizionato e pesato per dirlo. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>.</span>
+                  <span lang="en">One button for the whole table, on its own row under the filters — it does not filter anything, it rewrites data, and it is placed and weighted to say so. It re-reads every ticket you can see from the tracker and writes the state back on the findings — <code>POST /api/findings/tickets/refresh</code>. It exists because the state is moved by people in <em>their</em> tracker, not here: anything this application remembered on its own would be a copy that ages in silence. On Jira it is a single JQL call for the whole set; on GitHub one call per issue, which is the limit of that API rather than a choice. It reports how many tickets were checked and <b>how many changed</b>, and writes nothing when nothing moved. Scoped roles refresh only the tickets of findings inside their own cone. Recorded in the audit ledger as <code>finding.ticket_refresh</code>.<br>
+                  Changing provider in Settings does not delete the tickets opened with the previous one, and those references cannot be queried on the new tracker — <code>#42</code> means nothing to Jira, <code>SEC-101</code> means nothing to GitHub. Their rows are marked <em>frozen</em>, greyed and stamped with a clock: the state shown is the last one read and is no longer being updated. The refresh says so rather than counting them among the ones it checked, and it does not spend a call on them.</span>
+                  <span lang="it">Un pulsante solo per l'intera tabella, su una riga sua sotto i filtri — non filtra nulla, riscrive dati, ed è posizionato e pesato per dirlo. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>.<br>
+                  Cambiare provider in Impostazioni non cancella i ticket aperti con quello di prima, e quei riferimenti non sono interrogabili sul nuovo tracker — <code>#42</code> non significa nulla per Jira, <code>SEC-101</code> non significa nulla per GitHub. Le loro righe sono marcate <em>congelato</em>, in grigio e con un orologio: lo stato mostrato è l'ultimo letto e non viene più aggiornato. L'aggiornamento lo dichiara invece di contarli fra quelli controllati, e non spende una chiamata per loro.</span>
                 </td>
               </tr>
               <tr>
@@ -477,12 +479,14 @@
         <figure class="mid">
           <img src="img/findings-row.webp" alt="A single finding row" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>A single finding</b> — everything needed to decide, in one line. On the right, the linked
-              ticket with the state read back from the tracker; here the ticket is <em>Done</em> while the finding is
-              still <em>open</em>, which is exactly the disagreement worth seeing.</span>
-            <span lang="it"><b>Un singolo finding</b> — tutto il necessario per decidere, in una riga. A destra il ticket
-              collegato con lo stato riletto dal tracker; qui il ticket è <em>Done</em> mentre il finding è ancora
-              <em>open</em>, ed è esattamente la discordanza che vale la pena vedere.</span>
+            <span lang="en"><b>Findings with a ticket</b> — the state read back from the tracker sits under each reference.
+              All three findings are still <em>open</em> while their tickets are not, which is the disagreement worth
+              seeing. The two Jira ones are greyed and marked <em>frozen</em>: they were opened before the provider was
+              switched to GitHub, so their state is the last one read and is no longer being updated.</span>
+            <span lang="it"><b>Finding con un ticket</b> — sotto ogni riferimento, lo stato riletto dal tracker. Tutti e tre i
+              finding sono ancora <em>open</em> mentre i loro ticket non lo sono, ed è la discordanza che vale la pena
+              vedere. I due Jira sono in grigio e marcati <em>congelato</em>: sono stati aperti prima che il provider
+              passasse a GitHub, quindi il loro stato è l'ultimo letto e non viene più aggiornato.</span>
           </figcaption>
         </figure>
 

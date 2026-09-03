@@ -18,6 +18,7 @@ import json
 
 import pytest
 
+import app as app_module
 import ticketing
 
 
@@ -467,3 +468,88 @@ def test_ticket_refresh_is_writer_only(role_clients, monkeypatch):
     for role in ("admin", "manager", "editor"):
         r = role_clients[role].post("/api/findings/tickets/refresh")
         assert r.status_code == 200, f"{role} deve poter aggiornare ({r.text[:80]})"
+
+
+# ── Ticket aperti con un provider diverso da quello configurato ───────────
+
+@pytest.mark.parametrize("ref,expected", [
+    ("#1", "github"), ("#4212", "github"),
+    ("SEC-101", "jira"), ("VSO-1", "jira"), ("proj_2-77", "jira"),
+    ("", None), ("x", None), ("#a", None), ("VSO1", None),
+])
+def test_ref_provider_reads_the_shape(ref, expected):
+    """Il provider si puo' cambiare in Settings mentre restano aperti i ticket
+    di prima: la forma del riferimento e' l'unica cosa che dice da dove viene.
+    Quando non e' riconoscibile si dichiara di non saperlo, invece di
+    attribuirlo al provider corrente."""
+    assert ticketing.ref_provider(ref) is expected or \
+           ticketing.ref_provider(ref) == expected
+
+
+def test_foreign_refs_are_not_counted_as_checked(role_clients, monkeypatch):
+    """Con provider github, una chiave Jira non e' interrogabile: va
+    dichiarata, non contata fra i controllati e poi lasciata con uno stato
+    che nessuno aggiornera' piu'."""
+    rows = [
+        {"id": 1, "asset_ip": "h1", "ticket_ref": "#1", "ticket_status": None,
+         "ticket_state": None},
+        {"id": 2, "asset_ip": "h1", "ticket_ref": "SEC-9", "ticket_status": "Done",
+         "ticket_state": "done"},
+    ]
+    monkeypatch.setattr(app_module, "fetch_findings", lambda: rows)
+    monkeypatch.setattr(app_module, "load_config",
+                        lambda: {"ticketing": {"provider": "github",
+                                               "github_token": "t",
+                                               "github_repo": "a/b"}})
+    monkeypatch.setattr(ticketing.requests, "get",
+                        lambda *a, **k: FakeResponse(200, {"state": "open"}))
+    r = role_clients["admin"].post("/api/findings/tickets/refresh")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["foreign"] == ["SEC-9"]
+    assert d["resolved"] == 1
+    assert d["unresolved"] == []
+
+
+def test_a_ref_the_tracker_does_not_return_is_reported(role_clients, monkeypatch):
+    """Forma giusta ma il provider non lo restituisce: cancellato, spostato o
+    fuori dai permessi. Diverso da 'aperto su un altro tracker'."""
+    rows = [{"id": 1, "asset_ip": "h1", "ticket_ref": "SEC-1",
+             "ticket_status": None, "ticket_state": None}]
+    monkeypatch.setattr(app_module, "fetch_findings", lambda: rows)
+    monkeypatch.setattr(app_module, "load_config",
+                        lambda: {"ticketing": {"provider": "jira",
+                                               "jira_url": "https://a.atlassian.net",
+                                               "jira_email": "a@b.c",
+                                               "jira_api_token": "t",
+                                               "jira_project_key": "SEC"}})
+    monkeypatch.setattr(ticketing.requests, "post",
+                        lambda *a, **k: FakeResponse(200, {"issues": []}))
+    d = role_clients["admin"].post("/api/findings/tickets/refresh").json()
+    assert d["unresolved"] == ["SEC-1"]
+    assert d["foreign"] == []
+
+
+def test_only_foreign_refs_costs_no_provider_call(role_clients, monkeypatch):
+    """Se non c'e' nulla da chiedere non si chiede: chiamare il tracker per
+    zero ticket spenderebbe credenziali per niente."""
+    rows = [{"id": 1, "asset_ip": "h1", "ticket_ref": "SEC-1",
+             "ticket_status": None, "ticket_state": None}]
+    monkeypatch.setattr(app_module, "fetch_findings", lambda: rows)
+    monkeypatch.setattr(app_module, "load_config",
+                        lambda: {"ticketing": {"provider": "github",
+                                               "github_token": "t",
+                                               "github_repo": "a/b"}})
+    monkeypatch.setattr(ticketing.requests, "get",
+                        lambda *a, **k: pytest.fail("non deve chiamare il provider"))
+    d = role_clients["admin"].post("/api/findings/tickets/refresh").json()
+    assert d["foreign"] == ["SEC-1"] and d["resolved"] == 0
+
+
+def test_findings_list_names_the_configured_provider(role_clients, monkeypatch):
+    """La tabella deve poter marcare le righe congelate al caricamento, senza
+    aspettare che qualcuno prema AGGIORNA."""
+    monkeypatch.setattr(app_module, "load_config",
+                        lambda: {"ticketing": {"provider": "jira"}})
+    d = role_clients["admin"].get("/api/findings").json()
+    assert d["ticketing_provider"] == "jira"

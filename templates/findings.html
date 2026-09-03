@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=51" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=52" />
   <!-- XLSX export (SheetJS), gia' usato da dashboard e audit -->
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <style>
@@ -26,7 +26,7 @@
     .shader-bg { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; background: #ffffff; }
     body { min-height: max(884px, 100dvh); }
   </style>
-  <script src="/static/i18n.js?v=54"></script>
+  <script src="/static/i18n.js?v=55"></script>
 </head>
 
 <body class="bg-white text-on-background font-body-md text-body-md relative antialiased overflow-x-hidden">
@@ -294,6 +294,9 @@
       // Il sottoinsieme attualmente a schermo: l'export deve contenere quello
       // che l'utente sta guardando, non l'intero dataset.
       let VISIBLE = [];
+      // Provider di ticketing configurato: serve a riconoscere le righe il cui
+      // ticket appartiene a un tracker diverso da quello attivo.
+      let TK_PROVIDER = '';
 
       // Delega al toast condiviso (vfa-ui.js): stile/posizione/ARIA unificati.
       function showToast(text, ok) {
@@ -354,16 +357,44 @@
         done: 'check_circle', unknown: 'help',
       };
 
+      // Stesso criterio del server (ticketing.ref_provider): la forma del
+      // riferimento dice da quale tracker viene. '#42' e' GitHub, 'SEC-101'
+      // e' Jira; qualunque altra cosa e' sconosciuta e non si tira a indovinare.
+      function refProvider(ref) {
+        const v = (ref || '').trim();
+        if (/^#\d+$/.test(v)) return 'github';
+        if (/^[A-Za-z][A-Za-z0-9_]*-\d+$/.test(v)) return 'jira';
+        return '';
+      }
+
+      // Un ticket aperto con un provider che non e' piu' quello configurato
+      // non e' piu' interrogabile: lo stato agli atti resta congelato a
+      // quando lo era, e la riga deve dirlo invece di mostrarlo come corrente.
+      function isStaleProvider(r) {
+        if (!TK_PROVIDER || !r.ticket_ref) return false;
+        const p = refProvider(r.ticket_ref);
+        return !!p && p !== TK_PROVIDER;
+      }
+
       function ticketStatusLabel(r) {
         if (!r.ticket_status && !r.ticket_state) {
           // Mai riletto: dirlo, invece di lasciare la cella muta come prima.
           return `<span class="text-[10px] text-slate-400 font-code-sm">${esc(tr('find.tk_never'))}</span>`;
         }
         const st = r.ticket_state || 'unknown';
+        const stale = isStaleProvider(r);
         const when = r.ticket_checked_at
-          ? ` title="${esc(tr('find.tk_checked', { t: new Date(r.ticket_checked_at).toLocaleString() }))}"` : '';
-        return `<span class="px-1.5 py-0.5 rounded border ${TK_STATE_STYLE[st] || TK_STATE_STYLE.unknown} text-[10px] font-code-sm inline-flex items-center gap-1"${when}>
-          <span class="material-symbols-outlined text-[12px]">${TK_STATE_ICON[st] || TK_STATE_ICON.unknown}</span>${esc(r.ticket_status || tr('find.tk_state_' + st))}</span>`;
+          ? tr('find.tk_checked', { t: new Date(r.ticket_checked_at).toLocaleString() }) : '';
+        const tip = stale
+          ? tr('find.tk_frozen_tip', { p: refProvider(r.ticket_ref), q: TK_PROVIDER })
+            + (when ? ' · ' + when : '')
+          : when;
+        // Lo stato congelato si mostra spento: e' un dato storico, non lo
+        // stato corrente, e colorarlo come gli altri lo farebbe leggere tale.
+        const cls = stale ? 'border-slate-300 bg-slate-50 text-slate-400'
+                          : (TK_STATE_STYLE[st] || TK_STATE_STYLE.unknown);
+        return `<span class="px-1.5 py-0.5 rounded border ${cls} text-[10px] font-code-sm inline-flex items-center gap-1"${tip ? ` title="${esc(tip)}"` : ''}>
+          <span class="material-symbols-outlined text-[12px]">${stale ? 'history_toggle_off' : (TK_STATE_ICON[st] || TK_STATE_ICON.unknown)}</span>${esc(r.ticket_status || tr('find.tk_state_' + st))}${stale ? ' · ' + esc(tr('find.tk_frozen')) : ''}</span>`;
       }
 
       function ticketCell(r) {
@@ -565,6 +596,7 @@
           const data = await resp.json();
           $('dbBanner').classList.add('hidden');
           ALL = data.findings || [];
+          TK_PROVIDER = data.ticketing_provider || '';
           kpis(data.summary || {});
           render();
         } catch (err) {
@@ -749,12 +781,19 @@
           if (!data.checked) {
             msg.textContent = tr('find.tk_none');
           } else {
-            // Dire quanti sono cambiati, non solo quanti guardati: e' la sola
-            // parte della risposta che vale la pena leggere.
+            // Dire quanti sono cambiati, non solo quanti guardati; e dire
+            // quanti NON erano nemmeno interrogabili, altrimenti "3
+            // controllati" fa credere che tutti e tre siano stati letti.
+            const nForeign = (data.foreign || []).length;
+            const nUnres = (data.unresolved || []).length;
+            let text = tr('find.tk_done', { n: data.checked, u: data.updated });
+            if (nForeign) text += ' · ' + tr('find.tk_foreign', { n: nForeign, p: data.provider || '' });
+            if (nUnres) text += ' · ' + tr('find.tk_unresolved', { n: nUnres });
             msg.className = 'font-code-sm text-[11px] ' +
-              (data.updated ? 'text-cyan-700' : 'text-slate-500');
-            msg.textContent = tr('find.tk_done', { n: data.checked, u: data.updated });
-            showToast(tr('find.tk_done', { n: data.checked, u: data.updated }), true);
+              (nForeign || nUnres ? 'text-amber-600'
+                : (data.updated ? 'text-cyan-700' : 'text-slate-500'));
+            msg.textContent = text;
+            showToast(text, !(nForeign || nUnres));
           }
           await load();          // ridisegna le etichette dai valori salvati
         } catch (err) {

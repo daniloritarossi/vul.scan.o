@@ -61,7 +61,7 @@ from findings import (fingerprint, merge_findings, posture_findings,
                       lifecycle_events, parse_as_of, reconstruct_as_of,
                       compare_states)
 from ticketing import (create_ticket, check_connection, fetch_ticket_status,
-                       TicketError)
+                       ref_provider, TicketError)
 from localscan import run_gitleaks, run_trivy_image, LocalScanError
 from compliance import derive_compliance, compliance_summary
 from db import fetch_finding, set_finding_ticket, set_finding_ticket_status
@@ -810,7 +810,14 @@ def api_findings(status: str | None = None, severity: str | None = None,
         r["sla_breached"] = is_breached(r)
         r["compliance"] = derive_compliance(r)
     summary["compliance"] = compliance_summary(rows)
-    return {"findings": rows, "summary": summary}
+    # Il provider configurato serve alla tabella per riconoscere i ticket
+    # aperti con un tracker diverso da quello attivo: il loro stato agli atti
+    # non e' piu' aggiornabile, e la riga deve poterlo dire da sola, senza
+    # aspettare che qualcuno prema AGGIORNA. Non e' un segreto: e' il nome del
+    # provider, non le sue credenziali.
+    return {"findings": rows, "summary": summary,
+            "ticketing_provider": ((load_config().get("ticketing") or {})
+                                   .get("provider") or "")}
 
 
 def _point_in_time(user: CurrentUser, date: str | None, since: str | None):
@@ -1107,10 +1114,20 @@ def api_findings_tickets_refresh(request: Request,
     # una volta sola e si scrive su tutte le righe che lo puntano.
     refs = sorted({(r.get("ticket_ref") or "").strip() for r in ticketed})
     cfg = load_config().get("ticketing") or {}
+    provider = (cfg.get("provider") or "").strip().lower()
+    # Cambiare provider in Settings non cancella i ticket aperti con quello di
+    # prima: quei riferimenti non sono interrogabili qui, e vanno dichiarati
+    # tali invece di essere contati fra i "controllati" e lasciati con uno
+    # stato che nessuno aggiornera' piu'.
+    foreign = [r for r in refs if ref_provider(r) not in (None, provider)]
+    askable = [r for r in refs if r not in foreign]
     try:
-        found = fetch_ticket_status(cfg, refs)
+        found = fetch_ticket_status(cfg, askable) if askable else {}
     except TicketError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
+    # Forma giusta ma il provider non li ha restituiti: cancellati, spostati,
+    # o fuori dai permessi di questo token. Anche questo va detto.
+    unresolved = [r for r in askable if r not in found]
 
     updated, changed = 0, []
     for r in ticketed:
@@ -1131,10 +1148,13 @@ def api_findings_tickets_refresh(request: Request,
     # contenuto.
     _audit("finding.ticket_refresh", request, user,
            target={"type": "finding", "label": f"{len(refs)} ticket"},
-           detail={"provider": cfg.get("provider") or "", "checked": len(refs),
-                   "resolved": len(found), "updated": updated})
+           detail={"provider": provider, "checked": len(refs),
+                   "resolved": len(found), "updated": updated,
+                   "foreign": len(foreign), "unresolved": len(unresolved)})
     return {"ok": True, "checked": len(refs), "resolved": len(found),
             "updated": updated, "changed": changed,
+            "provider": provider,
+            "foreign": foreign, "unresolved": unresolved,
             "statuses": {k: {"status": v["status"], "state": v["state"]}
                          for k, v in found.items()}}
 

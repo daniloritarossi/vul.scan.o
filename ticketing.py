@@ -23,6 +23,7 @@ mai loggata ne' esposta nelle risposte.
 """
 
 import json
+import re
 
 import requests
 
@@ -574,6 +575,31 @@ def _github_statuses(cfg: dict, refs) -> dict:
             "resolution": reason,
         }
     return out
+
+
+_GITHUB_REF = re.compile(r"^#\d+$")
+_JIRA_REF = re.compile(r"^[A-Z][A-Z0-9_]*-\d+$", re.IGNORECASE)
+
+
+def ref_provider(ref: str):
+    """
+    Da quale tracker viene un riferimento, dedotto dalla sua forma.
+
+    Serve perche' il provider si puo' cambiare in Settings mentre in
+    inventario restano i ticket aperti con quello di prima: '#42' non e'
+    interrogabile su Jira e 'SEC-101' non lo e' su GitHub. Senza questa
+    distinzione quelle righe verrebbero contate come "controllate" e
+    resterebbero con uno stato che nessuno aggiorna piu', senza dirlo.
+
+    None quando la forma non e' riconoscibile: si dichiara di non sapere
+    invece di attribuirlo al provider corrente.
+    """
+    r = (ref or "").strip()
+    if _GITHUB_REF.match(r):
+        return "github"
+    if _JIRA_REF.match(r):
+        return "jira"
+    return None
 
 
 def fetch_ticket_status(cfg_ticketing: dict, refs) -> dict:
