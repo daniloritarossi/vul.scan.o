@@ -9,7 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
   <!-- Self-hosted fonts (Inter, JetBrains Mono, Material Symbols) -->
   <link href="/static/vendor/fonts/fonts.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=52" />
+  <link rel="stylesheet" href="/static/vendor/tailwind.css?v=53" />
   <!-- XLSX export (SheetJS), gia' usato da dashboard e audit -->
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <style>
@@ -376,6 +376,66 @@
         return !!p && p !== TK_PROVIDER;
       }
 
+      // ── CVE espandibili ────────────────────────────────────────────
+      // Il '+17' diceva quante ne mancavano senza darti modo di vederle: per
+      // sapere se un finding tocca una CVE precisa bisognava esportare o
+      // aprire un'altra pagina. Stesso comportamento della pagina posture —
+      // un elenco troncato, un interruttore, e i riferimenti cliccabili.
+      const CVE_LIMIT = 3;
+      let cveSeq = 0;
+
+      function cveUrl(id) {
+        // NVD conosce solo i CVE; gli advisory di distribuzione (DSA/DLA/GHSA)
+        // stanno su OSV, che e' anche la fonte da cui arrivano qui.
+        return /^CVE-/i.test(id)
+          ? `https://nvd.nist.gov/vuln/detail/${encodeURIComponent(id)}`
+          : `https://osv.dev/vulnerability/${encodeURIComponent(id)}`;
+      }
+
+      function cveChip(id) {
+        return `<a href="${cveUrl(id)}" target="_blank" rel="noopener noreferrer"`
+          + ` class="inline-block font-code-sm text-[10px] text-cyan-700 bg-cyan-50 border border-cyan-200 px-1.5 py-0.5 rounded hover:bg-cyan-100 hover:border-cyan-300 transition-colors"`
+          + ` title="${esc(id)}">${esc(id)}</a>`;
+      }
+
+      function cveCell(r) {
+        const ids = r.cve_ids || [];
+        if (!ids.length) return '<span class="text-slate-300 text-[11px]">—</span>';
+        const cid = 'fcve-' + (cveSeq++);
+        const hidden = ids.length - CVE_LIMIT;
+        const toggle = hidden > 0
+          ? `<button type="button" data-fcve data-cid="${cid}" data-expanded="0"
+               class="mt-1 inline-block font-code-sm text-[10px] text-cyan-700 hover:text-cyan-900 underline decoration-dotted underline-offset-2 cursor-pointer"
+               aria-expanded="false" aria-controls="${cid}-chips"
+               >${esc(tr('audit.show_more', { n: hidden }))}</button>`
+          : '';
+        // Gli id restano nel dataset della cella: la tabella si ridisegna a
+        // ogni cambio di filtro, e rileggerli dalla riga costerebbe una
+        // ricerca per id a ogni clic.
+        return `<div data-cve-ids='${esc(JSON.stringify(ids))}'>`
+          + `<div class="flex flex-wrap gap-1" id="${cid}-chips">${ids.slice(0, CVE_LIMIT).map(cveChip).join('')}</div>`
+          + `${toggle}</div>`;
+      }
+
+      // Delega sul tbody: le righe sono rigenerate a ogni render, agganciare
+      // un listener per pulsante li perderebbe tutti.
+      $('tbody').addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-fcve]');
+        if (!btn) return;
+        const chips = document.getElementById(btn.dataset.cid + '-chips');
+        const wrap = btn.parentElement;
+        if (!chips || !wrap) return;
+        let ids = [];
+        try { ids = JSON.parse(wrap.dataset.cveIds || '[]'); } catch (_) { return; }
+        const open = btn.dataset.expanded === '1';
+        chips.innerHTML = (open ? ids.slice(0, CVE_LIMIT) : ids).map(cveChip).join('');
+        btn.dataset.expanded = open ? '0' : '1';
+        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+        btn.textContent = open
+          ? tr('audit.show_more', { n: ids.length - CVE_LIMIT })
+          : tr('audit.show_less');
+      });
+
       function ticketStatusLabel(r) {
         if (!r.ticket_status && !r.ticket_state) {
           // Mai riletto: dirlo, invece di lasciare la cella muta come prima.
@@ -491,9 +551,7 @@
           const sevCls = SEV_BADGE[(r.severity || 'UNKNOWN').toUpperCase()] || SEV_BADGE.UNKNOWN;
           const srcs = (r.source || '').split('+').filter(Boolean).map((s) =>
             `<span class="px-2 py-0.5 rounded border text-[10px] ${SRC_BADGE[s] || 'bg-slate-50 text-slate-500 border-slate-200'}">${esc(s)}</span>`).join(' ');
-          const cves = (r.cve_ids || []).slice(0, 3).map((c) =>
-            `<span class="text-cyan-700">${esc(c)}</span>`).join(', ') +
-            ((r.cve_ids || []).length > 3 ? ` <span class="text-slate-500">+${r.cve_ids.length - 3}</span>` : '');
+          const cves = cveCell(r);
           const badges = [];
           if (r.reopened > 0) badges.push(`<span class="px-1.5 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-600 text-[9px]">${esc(tr('find.reopened_badge', { n: r.reopened }))}</span>`);
           if (r.times_seen > 1) badges.push(`<span class="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-500 text-[9px]">${esc(tr('find.seen_badge', { n: r.times_seen }))}</span>`);

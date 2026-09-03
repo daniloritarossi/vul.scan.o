@@ -433,7 +433,7 @@
             </thead>
             <tbody>
               <tr><td><strong>SEV</strong></td><td><span lang="en">Severity badge, colour-coded.</span><span lang="it">Badge di severità, codificato a colori.</span></td></tr>
-              <tr><td><strong>FINDING</strong></td><td><span lang="en">Title, package or rule, CVE identifiers, CWE and the derived compliance tags.</span><span lang="it">Titolo, pacchetto o regola, identificativi CVE, CWE e le etichette di conformità derivate.</span></td></tr>
+              <tr><td><strong>FINDING</strong></td><td><span lang="en">Title, package or rule, CVE identifiers, CWE and the derived compliance tags. Only the first three identifiers are shown; the <b>+N more</b> underneath opens the rest in place and turns into <b>show less</b>. Every identifier is a link — CVEs to the NVD entry, distribution advisories (DSA, DLA, GHSA) to OSV, which is where they came from. The list collapses again when the table is re-filtered, since the rows are redrawn.</span><span lang="it">Titolo, pacchetto o regola, identificativi CVE, CWE e le etichette di conformità derivate. Sono mostrati solo i primi tre identificativi; il <b>+N altre</b> sotto apre i restanti sul posto e diventa <b>mostra meno</b>. Ogni identificativo è un link — i CVE alla scheda NVD, gli advisory di distribuzione (DSA, DLA, GHSA) a OSV, da cui provengono. L'elenco si richiude quando la tabella viene rifiltrata, perché le righe vengono ridisegnate.</span></td></tr>
               <tr><td><strong>ASSET</strong></td><td><span lang="en">The attributed inventory host, or blank for an unattributed import.</span><span lang="it">L'host di inventario attribuito, o vuoto per un import senza attribuzione.</span></td></tr>
               <tr><td><strong>SOURCE</strong></td><td><span lang="en">The originating tool or tools — <code>posture</code>, <code>trivy</code>, <code>trivy+grype</code>, <code>semgrep</code>… A combined source is the visible proof that deduplication worked.</span><span lang="it">Lo strumento o gli strumenti di origine — <code>posture</code>, <code>trivy</code>, <code>trivy+grype</code>, <code>semgrep</code>… Una sorgente combinata è la prova visibile che la deduplica ha funzionato.</span></td></tr>
               <tr><td><strong>FIRST / LAST SEEN</strong></td><td><span lang="en">The observation window, with the badges <span class="badge">seen ×n</span> and <span class="badge b-warn">reopened ×n</span>.</span><span lang="it">La finestra di osservazione, con i badge <span class="badge">seen ×n</span> e <span class="badge b-warn">reopened ×n</span>.</span></td></tr>
@@ -479,14 +479,16 @@
         <figure class="mid">
           <img src="img/findings-row.webp" alt="A single finding row" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>Findings with a ticket</b> — the state read back from the tracker sits under each reference.
-              All three findings are still <em>open</em> while their tickets are not, which is the disagreement worth
-              seeing. The two Jira ones are greyed and marked <em>frozen</em>: they were opened before the provider was
-              switched to GitHub, so their state is the last one read and is no longer being updated.</span>
-            <span lang="it"><b>Finding con un ticket</b> — sotto ogni riferimento, lo stato riletto dal tracker. Tutti e tre i
-              finding sono ancora <em>open</em> mentre i loro ticket non lo sono, ed è la discordanza che vale la pena
-              vedere. I due Jira sono in grigio e marcati <em>congelato</em>: sono stati aperti prima che il provider
-              passasse a GitHub, quindi il loro stato è l'ultimo letto e non viene più aggiornato.</span>
+            <span lang="en"><b>A single finding, CVE list expanded</b> — all twenty identifiers of this one, opened in place
+              by the <em>+17 more</em> toggle and closed again by <em>show less</em>. The distribution advisories
+              (DSA, DLA) link to OSV, the CVEs to NVD. On the right the linked ticket: <em>Done</em> while the finding
+              is still <em>open</em>, and greyed as <em>frozen</em> because it lives on the tracker that is no longer
+              the configured one.</span>
+            <span lang="it"><b>Un singolo finding, elenco CVE espanso</b> — tutti e venti gli identificativi, aperti sul posto
+              dall'interruttore <em>+17 altre</em> e richiusi da <em>mostra meno</em>. Gli advisory di distribuzione
+              (DSA, DLA) puntano a OSV, i CVE a NVD. A destra il ticket collegato: <em>Done</em> mentre il finding è
+              ancora <em>open</em>, e in grigio come <em>congelato</em> perché vive sul tracker che non è più quello
+              configurato.</span>
           </figcaption>
         </figure>
 
