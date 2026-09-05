@@ -33,6 +33,7 @@ from fastapi.responses import (HTMLResponse, JSONResponse, RedirectResponse,
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+import asset_import
 from assets import (load_assets, get_asset, add_asset, update_asset,
                     set_asset_enabled, update_asset_fields, delete_asset,
                     Asset, AssetStoreError)
@@ -2181,13 +2182,18 @@ def _reachable(host: str, ports=(80, 443, 22, 8080), timeout: float = 1.5) -> bo
     return False
 
 
-def _check_ssh(asset: Asset, timeout: float = 3.0) -> bool:
-    """Tenta login SSH reale con le credenziali dell'asset. True se ha successo."""
+def _ssh_probe(host: str, username: str, password: str,
+               timeout: float = 3.0) -> tuple[bool, str]:
+    """
+    Tenta un login SSH reale. Ritorna (ok, motivo).
+
+    Il motivo non e' decorativo: "credenziali rifiutate" e "host key non nei
+    known_hosts" sono due fallimenti che si somigliano sullo schermo e non
+    hanno niente in comune nella soluzione. Chi importa un perimetro deve
+    sapere se correggere il foglio o il proprio known_hosts.
+    """
     import paramiko
-    try:
-        password = decrypt_password(asset.password)
-    except RuntimeError:
-        return False
+
     client = paramiko.SSHClient()
     # Coerente con lo scan autenticato reale (scanner.py): carica i known_hosts
     # e RIFIUTA host key sconosciute. AutoAddPolicy accetterebbe qualunque
@@ -2196,18 +2202,38 @@ def _check_ssh(asset: Asset, timeout: float = 3.0) -> bool:
     client.set_missing_host_key_policy(paramiko.RejectPolicy())
     try:
         client.connect(
-            asset.ip,
-            username=asset.username,
+            host,
+            username=username,
             password=password,
             timeout=timeout,
             allow_agent=False,
             look_for_keys=False,
         )
-        return True
+        return True, "ok"
+    except paramiko.AuthenticationException:
+        return False, "auth_failed"
+    except paramiko.SSHException as exc:
+        # RejectPolicy solleva SSHException: e' un rifiuto NOSTRO, non
+        # dell'host, e va detto per quello che e'.
+        low = str(exc).lower()
+        if "known_hosts" in low or "not found in" in low:
+            return False, "host_key_unknown"
+        return False, "protocol_error"
+    except socket.timeout:
+        return False, "timeout"
     except Exception:
-        return False
+        return False, "unreachable"
     finally:
         client.close()
+
+
+def _check_ssh(asset: Asset, timeout: float = 3.0) -> bool:
+    """Tenta login SSH reale con le credenziali dell'asset. True se ha successo."""
+    try:
+        password = decrypt_password(asset.password)
+    except RuntimeError:
+        return False
+    return _ssh_probe(asset.ip, asset.username, password, timeout)[0]
 
 
 @app.get("/api/asset/health")
@@ -2395,6 +2421,236 @@ async def api_assets_create(request: Request,
                    target={"type": "asset", "id": new_id, "label": ip},
                    detail={"user_id": user.id, "reason": "creator_scope"})
     return {"ok": True, "index": new_id}
+
+
+@app.get("/api/assets/import/template")
+def api_assets_import_template(user: CurrentUser = Depends(_writer)):
+    """
+    Contratto del modello di import: colonne prefissate + due righe di esempio.
+
+    Il file lo genera il browser (stesso SheetJS degli export), ma le colonne
+    le detta il server: se il modello scaricato e il validatore divergessero,
+    l'operatore compilerebbe diligentemente un file che viene rifiutato.
+    """
+    return asset_import.template()
+
+
+def _probe_row(fields: dict) -> dict:
+    """Sonda di rete per una riga: raggiungibilita' TCP + login se ha credenziali."""
+    host = _normalize_host(fields["ip"])
+    reachable = _reachable(host)
+    ssh = None
+    if fields["username"] and fields["password"]:
+        if not reachable:
+            # Non si tenta un login verso un host che non risponde: il
+            # fallimento sarebbe garantito e direbbe dell'host, non della
+            # credenziale.
+            ssh = {"ok": False, "reason": "unreachable"}
+        else:
+            ok, reason = _ssh_probe(host, fields["username"], fields["password"])
+            ssh = {"ok": ok, "reason": reason}
+    return {"reachable": reachable, "ssh": ssh}
+
+
+def _import_preflight(rows: list, existing_ips: set[str], probe: bool = True) -> list[dict]:
+    """
+    Verdetto riga per riga, nell'ordine del file.
+
+    'status' vale 'ok' | 'error' | 'duplicate' | 'warning'. La password non
+    compare MAI nel verdetto: e' arrivata in chiaro dal foglio e non deve
+    tornare indietro verso il browser ne' finire in un log.
+    """
+    seen: set[str] = set()
+    report: list[dict] = []
+    for i, raw in enumerate(rows):
+        fields, errors = asset_import.normalize(raw if isinstance(raw, dict) else {})
+        key = _normalize_host(fields["ip"]).lower()
+        status, reasons = "ok", list(errors)
+        if errors:
+            status = "error"
+        elif key and key in seen:
+            status, reasons = "duplicate", ["duplicate_in_file"]
+        elif key and key in existing_ips:
+            status, reasons = "duplicate", ["duplicate_in_inventory"]
+        if key:
+            seen.add(key)
+        report.append({
+            "line": i + 1,
+            "ip": fields["ip"],
+            "username": fields["username"],
+            "os_type": fields["os_type"],
+            "has_credentials": bool(fields["username"] and fields["password"]),
+            "status": status,
+            "reasons": reasons,
+            "reachable": None,
+            "ssh": None,
+            "_fields": fields,
+        })
+
+    # Le sonde partono solo per le righe che sarebbero davvero importabili:
+    # non ha senso bussare all'host di una riga gia' scartata, e ogni sonda
+    # evitata e' traffico che non generiamo verso reti altrui.
+    todo = [r for r in report if r["status"] == "ok"]
+    if probe and todo:
+        with ThreadPoolExecutor(max_workers=min(16, len(todo))) as pool:
+            futures = {pool.submit(_probe_row, r["_fields"]): r for r in todo}
+            for fut in as_completed(futures):
+                row = futures[fut]
+                try:
+                    res = fut.result()
+                except Exception:
+                    res = {"reachable": False, "ssh": None}
+                row["reachable"] = res["reachable"]
+                row["ssh"] = res["ssh"]
+                if not res["reachable"]:
+                    row["status"], row["reasons"] = "warning", ["unreachable"]
+                elif res["ssh"] and not res["ssh"]["ok"]:
+                    row["status"] = "warning"
+                    row["reasons"] = ["ssh_" + res["ssh"]["reason"]]
+    return report
+
+
+def _import_summary(report: list[dict]) -> dict:
+    """Conteggi per stato, piu' il totale importabile senza conferma."""
+    counts = {"total": len(report), "ok": 0, "warning": 0, "error": 0, "duplicate": 0}
+    for r in report:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    return counts
+
+
+def _public_report(report: list[dict]) -> list[dict]:
+    """Verdetto ripulito dai campi interni (contiene la password in chiaro)."""
+    return [{k: v for k, v in r.items() if not k.startswith("_")} for r in report]
+
+
+def _existing_asset_ips() -> set[str]:
+    """IP gia' in inventario, normalizzati. Cono ignorato di proposito: un
+    editor non deve poter creare un duplicato di un asset che non vede."""
+    try:
+        return {_normalize_host(a.ip).lower() for a in load_assets(ASSETS_FILE) if a.ip}
+    except AssetStoreError:
+        return set()
+
+
+@app.post("/api/assets/import/preflight")
+async def api_assets_import_preflight(request: Request,
+                                      user: CurrentUser = Depends(_writer)):
+    """
+    Verifica un file di import SENZA scrivere nulla. Body: {rows: [...]}.
+
+    Ogni riga importabile riceve una sonda TCP e, se porta credenziali, un
+    tentativo di login reale: l'esito e' quello che l'operatore vede prima di
+    decidere se continuare o rivedere il file.
+    """
+    body = await request.json()
+    rows = body.get("rows")
+    if not isinstance(rows, list) or not rows:
+        return JSONResponse({"error": "No rows"}, status_code=400)
+    if len(rows) > asset_import.MAX_ROWS:
+        return JSONResponse(
+            {"error": f"Too many rows (max {asset_import.MAX_ROWS})",
+             "max_rows": asset_import.MAX_ROWS}, status_code=413)
+
+    report = _import_preflight(rows, _existing_asset_ips())
+    summary = _import_summary(report)
+    # La verifica e' un'attivita' di rete verso host di terzi fatta con
+    # credenziali fornite da chi carica il file: lasciarla senza traccia
+    # renderebbe l'import un canale di sondaggio anonimo.
+    _audit("asset.import_preflight", request, user,
+           detail={"rows": summary["total"], "ok": summary["ok"],
+                   "warning": summary["warning"], "error": summary["error"],
+                   "duplicate": summary["duplicate"]})
+    return {"summary": summary, "rows": _public_report(report),
+            "max_rows": asset_import.MAX_ROWS}
+
+
+@app.post("/api/assets/import")
+async def api_assets_import(request: Request,
+                            user: CurrentUser = Depends(_writer)):
+    """
+    Import vero. Body: {rows: [...], acknowledge_warnings: bool}.
+
+    Righe con errori o duplicate non entrano MAI. Le righe segnalate dalla
+    sonda entrano solo con acknowledge_warnings=true: e' la scelta esplicita
+    dell'operatore, e viene registrata come tale.
+
+    Senza conferma le sonde vengono rieseguite qui: e' la garanzia che nessun
+    asset entri in inventario senza una verifica di raggiungibilita' fresca,
+    invece che sulla parola del browser.
+    """
+    body = await request.json()
+    rows = body.get("rows")
+    ack = bool(body.get("acknowledge_warnings"))
+    if not isinstance(rows, list) or not rows:
+        return JSONResponse({"error": "No rows"}, status_code=400)
+    if len(rows) > asset_import.MAX_ROWS:
+        return JSONResponse(
+            {"error": f"Too many rows (max {asset_import.MAX_ROWS})",
+             "max_rows": asset_import.MAX_ROWS}, status_code=413)
+
+    assign_group = body.get("assign_group_id")
+    if user.scoped and assign_group is not None \
+            and int(assign_group) not in user.group_ids:
+        raise Forbidden("Non appartieni al gruppo indicato")
+
+    report = _import_preflight(rows, _existing_asset_ips(), probe=not ack)
+    summary = _import_summary(report)
+    if not ack and summary["warning"]:
+        # 409: il file e' leggibile, e' la realta' di rete a non tornare.
+        # Sta all'operatore decidere, non al server.
+        _audit("asset.import", request, user, outcome="blocked",
+               detail={"reason": "unconfirmed_warnings", **summary})
+        return JSONResponse({"error": "warnings", "summary": summary,
+                             "rows": _public_report(report)}, status_code=409)
+
+    imported, failed = [], []
+    for row in report:
+        if row["status"] in ("error", "duplicate"):
+            continue
+        f = row["_fields"]
+        try:
+            stored_pw = encrypt_password(f["password"]) if f["password"] else ""
+        except RuntimeError as exc:
+            row["status"], row["reasons"] = "error", ["encrypt_failed"]
+            failed.append({"line": row["line"], "ip": f["ip"], "error": str(exc)})
+            continue
+        new_id = add_asset(Asset(
+            ip=f["ip"], username=f["username"], password=stored_pw,
+            os_type=f["os_type"], os_major_version=f["os_major_version"],
+            enabled=f["enabled"], environment=f["environment"],
+            internet_facing=f["internet_facing"], criticality=f["criticality"],
+        ))
+        if new_id is None:
+            row["status"], row["reasons"] = "error", ["store_unreachable"]
+            failed.append({"line": row["line"], "ip": f["ip"],
+                           "error": "Supabase non raggiungibile"})
+            continue
+        row["id"] = new_id
+        imported.append({"id": new_id, "ip": f["ip"]})
+        if user.scoped:
+            # Stessa concessione di visibilita' della creazione singola: un
+            # editor non deve creare asset che poi non vede.
+            if assign_group is not None:
+                db.add_asset_assignment(new_id, group_id=int(assign_group))
+            else:
+                db.add_asset_assignment(new_id, user_id=user.id)
+
+    _audit("asset.import", request, user,
+           outcome="success" if not failed else "partial",
+           detail={"imported": len(imported), "failed": len(failed),
+                   # 'probed' dice da dove vengono i conteggi qui sotto: con
+                   # la conferma le sonde si saltano, quindi 'warning: 0' non
+                   # significa "nessun avviso", significa "non richiesto".
+                   "acknowledged_warnings": ack, "probed": not ack, **summary,
+                   "ips": [x["ip"] for x in imported][:50]})
+    if user.scoped and imported:
+        _audit("assignment.auto", request, user,
+               detail={"assets": [x["id"] for x in imported],
+                       "group_id": int(assign_group) if assign_group is not None else None,
+                       "user_id": None if assign_group is not None else user.id,
+                       "reason": "creator_scope"})
+    return {"ok": True, "imported": len(imported), "failed": failed,
+            "summary": summary, "rows": _public_report(report)}
 
 
 @app.put("/api/assets/{index}/assignments")

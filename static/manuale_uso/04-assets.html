@@ -51,6 +51,7 @@
             <ol class="sub">
               <li><a href="#overview"><span lang="en">Overview</span><span lang="it">Panoramica</span></a></li>
               <li><a href="#new"><span lang="en">New asset</span><span lang="it">Nuovo asset</span></a></li>
+              <li><a href="#import"><span lang="en">Perimeter import</span><span lang="it">Import del perimetro</span></a></li>
               <li><a href="#table"><span lang="en">Inventory table</span><span lang="it">Tabella inventario</span></a></li>
               <li><a href="#health"><span lang="en">Health check</span><span lang="it">Health check</span></a></li>
               <li><a href="#toolbar"><span lang="en">Toolbar &amp; export</span><span lang="it">Barra e export</span></a></li>
@@ -106,13 +107,27 @@
           <code>password_encrypted</code>.
         </p>
 
+        <p lang="en">
+          There are two ways in. The <a href="#new">NEW ASSET</a> form adds one host at a time and is the right tool for
+          three of them; the <a href="#import">perimeter import</a> takes a CSV or XLSX file with fixed columns and is
+          the right tool for eighty. They land in the same table and obey the same rules — the import simply checks,
+          host by host, that what the file claims is actually out there before writing any of it.
+        </p>
+        <p lang="it">
+          Le strade d'ingresso sono due. Il form <a href="#new">NEW ASSET</a> aggiunge un host alla volta ed è lo
+          strumento giusto per tre; l'<a href="#import">import del perimetro</a> accetta un file CSV o XLSX a colonne
+          prefissate ed è lo strumento giusto per ottanta. Finiscono nella stessa tabella e rispettano le stesse regole
+          — l'import si limita a verificare, host per host, che quel che il file dichiara esista davvero prima di
+          scriverne una riga.
+        </p>
+
         <figure>
           <img src="img/assets-page.webp" alt="Asset inventory page" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>The inventory page</b> — creation panel on top, then the toolbar and the table with one row per
-              host.</span>
-            <span lang="it"><b>La pagina inventario</b> — pannello di creazione in alto, poi la barra strumenti e la tabella con
-              una riga per host.</span>
+            <span lang="en"><b>The inventory page</b> — the creation panel on top, with the manual form and the
+              <a href="#import">perimeter import</a> under it, then the toolbar and the table with one row per host.</span>
+            <span lang="it"><b>La pagina inventario</b> — il pannello di creazione in alto, con il form manuale e sotto
+              l'<a href="#import">import del perimetro</a>, poi la barra strumenti e la tabella con una riga per host.</span>
           </figcaption>
         </figure>
       </section>
@@ -124,9 +139,10 @@
         <figure>
           <img src="img/assets-new.webp" alt="New asset panel" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>Creating an asset</b> — host, optional credentials, operating system (mandatory) and OS version.</span>
+            <span lang="en"><b>Creating an asset</b> — host, optional credentials, operating system (mandatory) and OS version.
+              Below the divider the panel continues with the <a href="#import">perimeter import</a>.</span>
             <span lang="it"><b>Creazione di un asset</b> — host, credenziali opzionali, sistema operativo (obbligatorio) e versione
-              del sistema operativo.</span>
+              del sistema operativo. Sotto il separatore il pannello prosegue con l'<a href="#import">import del perimetro</a>.</span>
           </figcaption>
         </figure>
 
@@ -197,6 +213,205 @@
             </tbody>
           </table>
         </div>
+      </section>
+
+      <!-- ======================================= IMPORT -->
+      <section class="block" id="import">
+        <h2><span lang="en">Perimeter import (CSV / XLSX)</span><span lang="it">Import del perimetro (CSV / XLSX)</span> <span class="roles">admin · manager · editor</span></h2>
+
+        <figure>
+          <img src="img/assets-import.webp" alt="Perimeter import bar" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>IMPORT PERIMETER</b> — the bar sits under the manual form: download the template, fill it in, load it back.</span>
+            <span lang="it"><b>IMPORT PERIMETER</b> — la barra sta sotto il form manuale: scarica il modello, compilalo, ricaricalo.</span>
+          </figcaption>
+        </figure>
+
+        <p>
+          <span lang="en">Adding a perimeter one row at a time is fine for three assets and unworkable for eighty. The
+            import takes a <strong>CSV or XLSX</strong> file with <strong>fixed columns</strong> and turns it into
+            inventory rows — but not before checking, host by host, that what the file claims is actually out
+            there.</span>
+          <span lang="it">Aggiungere un perimetro una riga alla volta va bene per tre asset ed è impraticabile per
+            ottanta. L'import accetta un file <strong>CSV o XLSX</strong> a <strong>colonne prefissate</strong> e lo
+            trasforma in righe di inventario — ma non prima di aver verificato, host per host, che quel che il file
+            dichiara esista davvero.</span>
+        </p>
+
+        <h3><span lang="en">The template</span><span lang="it">Il modello</span></h3>
+        <p>
+          <span lang="en"><span class="badge">TEMPLATE CSV</span> and <span class="badge">TEMPLATE XLSX</span> download
+            the same file in two formats, already filled with <strong>two example rows</strong>: one authenticated asset
+            and one without credentials, the two ways an asset can be censused. The example IPs are in
+            <code>192.0.2.0/24</code> — the documentation range of RFC 5737, which is not routable: an example imported
+            by distraction cannot put someone else's host under scan. The column list comes from the server
+            (<code>GET /api/assets/import/template</code>), so the template you fill in and the validator that judges it
+            can never drift apart.</span>
+          <span lang="it"><span class="badge">MODELLO CSV</span> e <span class="badge">MODELLO XLSX</span> scaricano lo
+            stesso file in due formati, già compilato con <strong>due righe di esempio</strong>: un asset autenticato e
+            uno senza credenziali, i due modi in cui un asset si censisce. Gli IP di esempio stanno in
+            <code>192.0.2.0/24</code> — la rete di documentazione della RFC 5737, non instradabile: un esempio importato
+            per distrazione non può mettere in scansione l'host di qualcun altro. L'elenco delle colonne arriva dal
+            server (<code>GET /api/assets/import/template</code>), così il modello che compili e il validatore che lo
+            giudica non possono divergere.</span>
+        </p>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Column</span><span lang="it">Colonna</span></th>
+                <th><span lang="en">Required</span><span lang="it">Obbligatoria</span></th>
+                <th><span lang="en">Accepted values</span><span lang="it">Valori ammessi</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>ip</code></td>
+                <td><span class="badge b-err"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+                <td><span lang="en">IPv4/IPv6 address or DNS name. An address that does not parse is an <strong>error</strong>, never a warning — see below.</span><span lang="it">Indirizzo IPv4/IPv6 o nome DNS. Un indirizzo che non è tale è un <strong>errore</strong>, mai un avviso — vedi sotto.</span></td>
+              </tr>
+              <tr>
+                <td><code>username</code> · <code>password</code></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td>
+                  <span lang="en">Either both or neither. Half a credential is an <strong>error</strong>, not a blank: the asset would enter as unauthenticated and the deep scan you expect would never run. The password travels in clear inside the file — it is encrypted the moment it is stored and is never echoed back.</span>
+                  <span lang="it">O entrambi o nessuno dei due. Mezza credenziale è un <strong>errore</strong>, non un vuoto: l'asset entrerebbe come non autenticato e la scansione profonda che ti aspetti non verrebbe mai fatta. La password viaggia in chiaro dentro il file — viene cifrata nel momento in cui è memorizzata e non torna mai indietro.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><code>os_type</code></td>
+                <td><span class="badge b-err"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+                <td><code>linux</code> · <code>windows</code></td>
+              </tr>
+              <tr>
+                <td><code>os_major_version</code></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td><span lang="en">Free text — <code>Ubuntu 22.04</code>, <code>Windows 11</code>.</span><span lang="it">Testo libero — <code>Ubuntu 22.04</code>, <code>Windows 11</code>.</span></td>
+              </tr>
+              <tr>
+                <td><code>enabled</code> · <code>internet_facing</code></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td><span lang="en"><code>yes</code> / <code>no</code>. Empty means <code>yes</code> for <code>enabled</code>, <code>no</code> for <code>internet_facing</code>.</span><span lang="it"><code>yes</code> / <code>no</code>. Vuoto significa <code>yes</code> per <code>enabled</code>, <code>no</code> per <code>internet_facing</code>.</span></td>
+              </tr>
+              <tr>
+                <td><code>environment</code></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td><code>production</code> · <code>staging</code> · <code>dev</code> · <code>unknown</code></td>
+              </tr>
+              <tr>
+                <td><code>criticality</code></td>
+                <td><span class="badge"><span lang="en">no</span><span lang="it">no</span></span></td>
+                <td>
+                  <span lang="en">1 to 5. Together with <code>environment</code> and <code>internet_facing</code> it drives contextual risk in <a href="06-risk.html">/risk</a>: an import that dropped these would land every asset as <em>unknown</em>.</span>
+                  <span lang="it">Da 1 a 5. Insieme a <code>environment</code> e <code>internet_facing</code> guida il rischio contestuale in <a href="06-risk.html">/risk</a>: un import che le perdesse farebbe arrivare ogni asset come <em>unknown</em>.</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3><span lang="en">The check before the write</span><span lang="it">La verifica prima della scrittura</span></h3>
+
+        <figure>
+          <img src="img/assets-import-check.webp" alt="Import check panel" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>IMPORT CHECK</b> — the verdict row by row. Nothing has been written to the inventory at this point.</span>
+            <span lang="it"><b>VERIFICA IMPORT</b> — l'esito riga per riga. A questo punto nulla è ancora stato scritto in inventario.</span>
+          </figcaption>
+        </figure>
+
+        <p>
+          <span lang="en">Choosing a file does not import it. The rows are read in the browser and sent to
+            <code>POST /api/assets/import/preflight</code>, which — for every row that would actually be importable —
+            opens a <strong>TCP probe</strong> on ports 80, 443, 22 and 8080 and, when the row carries a complete
+            credential, attempts a <strong>real SSH login</strong>. No login is attempted towards a host that did not
+            answer: the outcome would be a foregone failure and would speak about the host, not about the
+            credential.</span>
+          <span lang="it">Scegliere un file non lo importa. Le righe vengono lette nel browser e inviate a
+            <code>POST /api/assets/import/preflight</code>, che — per ogni riga davvero importabile — apre una
+            <strong>sonda TCP</strong> sulle porte 80, 443, 22 e 8080 e, quando la riga porta una credenziale intera,
+            tenta un <strong>login SSH reale</strong>. Verso un host che non ha risposto non si tenta alcun login:
+            l'esito sarebbe un fallimento scontato e parlerebbe dell'host, non della credenziale.</span>
+        </p>
+
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Verdict</span><span lang="it">Esito</span></th>
+                <th><span lang="en">Meaning</span><span lang="it">Significato</span></th>
+                <th><span lang="en">Does it get imported?</span><span lang="it">Viene importata?</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge b-ok">OK</span></td>
+                <td><span lang="en">Valid data, host answered, credentials accepted where present.</span><span lang="it">Dato valido, host che risponde, credenziali accettate dove presenti.</span></td>
+                <td><span lang="en">Yes.</span><span lang="it">Sì.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge b-warn">WARNING</span></td>
+                <td>
+                  <span lang="en">The row is fine on paper but not on the network: silent host, refused credentials, or a host key missing from <code>known_hosts</code> — the last one is a refusal made <em>by us</em>, not by the host, and is named as such.</span>
+                  <span lang="it">La riga è corretta sulla carta ma non in rete: host muto, credenziali rifiutate, oppure host key assente dai <code>known_hosts</code> — quest'ultimo è un rifiuto fatto <em>da noi</em>, non dall'host, ed è detto per quello che è.</span>
+                </td>
+                <td>
+                  <span lang="en">Only on explicit confirmation — <span class="badge b-acc">IMPORT ANYWAY</span>. A host can legitimately be switched off today; the choice is the operator's, and it is recorded as an override.</span>
+                  <span lang="it">Solo su conferma esplicita — <span class="badge b-acc">IMPORTA COMUNQUE</span>. Un host può legittimamente essere spento oggi; la scelta è dell'operatore, e viene registrata come tale.</span>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="badge b-err">ERROR</span></td>
+                <td>
+                  <span lang="en">Malformed data: missing or invalid IP, unknown OS, half a credential, criticality out of range. An <strong>address written wrong</strong> lands here too — <code>999.999.999.999</code>, <code>192.0.2.300</code>, <code>192.0.2</code>, <code>008.8.8.8</code> — and not among the warnings: DNS labels are allowed to be numeric, so without an explicit rule such a string would pass as a "valid name", get probed, obviously not answer, and reach you as a banal <em>host is off</em> warning. Confirm that, and an asset that can never be scanned enters the inventory. RFC 1123 §2.1 forbids exactly this, requiring a hostname's rightmost label not to be all-numeric.</span>
+                  <span lang="it">Dato malformato: IP assente o non valido, SO sconosciuto, mezza credenziale, criticality fuori scala. Ci finisce anche un <strong>indirizzo scritto male</strong> — <code>999.999.999.999</code>, <code>192.0.2.300</code>, <code>192.0.2</code>, <code>008.8.8.8</code> — e non fra gli avvisi: le etichette DNS possono essere numeriche, quindi senza una regola esplicita una stringa così passerebbe come «nome valido», verrebbe messa in sonda, ovviamente non risponderebbe e ti arriverebbe come un banale avviso di <em>host spento</em>. Confermi, e in inventario entra un asset che non potrà mai essere scansionato. La RFC 1123 §2.1 vieta esattamente questo, richiedendo che l'etichetta più a destra di un hostname non sia tutta numerica.</span>
+                </td>
+                <td><span lang="en"><strong>Never</strong> — no confirmation makes an IP that does not exist valid. The other rows are imported anyway: a hand-filled sheet almost always has one crooked row, and losing the whole import over a comma would be worse.</span><span lang="it"><strong>Mai</strong> — nessuna conferma rende valido un IP che non esiste. Le altre righe vengono importate lo stesso: un foglio compilato a mano ha quasi sempre una riga storta, e perdere l'intero import per una virgola sarebbe peggio.</span></td>
+              </tr>
+              <tr>
+                <td><span class="badge">DUPLICATE</span></td>
+                <td><span lang="en">The same IP appears earlier in the file, or is already in the inventory.</span><span lang="it">Lo stesso IP compare prima nel file, oppure è già in inventario.</span></td>
+                <td><span lang="en">No. Two rows with the same IP are not a richer import, they are an inventory counting the same host twice. The inventory check ignores the visibility cone, so an editor cannot create a duplicate of an asset they cannot see.</span><span lang="it">No. Due righe con lo stesso IP non sono un import più ricco, sono un inventario che conta due volte lo stesso host. Il controllo sull'inventario ignora il cono di visibilità, così un editor non può creare il duplicato di un asset che non vede.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          <span lang="en">When there are <strong>no</strong> warnings, the probes are <strong>run again</strong> at write
+            time: the verdict you were shown is information, not a pass the browser can replay. When you do confirm the
+            warnings, the probes are skipped — you have already decided — and the override is written to the activity
+            ledger as <code>asset.import</code> with <code>acknowledged_warnings: true</code>. The check itself is
+            recorded too (<code>asset.import_preflight</code>): probing third-party hosts with credentials supplied by
+            whoever uploads the file is exactly the activity a ledger has to be able to reconstruct.</span>
+          <span lang="it">Quando <strong>non</strong> ci sono avvisi, le sonde vengono <strong>rifatte</strong> al
+            momento della scrittura: l'esito che ti è stato mostrato è un'informazione, non un lasciapassare che il
+            browser può rigiocare. Quando invece confermi gli avvisi le sonde si saltano — hai già deciso — e lo
+            scavalcamento finisce nel registro attività come <code>asset.import</code> con
+            <code>acknowledged_warnings: true</code>. Anche la sola verifica lascia traccia
+            (<code>asset.import_preflight</code>): sondare host di terzi con credenziali fornite da chi carica il file è
+            esattamente l'attività che un registro deve poter ricostruire.</span>
+        </p>
+
+        <div class="note">
+          <span lang="en"><strong>Ceiling of 500 rows per import.</strong> It is not a convenience limit: every row
+            costs a network probe and, where credentials are present, a login attempt. A fifty-thousand-row file would
+            not be an import, it would be a network scan launched from a form.</span>
+          <span lang="it"><strong>Tetto di 500 righe per import.</strong> Non è un limite di comodo: ogni riga costa una
+            sonda di rete e, dove ci sono credenziali, un tentativo di login. Un file da cinquantamila righe non sarebbe
+            un import, sarebbe una scansione di rete lanciata da un form.</span>
+        </div>
+
+        <h3><span lang="en">How It Works — import a perimeter</span><span lang="it">Come funziona — importare un perimetro</span></h3>
+        <ol class="steps">
+          <li><span lang="en">Press <span class="badge">TEMPLATE CSV</span> or <span class="badge">TEMPLATE XLSX</span> and open the downloaded file.</span><span lang="it">Premi <span class="badge">MODELLO CSV</span> o <span class="badge">MODELLO XLSX</span> e apri il file scaricato.</span></li>
+          <li><span lang="en"><strong>Replace</strong> the two example rows with your own — do not import the examples. Keep the header row exactly as it is: the column names are the contract.</span><span lang="it"><strong>Sostituisci</strong> le due righe di esempio con le tue — non importare gli esempi. Lascia la riga di intestazione esattamente com'è: i nomi delle colonne sono il contratto.</span></li>
+          <li><span lang="en">Press <span class="badge b-acc">SELECT FILE</span> and choose it. The check starts immediately; on a large file it takes a few seconds, because it is actually knocking on every host.</span><span lang="it">Premi <span class="badge b-acc">SCEGLI FILE</span> e selezionalo. La verifica parte subito; su un file grande richiede qualche secondo, perché sta davvero bussando a ogni host.</span></li>
+          <li><span lang="en">Read the verdict. If everything is <span class="badge b-ok">OK</span>, press <span class="badge b-acc">IMPORT</span>.</span><span lang="it">Leggi l'esito. Se è tutto <span class="badge b-ok">OK</span>, premi <span class="badge b-acc">IMPORTA</span>.</span></li>
+          <li><span lang="en">If there are warnings, choose: <span class="badge">REVIEW FILE</span> closes without writing anything, so you can fix the sheet and load it again; <span class="badge b-acc">IMPORT ANYWAY</span> writes the flagged rows too, unverified and on the record.</span><span lang="it">Se ci sono avvisi, scegli: <span class="badge">RIVEDI IL FILE</span> chiude senza scrivere nulla, così puoi correggere il foglio e ricaricarlo; <span class="badge b-acc">IMPORTA COMUNQUE</span> scrive anche le righe segnalate, non verificate e messe a verbale.</span></li>
+          <li><span lang="en">The inventory reloads. Check the <strong>ACTIVE</strong> column: it repeats the same reachability verdict live, row by row.</span><span lang="it">L'inventario si ricarica. Controlla la colonna <strong>ACTIVE</strong>: ripete lo stesso esito di raggiungibilità dal vivo, riga per riga.</span></li>
+        </ol>
       </section>
 
       <!-- ======================================= TABLE -->

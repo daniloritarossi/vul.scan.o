@@ -1172,7 +1172,8 @@ Visual states: `idle` (gray) → `running` (pulsing cyan) → `done` (green ✓)
 
 The inventory lives in the `public.assets` table (local Supabase). Columns:
 `ip`, `username`, `password` (encrypted `ENC:<hex>`), `os_type` (`linux`/`windows`),
-`os_major_version`, `enabled`.
+`os_major_version`, `enabled`, plus the business context that drives contextual
+risk: `environment`, `internet_facing`, `criticality`.
 
 - Plaintext password → ⚠️ NOT ENCRYPTED badge; health check SSH FAIL
 - `ENC:<hex>` password → encrypted with encdec; health check performs a real login
@@ -1180,6 +1181,70 @@ The inventory lives in the `public.assets` table (local Supabase). Columns:
 **Migration from the legacy `assets.txt`**: on first read, if the table is
 empty and `assets.txt` exists, the file is automatically imported and
 renamed to `assets.txt.migrated` (backup).
+
+### Perimeter import (CSV / XLSX)
+
+Adding a perimeter one row at a time is fine for three assets and unworkable
+for eighty. The **IMPORT PERIMETER** bar in `/assets`, under the manual form,
+takes a CSV or XLSX file with **fixed columns** and turns it into inventory
+rows — but not before checking, host by host, that what the file claims is
+actually out there.
+
+The file is read **in the browser** (the same vendored SheetJS the exports
+use, so no new server dependency); what reaches the server is rows, and the
+server is the only one that decides which of them are importable.
+
+**Columns** (`asset_import.COLUMNS`, served by `GET /api/assets/import/template`
+so the downloaded template and the validator cannot drift apart):
+
+| Column | Required | Values |
+|---|---|---|
+| `ip` | ✅ | IPv4/IPv6 address or DNS name |
+| `username`, `password` | — | both or neither (half a credential is an error) |
+| `os_type` | ✅ | `linux` \| `windows` |
+| `os_major_version` | — | free text (`Ubuntu 22.04`) |
+| `enabled`, `internet_facing` | — | `yes` / `no` |
+| `environment` | — | `production` \| `staging` \| `dev` \| `unknown` |
+| `criticality` | — | 1–5 |
+
+An address that does not parse is an **error**, not a warning. DNS labels are
+allowed to be numeric, so without an explicit rule `999.999.999.999` would pass
+as a valid *name*, get probed, obviously not answer, and surface as a banal
+"host is off" warning — confirm that, and an asset that can never be scanned
+enters the inventory. RFC 1123 §2.1 forbids precisely this, requiring a
+hostname's rightmost label not to be all-numeric.
+
+The template ships **two example rows** — one authenticated asset and one
+without credentials — with IPs in `192.0.2.0/24` (RFC 5737 documentation
+range, not routable): an example imported by distraction cannot put someone
+else's host under scan.
+
+**Nothing is written until the check has run.** `POST /api/assets/import/preflight`
+opens a TCP probe (80, 443, 22, 8080) on every importable row and, where the
+row carries a complete credential, attempts a real SSH login — no login is
+attempted towards a host that did not answer, since the outcome would speak
+about the host and not about the credential. Four verdicts:
+
+| Verdict | Imported? |
+|---|---|
+| **OK** | yes |
+| **WARNING** — silent host, refused credentials, host key missing from `known_hosts` | only with `acknowledge_warnings: true` |
+| **ERROR** — malformed data, including an address written wrong (`999.999.999.999`, `192.0.2.300`, `192.0.2`, `008.8.8.8`) | **never**; the other rows still go through |
+| **DUPLICATE** — same IP earlier in the file, or already in the inventory | no |
+
+Without confirmation the probes are **run again** at write time: the verdict
+shown to the operator is information, not a pass the browser can replay.
+Both the check (`asset.import_preflight`) and the import
+(`asset.import`, carrying `acknowledged_warnings`) are written to the
+activity ledger — probing third-party hosts with credentials supplied by
+whoever uploads the file is exactly the activity a ledger has to be able to
+reconstruct. Ceiling of **500 rows per import**: every row costs a network
+probe, and a fifty-thousand-row file would not be an import but a network
+scan launched from a form.
+
+The duplicate check ignores the visibility cone, so an editor cannot create a
+duplicate of an asset they cannot see; rows an editor imports are
+auto-assigned to them exactly as `POST /api/assets` does.
 
 ---
 
@@ -1313,6 +1378,9 @@ omitted for scoped roles for the same reason.
 | `POST /api/assets` | ✅ | ✅ | ✅ auto-assigned to self/own group | 403 | 403 | 403 |
 | `PUT /api/assets/{id}/assignments` | ✅ any user/group | ✅ any user/group | 403 (self-escalation) | 403 | 403 | 403 |
 | `PUT/PATCH/DELETE /api/assets/{id}` | ✅ | ✅ | ✅ only in scope | 403 | 403 | 403 |
+| `GET /api/assets/import/template` | ✅ | ✅ | ✅ | 403 | 403 | 403 |
+| `POST /api/assets/import/preflight` | ✅ | ✅ | ✅ | 403 | 403 | 403 |
+| `POST /api/assets/import` | ✅ | ✅ | ✅ auto-assigned to self/own group | 403 | 403 | 403 |
 | `GET/POST/PUT/DELETE /api/users` | ✅ | GET only | 403 | 403 | 403 | 403 |
 | `GET /api/groups` | ✅ all | ✅ all | own groups only | 403 | 403 | 403 |
 | `POST/DELETE /api/groups`, `PUT .../members` | ✅ | 403 | 403 | 403 | 403 | 403 |
