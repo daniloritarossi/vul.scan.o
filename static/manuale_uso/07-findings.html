@@ -341,9 +341,12 @@
         <figure>
           <img src="img/findings-kpis.webp" alt="Findings KPI cards" loading="lazy" />
           <figcaption>
-            <span lang="en"><b>Five KPI cards</b> — each one is also a status filter: click it and the table below narrows.</span>
+            <span lang="en"><b>Five KPI cards</b> — each one is also a status filter: click it and the table below narrows.
+              The line above them states what they count, because a closed ticket leaving them untouched is the single
+              most common surprise on this page.</span>
             <span lang="it"><b>Cinque card KPI</b> — ciascuna è anche un filtro di stato: cliccala e la tabella sotto si
-              restringe.</span>
+              restringe. La riga sopra dice che cosa contano, perché un ticket chiuso che non le muove è la sorpresa
+              più frequente di questa pagina.</span>
           </figcaption>
         </figure>
         <p lang="en">
@@ -357,6 +360,158 @@
           <span class="badge b-warn">TRIAGED</span> · <span class="badge">ACCEPTED</span> ·
           <span class="badge b-ok">FIXED</span>. In un report settimanale il numero che conta è <strong>SLA
             BREACHED</strong>: OPEN misura quanto esiste, BREACHED misura quanto è in ritardo.
+        </p>
+
+        <div class="note">
+          <p lang="en">
+            <strong>These five count status, not tickets.</strong> A finding's status — <span class="badge b-err">open</span>,
+            <span class="badge b-warn">triaged</span>, <span class="badge">accepted</span>, <span class="badge b-ok">fixed</span> —
+            is the only thing that moves these numbers. Opening a remediation ticket does not, and neither does
+            <em>closing</em> it: press <span class="badge">REFRESH TICKET STATUS</span>, watch a ticket turn
+            <span class="badge b-ok">DONE</span>, and the finding stays exactly where it was, still counted under OPEN.
+          </p>
+          <p lang="it">
+            <strong>Questi cinque contano lo stato, non i ticket.</strong> Lo stato del finding — <span class="badge b-err">open</span>,
+            <span class="badge b-warn">triaged</span>, <span class="badge">accepted</span>, <span class="badge b-ok">fixed</span> —
+            è l'unica cosa che muove questi numeri. Aprire un ticket di remediation non li muove, e non li muove
+            nemmeno <em>chiuderlo</em>: premi <span class="badge">AGGIORNA STATO TICKET</span>, vedi un ticket passare a
+            <span class="badge b-ok">DONE</span>, e il finding resta esattamente dov'era, ancora contato sotto OPEN.
+          </p>
+          <p lang="en">
+            This is deliberate. <strong>&ldquo;The ticket is closed&rdquo; and &ldquo;the vulnerability is fixed&rdquo;
+            are not the same statement.</strong> A ticket gets closed as <em>won't fix</em>, because the sprint ended,
+            because it was a duplicate, or by mistake — on GitHub a <code>not_planned</code> closure is reported closed
+            but explicitly <em>not</em> done. If the application closed the finding on its own, it would be asserting
+            that a vulnerability is resolved on the strength of somebody's click in another system, and that assertion
+            then travels into the signed evidence export. Whoever states a vulnerability is fixed should be a person,
+            and the ledger records which one.
+          </p>
+          <p lang="it">
+            È una scelta voluta. <strong>«Il ticket è chiuso» e «la vulnerabilità è risolta» non sono la stessa
+            affermazione.</strong> Un ticket si chiude anche come <em>won't fix</em>, perché è finito lo sprint, perché
+            era un duplicato, o per sbaglio — su GitHub una chiusura <code>not_planned</code> viene riportata come chiusa
+            ma esplicitamente <em>non</em> risolta. Se l'applicazione chiudesse il finding da sola, starebbe dichiarando
+            risolta una vulnerabilità sulla fiducia del click di qualcuno in un altro sistema, e quella dichiarazione
+            finisce poi nell'export di evidenza firmato. Chi dichiara risolta una vulnerabilità deve essere una persona,
+            e il registro annota quale.
+          </p>
+          <p lang="en">
+            So the two live side by side on purpose: the <strong>TICKET</strong> column says what the tracker thinks, the
+            <strong>STATUS</strong> column says what you have decided. A row showing a green <span class="badge b-ok">DONE</span>
+            ticket next to a finding still marked <span class="badge b-err">open</span> is not a glitch — it is the
+            application telling you there is a decision left to make. To close it, set the status in the
+            <a href="#lifecycle">STATUS column</a>; the KPIs move immediately.
+          </p>
+          <p lang="it">
+            Per questo le due cose convivono di proposito: la colonna <strong>TICKET</strong> dice cosa ne pensa il
+            tracker, la colonna <strong>STATO</strong> dice cosa hai deciso tu. Una riga con il ticket verde
+            <span class="badge b-ok">DONE</span> accanto a un finding ancora <span class="badge b-err">open</span> non è
+            un difetto: è l'applicazione che ti segnala una decisione ancora da prendere. Per chiuderlo imposta lo stato
+            nella <a href="#lifecycle">colonna STATO</a>; i KPI si muovono all'istante.
+          </p>
+        </div>
+
+        <h4><span class="n">3-bis</span><span lang="en">When the ticket is closed and the vulnerability is not</span><span lang="it">Quando il ticket è chiuso e la vulnerabilità no</span></h4>
+        <div class="figrow">
+          <figure>
+            <img src="img/findings-ticket-cell.webp" alt="Ticket cell with the new-ticket action" loading="lazy" />
+            <figcaption><span lang="en"><b>The ticket cell</b> — reference, state read from the tracker, the <span class="badge b-warn">NEW TICKET</span> action when the current one can no longer carry work, and the history chip.</span><span lang="it"><b>La cella ticket</b> — riferimento, stato riletto dal tracker, l'azione <span class="badge b-warn">NUOVO TICKET</span> quando quello corrente non può più portare lavoro, e il chip della cronologia.</span></figcaption>
+          </figure>
+          <figure>
+            <img src="img/findings-ticket-again.webp" alt="Second ticket confirmation" loading="lazy" />
+            <figcaption><span lang="en"><b>Confirmation</b> — it names the specific reason and states that the previous reference is archived, not deleted.</span><span lang="it"><b>Conferma</b> — nomina il motivo specifico e dichiara che il riferimento precedente viene archiviato, non cancellato.</span></figcaption>
+          </figure>
+        </div>
+        <p lang="en">
+          If a closed ticket does not close the finding, the finding needs somewhere for the work to continue —
+          otherwise it stays chained to a dead reference forever. The application <strong>never reopens a ticket</strong>
+          on the tracker: it writes there once, at creation, and from then on the relationship is one-way, read only.
+          What it does instead is let you open a <strong>second ticket</strong>, and it offers it only when the current
+          one can no longer carry work:
+        </p>
+        <p lang="it">
+          Se un ticket chiuso non chiude il finding, al finding serve un posto dove il lavoro possa continuare —
+          altrimenti resta incatenato per sempre a un riferimento morto. L'applicazione <strong>non riapre mai un
+          ticket</strong> sul tracker: ci scrive una volta sola, alla creazione, e da lì in poi il rapporto è a senso
+          unico, in sola lettura. Quel che fa invece è permetterti di aprire un <strong>secondo ticket</strong>, e te lo
+          propone solo quando quello corrente non può più portare lavoro:
+        </p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Situation</span><span lang="it">Situazione</span></th>
+                <th><span lang="en">New ticket?</span><span lang="it">Nuovo ticket?</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">Ticket closed and completed, finding still open — typically a vulnerability that <strong>came back</strong> in a later scan and was reopened automatically.</span><span lang="it">Ticket chiuso e completato, finding ancora aperto — tipicamente una vulnerabilità <strong>rientrata</strong> in una scansione successiva e riaperta in automatico.</span></td>
+                <td><span class="badge b-ok"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Ticket closed <strong>without a fix</strong> — <code>not_planned</code> on GitHub. That closure is a decision not to act, not a remediation.</span><span lang="it">Ticket chiuso <strong>senza intervento</strong> — <code>not_planned</code> su GitHub. Quella chiusura è la decisione di non agire, non una remediation.</span></td>
+                <td><span class="badge b-ok"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">Ticket opened on a <strong>tracker that is no longer configured</strong>: its state can no longer be read and no work can land on it.</span><span lang="it">Ticket aperto su un <strong>tracker che non è più configurato</strong>: il suo stato non è più leggibile e su di lui non può arrivare lavoro.</span></td>
+                <td><span class="badge b-ok"><span lang="en">yes</span><span lang="it">sì</span></span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">The current ticket is still <strong>open or in progress</strong>.</span><span lang="it">Il ticket corrente è ancora <strong>aperto o in corso</strong>.</span></td>
+                <td><span class="badge b-err"><span lang="en">no</span><span lang="it">no</span></span> <span lang="en">Two tickets on one vulnerability is duplicated work, discovered downstream in somebody else's hands.</span><span lang="it">Due ticket sulla stessa vulnerabilità sono lavoro duplicato, scoperto a valle in mano a un'altra persona.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">The finding is already <span class="badge b-ok">fixed</span> or <span class="badge">accepted</span>.</span><span lang="it">Il finding è già <span class="badge b-ok">fixed</span> o <span class="badge">accepted</span>.</span></td>
+                <td><span class="badge b-err"><span lang="en">no</span><span lang="it">no</span></span> <span lang="en">There is no work left to assign.</span><span lang="it">Non c'è lavoro da assegnare.</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">The ticket state has <strong>never been read</strong> from the tracker.</span><span lang="it">Lo stato del ticket non è <strong>mai stato riletto</strong> dal tracker.</span></td>
+                <td><span class="badge b-err"><span lang="en">no</span><span lang="it">no</span></span> <span lang="en">Opening one blind could place it alongside a ticket that is still alive. Press <span class="badge">REFRESH TICKET STATUS</span> first.</span><span lang="it">Aprirne uno alla cieca potrebbe affiancarlo a un ticket ancora vivo. Premi prima <span class="badge">AGGIORNA STATO TICKET</span>.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">
+          The action asks for confirmation, because it creates a real issue on a third-party system and cannot be undone
+          from here. <strong>The previous reference is not overwritten:</strong> it moves into the finding's ticket
+          history with its reason and date, shown as a <span class="badge">n previous</span> chip in the cell and
+          exported in the <code>ticket_previous</code> column. That matters beyond tidiness — a ticket closed as
+          <em>won't fix</em> records that somebody decided not to act, and when. Overwriting the reference would erase
+          exactly the fact an audit asks about.
+        </p>
+        <figure>
+          <img src="img/findings-ticket-history.webp" alt="Ticket history timeline" loading="lazy" />
+          <figcaption>
+            <span lang="en"><b>Ticket history</b> — every ticket the finding has had, each superseded by the one below it,
+              with its state, the reason and the dates. The current one is the last entry, marked in cyan.</span>
+            <span lang="it"><b>Cronologia dei ticket</b> — tutti i ticket che il finding ha avuto, ciascuno sostituito da
+              quello sotto, con lo stato, il motivo e le date. Quello in corso è l'ultima voce, segnata in cyan.</span>
+          </figcaption>
+        </figure>
+        <p lang="en">
+          <strong>Clicking that chip opens the full history.</strong> It is a timeline read from the top down: every
+          ticket the finding has had, each one superseded by the one below it, with the state it was in, why it was
+          superseded, and the dates. The <strong>current</strong> ticket is the last entry, not a separate thing —
+          otherwise you would have to recompose the sequence in your head. Every reference is a link straight to the
+          tracker. Tickets opened before this history existed show <em>date not recorded</em> rather than a blank cell:
+          the date is genuinely missing, and a blank would read as a defect.
+        </p>
+        <p lang="it">
+          L'azione chiede conferma, perché crea una issue vera su un sistema di terzi e da qui non è annullabile. <strong>Il
+          riferimento precedente non viene sovrascritto:</strong> passa nella storia dei ticket del finding con il suo
+          motivo e la sua data, mostrata come chip <span class="badge">n precedenti</span> nella cella ed esportata
+          nella colonna <code>ticket_previous</code>. Non è ordine per l'ordine — un ticket chiuso come <em>won't
+          fix</em> registra che qualcuno ha deciso di non intervenire, e quando. Sovrascrivere il riferimento
+          cancellerebbe esattamente il fatto su cui un audit fa domande.
+        </p>
+        <p lang="it">
+          <strong>Cliccando quel chip si apre la cronologia completa.</strong> È una linea del tempo che si legge
+          dall'alto in basso: tutti i ticket che il finding ha avuto, ciascuno sostituito da quello sotto, con lo stato
+          in cui si trovava, il motivo della sostituzione e le date. Il ticket <strong>in corso</strong> è l'ultima
+          voce, non una cosa a parte — altrimenti la sequenza andrebbe ricomposta a mente. Ogni riferimento è un link
+          diretto al tracker. I ticket aperti prima che questa cronologia esistesse riportano <em>data non
+          registrata</em> invece di una cella vuota: la data manca davvero, e il vuoto si leggerebbe come un difetto.
         </p>
 
         <h4><span class="n">4</span><span lang="en">Compliance aggregation</span><span lang="it">Aggregazione di conformità</span></h4>
@@ -451,9 +606,9 @@
               <tr>
                 <td><span class="badge b-acc">REFRESH TICKET STATUS</span></td>
                 <td>
-                  <span lang="en">One button for the whole table, on its own row under the filters — it does not filter anything, it rewrites data, and it is placed and weighted to say so. It re-reads every ticket you can see from the tracker and writes the state back on the findings — <code>POST /api/findings/tickets/refresh</code>. It exists because the state is moved by people in <em>their</em> tracker, not here: anything this application remembered on its own would be a copy that ages in silence. On Jira it is a single JQL call for the whole set; on GitHub one call per issue, which is the limit of that API rather than a choice. It reports how many tickets were checked and <b>how many changed</b>, and writes nothing when nothing moved. Scoped roles refresh only the tickets of findings inside their own cone. Recorded in the audit ledger as <code>finding.ticket_refresh</code>.<br>
+                  <span lang="en">One button for the whole table, on its own row under the filters — it does not filter anything, it rewrites data, and it is placed and weighted to say so. It re-reads every ticket you can see from the tracker and writes the state back on the findings — <code>POST /api/findings/tickets/refresh</code>. It exists because the state is moved by people in <em>their</em> tracker, not here: anything this application remembered on its own would be a copy that ages in silence. On Jira it is a single JQL call for the whole set; on GitHub one call per issue, which is the limit of that API rather than a choice. It reports how many tickets were checked and <b>how many changed</b>, and writes nothing when nothing moved. Scoped roles refresh only the tickets of findings inside their own cone. Recorded in the audit ledger as <code>finding.ticket_refresh</code>. <strong>It updates the ticket, never the finding:</strong> a ticket that turns <span class="badge b-ok">DONE</span> leaves its finding exactly where it was, still counted under OPEN &mdash; see <a href="#kpi">why</a>.<br>
                   Changing provider in Settings does not delete the tickets opened with the previous one, and those references cannot be queried on the new tracker — <code>#42</code> means nothing to Jira, <code>SEC-101</code> means nothing to GitHub. Their rows are marked <em>frozen</em>, greyed and stamped with a clock: the state shown is the last one read and is no longer being updated. The refresh says so rather than counting them among the ones it checked, and it does not spend a call on them.</span>
-                  <span lang="it">Un pulsante solo per l'intera tabella, su una riga sua sotto i filtri — non filtra nulla, riscrive dati, ed è posizionato e pesato per dirlo. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>.<br>
+                  <span lang="it">Un pulsante solo per l'intera tabella, su una riga sua sotto i filtri — non filtra nulla, riscrive dati, ed è posizionato e pesato per dirlo. Rilegge dal tracker tutti i ticket che puoi vedere e riscrive lo stato sui finding — <code>POST /api/findings/tickets/refresh</code>. Esiste perché lo stato lo muovono le persone nel <em>loro</em> tracker, non qui: qualunque valore ricordato per conto proprio sarebbe una copia che invecchia in silenzio. Su Jira è un'unica chiamata JQL per tutto l'insieme; su GitHub una per issue, che è il limite di quell'API e non una scelta. Riporta quanti ticket ha controllato e <b>quanti sono cambiati</b>, e non scrive nulla se nulla si è mosso. I ruoli scoped aggiornano solo i ticket dei finding nel proprio cono. Registrato nel registro di audit come <code>finding.ticket_refresh</code>. <strong>Aggiorna il ticket, mai il finding:</strong> un ticket che passa a <span class="badge b-ok">DONE</span> lascia il suo finding esattamente dov'era, ancora contato sotto OPEN &mdash; <a href="#kpi">qui il perché</a>.<br>
                   Cambiare provider in Impostazioni non cancella i ticket aperti con quello di prima, e quei riferimenti non sono interrogabili sul nuovo tracker — <code>#42</code> non significa nulla per Jira, <code>SEC-101</code> non significa nulla per GitHub. Le loro righe sono marcate <em>congelato</em>, in grigio e con un orologio: lo stato mostrato è l'ultimo letto e non viene più aggiornato. L'aggiornamento lo dichiara invece di contarli fra quelli controllati, e non spende una chiamata per loro.</span>
                 </td>
               </tr>

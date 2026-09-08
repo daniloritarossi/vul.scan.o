@@ -1184,10 +1184,55 @@ def set_finding_ticket(finding_id: int, ref: str, url: str) -> bool:
     try:
         resp = client.table("findings").update({
             "ticket_ref": ref, "ticket_url": url,
+            "ticket_opened_at": _utc_iso(),
         }).eq("id", finding_id).execute()
         return bool(resp.data)
     except Exception as exc:
         logger.warning("set_finding_ticket fallita (id=%s): %s", finding_id, exc)
+        return False
+
+
+def replace_finding_ticket(finding_id: int, prev: dict, ref: str, url: str,
+                           reason: str) -> bool:
+    """
+    Sostituisce il ticket del finding archiviando il precedente.
+
+    Una sola UPDATE, non due: archiviare e poi creare sarebbe una finestra in
+    cui il finding non ha ne' il vecchio ne' il nuovo riferimento, e in quella
+    finestra un ticket risulterebbe semplicemente sparito.
+
+    Lo stato riletto (status/state/checked_at) viene AZZERATO: appartiene al
+    ticket vecchio, e lasciarlo farebbe apparire il ticket appena aperto come
+    gia' chiuso.
+    """
+    client = _get_client()
+    if client is None:
+        return False
+    history = list(prev.get("ticket_history") or [])
+    history.append({
+        "ref": prev.get("ticket_ref"),
+        "url": prev.get("ticket_url"),
+        "status": prev.get("ticket_status"),
+        "state": prev.get("ticket_state"),
+        "checked_at": prev.get("ticket_checked_at"),
+        # None sulle righe aperte prima che questa colonna esistesse: la
+        # cronologia lo dira' come "data non registrata", che e' vero, invece
+        # di lasciare una cella vuota che sembra un difetto.
+        "opened_at": prev.get("ticket_opened_at"),
+        "superseded_at": _utc_iso(),
+        "superseded_by": ref,
+        "reason": reason,
+    })
+    try:
+        resp = client.table("findings").update({
+            "ticket_ref": ref, "ticket_url": url,
+            "ticket_status": None, "ticket_state": None, "ticket_checked_at": None,
+            "ticket_opened_at": _utc_iso(),
+            "ticket_history": history,
+        }).eq("id", finding_id).execute()
+        return bool(resp.data)
+    except Exception as exc:
+        logger.warning("replace_finding_ticket fallita (id=%s): %s", finding_id, exc)
         return False
 
 

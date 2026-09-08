@@ -223,6 +223,24 @@ ALTER TABLE public.findings
   ADD COLUMN IF NOT EXISTS ticket_state      text,   -- todo|in_progress|done|unknown
   ADD COLUMN IF NOT EXISTS ticket_checked_at timestamptz;
 
+-- Ticket PRECEDENTI dello stesso finding, dal piu' vecchio al piu' recente.
+-- Esiste perche' un ticket chiuso non chiude la vulnerabilita': se quella e'
+-- ancora aperta le serve un ticket nuovo, e sovrascrivere 'ticket_ref'
+-- cancellerebbe il fatto che il primo era stato chiuso come 'won't fix'.
+-- Per uno strumento di compliance quel fatto E' l'evidenza: dice che qualcuno
+-- aveva deciso di non intervenire, e quando.
+-- Ogni voce: {ref, url, provider, status, state, checked_at, superseded_at,
+--             reason}  (reason: closed | wont_fix | foreign_provider)
+ALTER TABLE public.findings
+  ADD COLUMN IF NOT EXISTS ticket_history jsonb NOT NULL DEFAULT '[]'::jsonb;
+
+-- Quando il ticket CORRENTE e' stato aperto da qui. Senza, la cronologia
+-- saprebbe dire quando un ticket e' stato sostituito ma non quando era nato,
+-- e il ticket in corso non avrebbe alcuna data. Le righe precedenti a questa
+-- colonna restano senza: si mostrano come "data non registrata", non vuote.
+ALTER TABLE public.findings
+  ADD COLUMN IF NOT EXISTS ticket_opened_at timestamptz;
+
 CREATE INDEX IF NOT EXISTS idx_findings_status   ON public.findings(status);
 CREATE INDEX IF NOT EXISTS idx_findings_asset_ip ON public.findings(asset_ip);
 CREATE INDEX IF NOT EXISTS idx_findings_severity ON public.findings(severity);

@@ -62,7 +62,8 @@ from findings import (fingerprint, merge_findings, posture_findings,
                       lifecycle_events, parse_as_of, reconstruct_as_of,
                       compare_states)
 from ticketing import (create_ticket, check_connection, fetch_ticket_status,
-                       ref_provider, TicketError)
+                       ref_provider, TicketError,
+                       STATE_TODO, STATE_DOING, STATE_DONE, STATE_UNKNOWN)
 from localscan import run_gitleaks, run_trivy_image, LocalScanError
 from compliance import derive_compliance, compliance_summary
 from db import fetch_finding, set_finding_ticket, set_finding_ticket_status
@@ -807,9 +808,17 @@ def api_findings(status: str | None = None, severity: str | None = None,
     if q:
         ql = q.lower()
         rows = [r for r in rows if ql in json.dumps(r, default=str).lower()]
+    provider = ((load_config().get("ticketing") or {}).get("provider") or "").strip().lower()
     for r in rows:
         r["sla_breached"] = is_breached(r)
         r["compliance"] = derive_compliance(r)
+        # "Puo' avere un altro ticket?" lo decide il server anche per la sola
+        # visualizzazione: se la riga se lo calcolasse da sola, potrebbe
+        # offrire un'azione che poi l'endpoint rifiuta.
+        if r.get("ticket_url"):
+            ok, code = ticket_replacement(r, provider)
+            r["ticket_replaceable"] = ok
+            r["ticket_replace_reason"] = code
     summary["compliance"] = compliance_summary(rows)
     # Il provider configurato serve alla tabella per riconoscere i ticket
     # aperti con un tracker diverso da quello attivo: il loro stato agli atti
@@ -991,34 +1000,110 @@ async def api_findings_status(finding_id: int, request: Request,
     return {"ok": True, "status": status}
 
 
+def ticket_replacement(f: dict, provider: str) -> tuple[bool, str]:
+    """
+    Se il finding ha gia' un ticket, dice se puo' averne un ALTRO e perche'.
+
+    Ritorna (ammesso, codice). Esiste perche' un ticket chiuso non chiude la
+    vulnerabilita': se questa e' ancora aperta le serve un ticket nuovo,
+    altrimenti resta agganciata per sempre a uno chiuso e la remediation non
+    ha piu' un posto dove succedere. Il caso piu' comune non e' nemmeno un
+    errore: un finding risolto davvero, ticket chiuso come si deve, che mesi
+    dopo RIENTRA in una scansione e viene riaperto in automatico.
+
+    Ammesso solo quando il ticket corrente non puo' piu' portare lavoro:
+
+      wont_fix         chiuso senza intervento (su GitHub 'not_planned', che
+                       l'app riporta chiuso ma esplicitamente NON risolto)
+      closed           chiuso e completato, ma la vulnerabilita' e' ancora li'
+      foreign_provider aperto con un tracker diverso da quello configurato:
+                       quel riferimento non e' piu' interrogabile ne' lavorabile
+
+    Rifiutato quando un secondo ticket sarebbe solo un doppione:
+
+      finding_closed   il finding e' gia' fixed/accepted: non c'e' lavoro
+      ticket_open      il ticket corrente e' ancora aperto o in corso
+      state_unknown    lo stato non e' mai stato riletto dal tracker; aprire
+                       un secondo ticket "alla cieca" ne creerebbe uno
+                       parallelo a uno magari ancora aperto
+    """
+    status = (f.get("status") or "open").lower()
+    if status in ("fixed", "accepted"):
+        return False, "finding_closed"
+    ref = f.get("ticket_ref") or ""
+    if ref_provider(ref) not in (None, provider):
+        return True, "foreign_provider"
+    state = (f.get("ticket_state") or "").lower()
+    if not state:
+        return False, "state_unknown"
+    if state in (STATE_TODO, STATE_DOING):
+        return False, "ticket_open"
+    # 'unknown' arriva da una chiusura senza intervento (GitHub not_planned):
+    # e' il caso che piu' di tutti merita un ticket nuovo, non una riapertura.
+    return True, "wont_fix" if state == STATE_UNKNOWN else "closed"
+
+
 @app.post("/api/findings/{finding_id}/ticket")
-def api_findings_ticket(finding_id: int, request: Request,
-                        user: CurrentUser = Depends(_writer)):
+async def api_findings_ticket(finding_id: int, request: Request,
+                              user: CurrentUser = Depends(_writer)):
     """
     Crea un ticket di remediation (GitHub Issue / Jira) per il finding e ne
     salva il riferimento. Provider e credenziali in config.json ('ticketing').
     Editor: solo su finding di asset nel proprio cono di visibilita'.
+
+    Body opzionale {"replace": true}: apre un ticket NUOVO su un finding che
+    ne ha gia' uno, archiviando il precedente in 'ticket_history'. Serve la
+    conferma esplicita perche' un secondo ticket aperto per sbaglio e' lavoro
+    duplicato che si scopre solo a valle, in mano a un'altra persona.
     """
     f = fetch_finding(finding_id)
     if f is None:
         return JSONResponse({"error": "Finding non trovato o DB non raggiungibile"},
                             status_code=404)
     _require_ip_in_scope(user, f.get("asset_ip") or "")
+    cfg = load_config().get("ticketing") or {}
+    provider = (cfg.get("provider") or "").strip().lower()
+
+    replace = False
     if f.get("ticket_url"):
-        return {"ok": True, "already": True,
-                "ref": f.get("ticket_ref"), "url": f.get("ticket_url")}
+        try:
+            replace = bool((await request.json()).get("replace"))
+        except Exception:
+            replace = False
+        allowed, code = ticket_replacement(f, provider)
+        if not replace or not allowed:
+            # Risposta unica per "ne ha gia' uno": la UI ci trova anche SE se
+            # ne puo' aprire un altro e perche', cosi' la riga lo puo' dire
+            # senza doverlo chiedere.
+            return {"ok": True, "already": True,
+                    "ref": f.get("ticket_ref"), "url": f.get("ticket_url"),
+                    "replaceable": allowed, "reason": code}
+
     try:
-        ticket = create_ticket(load_config().get("ticketing") or {}, f)
+        ticket = create_ticket(cfg, f)
     except TicketError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
-    set_finding_ticket(finding_id, ticket["ref"], ticket["url"])
+
+    if replace:
+        _, code = ticket_replacement(f, provider)
+        db.replace_finding_ticket(finding_id, f, ticket["ref"], ticket["url"], code)
+    else:
+        set_finding_ticket(finding_id, ticket["ref"], ticket["url"])
+
     # L'apertura del ticket manda titolo e dettagli del finding a un sistema
     # ESTERNO (GitHub/Jira): e' un'uscita di dati verso terzi.
     _audit("finding.ticket_create", request, user,
            target={"type": "finding", "id": finding_id, "label": f.get("title")},
            detail={"ref": ticket.get("ref"), "url": ticket.get("url"),
-                   "provider": (load_config().get("ticketing") or {}).get("provider")})
-    return {"ok": True, "already": False, **ticket}
+                   "provider": provider,
+                   # Un ticket che ne sostituisce un altro non e' la stessa
+                   # azione di un primo ticket: a valle si deve poter dire
+                   # quante volte una vulnerabilita' e' stata ri-assegnata.
+                   **({"replaces": f.get("ticket_ref"),
+                       "replaces_url": f.get("ticket_url"),
+                       "reason": code} if replace else {})})
+    return {"ok": True, "already": False, "replaced": f.get("ticket_ref") if replace else None,
+            **ticket}
 
 
 @app.post("/api/findings/export")
