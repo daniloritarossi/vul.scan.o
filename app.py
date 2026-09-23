@@ -266,6 +266,44 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 templates.env.globals["app_version"] = APP_VERSION
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
+# Add-on di analisi proprietario (vfa-agent), opzionale: se il package non e'
+# installato l'applicazione parte identica a prima.
+try:
+    from vfa_agent import router as agent_router
+    app.include_router(agent_router)
+except ImportError:
+    pass
+
+
+def _agent_enabled() -> bool:
+    """
+    Se mostrare la voce di menu dell'add-on: installato E con licenza attiva.
+
+    Importato a ogni chiamata e non all'avvio, cosi' incollare la chiave nelle
+    impostazioni si vede subito senza riavviare. Non solleva mai: una voce di
+    menu non deve poter far cadere una pagina.
+    """
+    try:
+        from vfa_agent import license_active
+        return bool(license_active())
+    except Exception:
+        return False
+
+
+def _agent_installed() -> bool:
+    """Se il pacchetto dell'add-on c'e': basta a decidere se mostrare il campo
+    della licenza nelle impostazioni, che serve proprio quando la licenza non
+    e' ancora attiva."""
+    try:
+        import vfa_agent  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+templates.env.globals["agent_enabled"] = _agent_enabled
+templates.env.globals["agent_installed"] = _agent_installed
+
 
 # ---------------------------------------------------------------------------
 # AUTENTICAZIONE / RBAC (cono di visibilita')

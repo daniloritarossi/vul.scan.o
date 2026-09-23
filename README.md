@@ -1121,6 +1121,74 @@ Visual states: `idle` (gray) → `running` (pulsing cyan) → `done` (green ✓)
 
 ---
 
+## Optional add-on — analysis agent (`vfa-agent`)
+
+This core is and stays free and open source under Apache 2.0. A separate,
+proprietary add-on can be installed on top of it: **`vfa-agent`**, an analysis
+agent that reads the data this application already holds — assets, CVEs,
+findings, network exposure — and says **what to fix first and why**.
+
+It is not part of this repository and it is not required. Without it the
+application runs exactly as it does now: the hook is four lines in `app.py`
+that do nothing when the package is absent.
+
+```python
+try:
+    from vfa_agent import router as agent_router
+    app.include_router(agent_router)
+except ImportError:
+    pass    # add-on not installed
+```
+
+### How it works, in short
+
+- **It is installed like any pip package** at deploy time, from a wheel. It
+  never downloads code at runtime: a security product that fetched and executed
+  remote code would not survive a customer's own review.
+- **It reads, it does not write.** It touches none of your assets and none of
+  your findings. It writes only to its own `agent_*` tables and to the activity
+  ledger, where every analysis it produces is recorded.
+- **It proposes, it never executes.** No automatic remediation, no tickets
+  opened by itself, no findings closed. It produces priorities, analyses and
+  drafts that a person approves — and a reviewer can correct a draft before
+  approving it.
+- **It obeys the same visibility cones.** An agent page never shows an asset
+  you would not see navigating this application, because it asks this
+  application's own `visible_asset_ips`.
+- **The model stays where you put it.** It uses the LLM already configured in
+  `config.json` -> `ai`: Ollama on your own machine, or Claude via API. Local
+  inference is a first-class option, not a fallback.
+- **It needs a licence key**, pasted in Settings (section `agent`). On expiry
+  it degrades gently: new analyses stop, everything already produced stays
+  readable, and there is a 14-day tolerance for slow renewals.
+
+### Installation
+
+```bash
+source .venv/bin/activate
+pip install vfa_agent-<version>-py3-none-any.whl     # wheel supplied to you
+# apply the add-on's migrations (vfa_agent/migrations/*.sql), then:
+#   notify pgrst, 'reload schema';
+# paste the licence key in Settings, section 'agent'
+```
+
+Restart is not required to make the menu entry appear: it shows up as soon as
+the key is in place, and only while the licence is active.
+
+### What it adds to the interface
+
+A new **Agent** entry in the navigation, leading to:
+
+| Page | What it gives you |
+|---|---|
+| Briefing | the ranked list of what to fix first, with the reason for every point of the score |
+| Finding analysis | exploitability, reachability, correlation across scanners, false-positive signals, and a remediation and ticket draft to approve |
+| What changed | new findings, findings that came back after being closed, SLAs missed, and data that disappeared without being closed |
+| Ask | questions in plain language about your own data, answered from it |
+
+The full description of every feature, page by page, is in the user manual:
+[13 · Analysis agent](static/manuale_uso/13-agent.html).
+
 ## Configuration (`config.json`)
 
 ```jsonc

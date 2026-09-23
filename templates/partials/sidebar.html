@@ -10,6 +10,13 @@
   {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',  'text': 'Admin'},
   {'page': 'settings',  'href': '/settings', 'icon': 'settings',     'key': 'nav.settings',  'text': 'Settings'}
 ] %}
+{# Add-on di analisi opzionale: la voce compare solo se il pacchetto e'
+   installato e la licenza e' attiva (vedi _agent_enabled in app.py). #}
+{% if agent_enabled is defined and agent_enabled() %}
+{% set nav_items = nav_items + [
+  {'page': 'agent', 'href': '/agent/', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent'}
+] %}
+{% endif %}
 <!-- NavigationDrawer (Web) -->
 <nav
   class="hidden md:flex flex-col py-panel-padding gap-base-unit fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-white/40 backdrop-blur-xl border-r border-slate-200/50 z-40">

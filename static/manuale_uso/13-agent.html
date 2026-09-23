@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en" data-theme="dark" data-title-en="13 · Analysis agent" data-title-it="13 · Agente di analisi">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>13 · Analysis agent — VUL.SCAN.O</title>
+  <link rel="icon" href="/static/favicon.svg" />
+  <link rel="stylesheet" href="assets/manual.css" />
+</head>
+
+<body>
+  <div class="layout">
+    <aside>
+          <a class="brand" href="index.html">
+            <img src="/static/logo-icon.svg" alt="" onerror="this.style.display='none'" />
+            <b>VUL.SCAN.O</b>
+          </a>
+          <p class="brand-sub"><span lang="en">User Manual</span><span lang="it">Manuale d'uso</span></p>
+          <div class="switches">
+            <button type="button" data-lang-btn="en">EN</button>
+            <button type="button" data-lang-btn="it">IT</button>
+            <button type="button" data-theme-btn="dark">DARK</button>
+            <button type="button" data-theme-btn="light">LIGHT</button>
+          </div>
+          <input id="tocSearch" type="search" placeholder="Filter…" autocomplete="off" />
+          <nav class="toc">
+            <div class="grp"><span lang="en">Start here</span><span lang="it">Da qui</span></div>
+            <ol>
+              <li><a href="index.html"><span class="num">00</span><span lang="en">Overview &amp; quick start</span><span lang="it">Panoramica e avvio rapido</span></a></li>
+              <li><a href="01-shell.html"><span class="num">01</span><span lang="en">Application shell</span><span lang="it">Interfaccia comune</span></a></li>
+              <li><a href="02-auth.html"><span class="num">02</span><span lang="en">Sign in &amp; accounts</span><span lang="it">Accesso e account</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Pages</span><span lang="it">Pagine</span></div>
+            <ol>
+              <li><a href="03-dashboard.html"><span class="num">03</span>Dashboard</a></li>
+              <li><a href="04-assets.html"><span class="num">04</span><span lang="en">Asset Inventory</span><span lang="it">Inventario asset</span></a></li>
+              <li><a href="05-posture.html"><span class="num">05</span><span lang="en">Security Posture</span><span lang="it">Postura di sicurezza</span></a></li>
+              <li><a href="06-risk.html"><span class="num">06</span><span lang="en">Contextual Risk</span><span lang="it">Rischio contestuale</span></a></li>
+              <li><a href="07-findings.html"><span class="num">07</span><span lang="en">Unified Findings</span><span lang="it">Findings unificati</span></a></li>
+              <li><a href="08-sbom.html"><span class="num">08</span>SBOM</a></li>
+              <li><a href="09-audit.html"><span class="num">09</span><span lang="en">Audit Ledger</span><span lang="it">Registro audit</span></a></li>
+              <li><a href="10-admin.html"><span class="num">10</span><span lang="en">Users &amp; Groups</span><span lang="it">Utenti e gruppi</span></a></li>
+              <li><a href="11-settings.html"><span class="num">11</span><span lang="en">Settings</span><span lang="it">Impostazioni</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Reference</span><span lang="it">Riferimento</span></div>
+            <ol>
+              <li><a href="12-reference.html"><span class="num">12</span><span lang="en">Matrix, API, formulas, glossary</span><span lang="it">Matrice, API, formule, glossario</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">Add-on</span><span lang="it">Add-on</span></div>
+            <ol>
+              <li><a href="13-agent.html" aria-current="page"><span class="num">13</span><span lang="en">Analysis agent</span><span lang="it">Agente di analisi</span></a></li>
+            </ol>
+            <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
+            <ol class="sub">
+              <li><a href="#overview"><span lang="en">What it is</span><span lang="it">Che cos'è</span></a></li>
+              <li><a href="#install"><span lang="en">Installation &amp; licence</span><span lang="it">Installazione e licenza</span></a></li>
+              <li><a href="#briefing"><span lang="en">Briefing</span><span lang="it">Briefing</span></a></li>
+              <li><a href="#finding"><span lang="en">Finding analysis</span><span lang="it">Analisi del finding</span></a></li>
+              <li><a href="#drafts"><span lang="en">Drafts to approve</span><span lang="it">Bozze da approvare</span></a></li>
+              <li><a href="#drift"><span lang="en">What changed</span><span lang="it">Cosa è cambiato</span></a></li>
+              <li><a href="#ask"><span lang="en">Ask</span><span lang="it">Domande</span></a></li>
+              <li><a href="#roles"><span lang="en">Roles</span><span lang="it">Ruoli</span></a></li>
+              <li><a href="#data"><span lang="en">Data &amp; model</span><span lang="it">Dati e modello</span></a></li>
+            </ol>
+          </nav>
+        </aside>
+    <main>
+      <header class="hero">
+        <div class="kicker">13 · <span lang="en">Analysis agent</span><span lang="it">Agente di analisi</span> <span class="route">/agent/</span></div>
+        <h1><span lang="en">Analysis agent (optional add-on)</span><span lang="it">Agente di analisi (add-on opzionale)</span></h1>
+        <p lang="en">
+          A separate, paid module that reads the data this application already holds — assets, CVEs, findings, network
+          exposure — and says <strong>what to fix first and why</strong>. It is not part of the open source core: the core
+          runs identically without it. These pages appear only when the package is installed and its licence is active.
+        </p>
+        <p lang="it">
+          Un modulo separato e a pagamento che legge i dati che questa applicazione già possiede — asset, CVE, finding,
+          esposizione di rete — e dice <strong>cosa sistemare per primo e perché</strong>. Non fa parte del core open
+          source: senza di lui il core funziona identico. Queste pagine compaiono solo se il pacchetto è installato e la
+          sua licenza è attiva.
+        </p>
+      </header>
+
+      <section id="overview">
+        <h2><span lang="en">What it is, and what it never does</span><span lang="it">Che cos'è, e cosa non fa mai</span></h2>
+        <div class="block">
+          <p lang="en"><strong>It proposes, it never executes.</strong> No automatic remediation, no ticket opened by
+            itself, no finding closed or reclassified. It produces priorities, analyses and drafts; a person reads them
+            and decides. This is a deliberate choice about responsibility, not a missing feature.</p>
+          <p lang="it"><strong>Propone, non esegue mai.</strong> Nessuna remediation automatica, nessun ticket aperto da
+            sé, nessun finding chiuso o riclassificato. Produce priorità, analisi e bozze; una persona le legge e decide.
+            È una scelta deliberata di responsabilità, non una funzione mancante.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>It reads your data, it does not write to it.</strong> It writes only to its own
+            <code>agent_*</code> tables and to the activity ledger, where every analysis it produces and every decision
+            taken on a draft is recorded — the same hash-chained ledger described in
+            <a href="09-audit.html">09 · Audit Ledger</a>.</p>
+          <p lang="it"><strong>Legge i tuoi dati, non li scrive.</strong> Scrive solo nelle proprie tabelle
+            <code>agent_*</code> e nel registro attività, dove finiscono ogni analisi prodotta e ogni decisione presa su
+            una bozza — lo stesso registro a catena di hash descritto in
+            <a href="09-audit.html">09 · Registro audit</a>.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>It respects your visibility cone.</strong> Every page asks this application's own
+            permission function: you never see, through the agent, an asset you would not see navigating normally. See
+            <a href="10-admin.html#roles">10 · Users &amp; Groups</a>.</p>
+          <p lang="it"><strong>Rispetta il tuo cono di visibilità.</strong> Ogni pagina interroga la funzione dei permessi
+            di questa applicazione: attraverso l'agente non vedi mai un asset che non vedresti navigando normalmente.
+            Vedi <a href="10-admin.html#roles">10 · Utenti e gruppi</a>.</p>
+        </div>
+        <div class="note">
+          <p lang="en"><strong>The risk score is arithmetic, not a model's opinion.</strong> Every point is assigned by
+            code and carries the reason it was assigned. The model is used to write the wording, never to decide the
+            priority.</p>
+          <p lang="it"><strong>Il punteggio di rischio è aritmetica, non l'opinione di un modello.</strong> Ogni punto è
+            assegnato dal codice e porta con sé il motivo per cui è stato assegnato. Il modello serve a scrivere il testo,
+            mai a decidere la priorità.</p>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2><span lang="en">Installation and licence</span><span lang="it">Installazione e licenza</span></h2>
+        <ol class="steps">
+          <li><span lang="en">Install the wheel you were supplied, inside the application's virtualenv.</span><span lang="it">Installa il wheel che ti è stato consegnato, dentro il virtualenv dell'applicazione.</span></li>
+          <li><span lang="en">Apply the add-on's migrations, then reload the PostgREST schema (<code>notify pgrst, 'reload schema';</code>), otherwise its new tables are unreachable.</span><span lang="it">Applica le migrazioni dell'add-on, poi ricarica lo schema di PostgREST (<code>notify pgrst, 'reload schema';</code>), altrimenti le tabelle nuove non sono raggiungibili.</span></li>
+          <li><span lang="en">Paste the licence key in <a href="11-settings.html">Settings</a>, section <code>agent</code>.</span><span lang="it">Incolla la chiave di licenza in <a href="11-settings.html">Impostazioni</a>, sezione <code>agent</code>.</span></li>
+          <li><span lang="en">The <strong>Agent</strong> entry appears in the navigation. No restart needed.</span><span lang="it">La voce <strong>Agente</strong> compare nel menu. Nessun riavvio necessario.</span></li>
+        </ol>
+        <div class="block">
+          <p lang="en"><strong>On expiry it degrades gently.</strong> New analyses stop; everything already produced stays
+            readable. There is a <strong>14-day tolerance</strong> past the expiry date, for slow renewals and clocks that
+            disagree. The application itself is never blocked.</p>
+          <p lang="it"><strong>Alla scadenza degrada con gentilezza.</strong> Le analisi nuove si fermano; tutto ciò che è
+            già stato prodotto resta leggibile. C'è una <strong>tolleranza di 14 giorni</strong> oltre la scadenza, per
+            rinnovi lenti e orologi non allineati. L'applicazione non viene mai bloccata.</p>
+        </div>
+      </section>
+
+      <section id="briefing">
+        <h2><span lang="en">Briefing — what to fix first</span><span lang="it">Briefing — cosa sistemare per primo</span></h2>
+        <p lang="en">The open findings in your visibility cone, ranked. Each one shows every factor that contributed to its
+          score, so the ranking can be checked by hand.</p>
+        <p lang="it">I finding aperti nel tuo cono di visibilità, in classifica. Ognuno mostra tutti i fattori che hanno
+          contribuito al punteggio, così la classifica si può verificare a mano.</p>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Factor</span><span lang="it">Fattore</span></th>
+                <th><span lang="en">Points</span><span lang="it">Punti</span></th>
+                <th><span lang="en">Where it comes from</span><span lang="it">Da dove viene</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><span lang="en">Severity</span><span lang="it">Gravità</span></td><td>4–40</td><td><span lang="en">the finding</span><span lang="it">il finding</span></td></tr>
+              <tr><td><span lang="en">CVE in the CISA KEV catalogue</span><span lang="it">CVE nel catalogo CISA KEV</span></td><td>30</td><td><span lang="en">known exploited in the wild</span><span lang="it">sfruttato attivamente</span></td></tr>
+              <tr><td>EPSS</td><td>0–20</td><td><span lang="en">probability of exploitation</span><span lang="it">probabilità di sfruttamento</span></td></tr>
+              <tr><td><span lang="en">Asset exposed to the internet</span><span lang="it">Asset esposto su internet</span></td><td>15</td><td><span lang="en">asset inventory</span><span lang="it">inventario asset</span></td></tr>
+              <tr><td><span lang="en">Remediation SLA missed</span><span lang="it">SLA di remediation superata</span></td><td>12</td><td><span lang="en">the finding's due date</span><span lang="it">la scadenza del finding</span></td></tr>
+              <tr><td><span lang="en">Environment</span><span lang="it">Ambiente</span></td><td>0–10</td><td><span lang="en">production, staging, …</span><span lang="it">produzione, collaudo, …</span></td></tr>
+              <tr><td><span lang="en">Business criticality</span><span lang="it">Criticità per il business</span></td><td>0–10</td><td><span lang="en">asset inventory</span><span lang="it">inventario asset</span></td></tr>
+              <tr><td><span lang="en">Regression (reopened)</span><span lang="it">Regressione (riaperto)</span></td><td>8</td><td><span lang="en">finding history</span><span lang="it">storia del finding</span></td></tr>
+              <tr><td><span lang="en">SLA due within 7 days</span><span lang="it">SLA in scadenza entro 7 giorni</span></td><td>5</td><td><span lang="en">the finding's due date</span><span lang="it">la scadenza del finding</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Findings marked <strong>fixed</strong> or <strong>accepted</strong> are left out: an accepted risk is a
+          decision already taken, not a priority. A written summary of the briefing can be produced on request; it is
+          saved, not regenerated on every page load, and it says which model wrote it and when.</p>
+        <p lang="it">I finding <strong>risolti</strong> o <strong>accettati</strong> restano fuori: un rischio accettato è
+          una decisione già presa, non una priorità. Su richiesta si può produrre una sintesi scritta del briefing: viene
+          salvata, non rigenerata a ogni caricamento, e dichiara quale modello l'ha scritta e quando.</p>
+      </section>
+
+      <section id="finding">
+        <h2><span lang="en">Finding analysis</span><span lang="it">Analisi del finding</span></h2>
+        <p lang="en">For a single finding: why it ranks where it ranks, what the exploitation signals mean, whether the
+          service is actually reachable, and what the same CVE is doing elsewhere in your estate.</p>
+        <p lang="it">Per un singolo finding: perché sta dove sta in classifica, cosa dicono i segnali di sfruttamento, se
+          il servizio è davvero raggiungibile, e cosa sta facendo lo stesso CVE altrove nel tuo parco.</p>
+        <div class="block">
+          <p lang="en"><strong>Reachability.</strong> For packages that expose a service, the agent can check whether the
+            relevant ports actually answer. That check opens TCP connections to your own asset, so it runs only when you
+            ask for the analysis — never while a page is simply loading.</p>
+          <p lang="it"><strong>Raggiungibilità.</strong> Per i pacchetti che espongono un servizio, l'agente può verificare
+            se le porte interessate rispondono davvero. Quel controllo apre connessioni TCP verso un tuo asset, quindi
+            parte solo quando chiedi l'analisi — mai al semplice caricamento di una pagina.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>False-positive signals, not verdicts.</strong> The same CVE already accepted elsewhere by a
+            person, no service listening, probability of exploitation below 1% without KEV, no CVE attached, severity never
+            rated: these are listed as signals to help you decide where to look first. The agent closes nothing and
+            dismisses nothing.</p>
+          <p lang="it"><strong>Segnali di falso positivo, non verdetti.</strong> Lo stesso CVE già accettato altrove da una
+            persona, nessun servizio in ascolto, probabilità di sfruttamento sotto l'1% senza KEV, nessun CVE associato,
+            gravità mai valutata: sono elencati come segnali, per aiutarti a decidere dove guardare prima. L'agente non
+            chiude e non archivia nulla.</p>
+        </div>
+      </section>
+
+      <section id="drafts">
+        <h2><span lang="en">Drafts to approve</span><span lang="it">Bozze da approvare</span></h2>
+        <p lang="en">On request, the agent writes a draft for a finding: an assessment, remediation steps, and the text of
+          a ticket. The draft is born <strong>awaiting a decision</strong>.</p>
+        <p lang="it">Su richiesta l'agente scrive una bozza per un finding: una valutazione, i passi di remediation e il
+          testo di un ticket. La bozza nasce <strong>in attesa di una decisione</strong>.</p>
+        <ol class="steps">
+          <li><span lang="en">You read it.</span><span lang="it">La leggi.</span></li>
+          <li><span lang="en"><strong>You can correct it</strong> before approving: the corrected version is the one that
+            gets signed and kept.</span><span lang="it"><strong>Puoi correggerla</strong> prima di approvare: la versione
+            corretta è quella che viene firmata e conservata.</span></li>
+          <li><span lang="en">Approving <strong>records a decision</strong>. It does not open a ticket, does not touch an
+            asset, does not close a finding.</span><span lang="it">Approvare <strong>registra una decisione</strong>. Non
+            apre un ticket, non tocca un asset, non chiude un finding.</span></li>
+        </ol>
+        <div class="warn">
+          <p lang="en">A draft is checked before you ever see it: any CVE it mentions must be one of the finding's own. A
+            plausible but non-existent CVE would send someone chasing a vulnerability they do not have, so such an answer
+            is discarded. The same check applies to <em>your</em> correction.</p>
+          <p lang="it">Una bozza viene verificata prima che tu la veda: qualunque CVE citi deve essere fra quelli del
+            finding. Un CVE plausibile ma inesistente manderebbe qualcuno a rincorrere una vulnerabilità che non ha, quindi
+            una risposta così viene scartata. La stessa verifica vale per <em>la tua</em> correzione.</p>
+        </div>
+      </section>
+
+      <section id="drift">
+        <h2><span lang="en">What changed</span><span lang="it">Cosa è cambiato</span></h2>
+        <p lang="en">Over a window you choose, reconstructed from the finding event log:</p>
+        <p lang="it">Su una finestra che scegli tu, ricostruita dal registro eventi dei finding:</p>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Section</span><span lang="it">Sezione</span></th><th><span lang="en">Meaning</span><span lang="it">Significato</span></th></tr></thead>
+            <tbody>
+              <tr><td><span lang="en">Came back</span><span lang="it">Tornati</span></td><td><span lang="en">closed or accepted by a person, open again — a regression</span><span lang="it">chiusi o accettati da una persona, di nuovo aperti — una regressione</span></td></tr>
+              <tr><td><span lang="en">New since then</span><span lang="it">Comparsi da allora</span></td><td><span lang="en">did not exist at the start of the window</span><span lang="it">non esistevano all'inizio della finestra</span></td></tr>
+              <tr><td><span lang="en">SLA missed</span><span lang="it">SLA superate</span></td><td><span lang="en">the remediation deadline lapsed inside the window</span><span lang="it">la scadenza di remediation è passata dentro la finestra</span></td></tr>
+              <tr><td><span lang="en">Closed</span><span lang="it">Chiusi</span></td><td><span lang="en">resolved or accepted in the window</span><span lang="it">risolti o accettati nella finestra</span></td></tr>
+              <tr><td><span lang="en">Disappeared</span><span lang="it">Spariti</span></td><td><span lang="en">open before, absent now, never marked fixed or accepted — a data anomaly, not a success</span><span lang="it">aperti prima, assenti ora, mai marcati risolti o accettati — un'anomalia del dato, non un successo</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <p lang="en">The page says how much of the past state is <strong>proven</strong> by the event log and how much is
+            <strong>estimated</strong> from timestamps, because findings that predate the log can only be reconstructed
+            approximately. A drift built on estimates is an indication, not a proof.</p>
+          <p lang="it">La pagina dichiara quanta parte dello stato passato è <strong>provata</strong> dal registro eventi e
+            quanta è <strong>stimata</strong> dai timestamp, perché i finding nati prima del registro si possono
+            ricostruire solo in modo approssimato. Un drift costruito su stime è un'indicazione, non una prova.</p>
+        </div>
+      </section>
+
+      <section id="ask">
+        <h2><span lang="en">Ask</span><span lang="it">Domande</span></h2>
+        <p lang="en">Questions in plain language about your own data, in English or Italian. The answer is grounded in the
+          data and the agent says so when the data does not contain it.</p>
+        <p lang="it">Domande in linguaggio naturale sui tuoi dati, in italiano o in inglese. La risposta si basa sui dati, e
+          l'agente lo dice quando i dati non la contengono.</p>
+        <div class="block">
+          <p lang="en"><strong>Counts do not go through the model.</strong> "How many criticals are open" has an answer
+            already computed: it is served immediately and it is exact. The model is used for questions that are really
+            language.</p>
+          <p lang="it"><strong>I conteggi non passano dal modello.</strong> «Quante critiche sono aperte» ha una risposta
+            già calcolata: viene servita subito ed è esatta. Il modello serve per le domande che sono davvero linguaggio.</p>
+        </div>
+        <div class="block">
+          <p lang="en">Answers arrive as they are written. If the answer names a CVE that is not in your data, it is cut off
+            where that happens, with an explicit notice: you see where it stopped rather than an invented sentence carried
+            confidently to its end.</p>
+          <p lang="it">Le risposte arrivano mentre vengono scritte. Se una risposta cita un CVE che nei tuoi dati non c'è,
+            viene interrotta in quel punto, con un avviso esplicito: vedi dove si è fermata, invece di una frase inventata
+            portata a termine con sicurezza.</p>
+        </div>
+      </section>
+
+      <section id="roles">
+        <h2><span lang="en">Who can do what</span><span lang="it">Chi può fare cosa</span></h2>
+        <div class="scroll-x">
+          <table>
+            <thead><tr><th><span lang="en">Role</span><span lang="it">Ruolo</span></th><th><span lang="en">Reads the agent</span><span lang="it">Legge l'agente</span></th><th><span lang="en">Decides on drafts</span><span lang="it">Decide sulle bozze</span></th><th><span lang="en">Licence details</span><span lang="it">Dettaglio licenza</span></th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge b-acc">admin</span></td><td>✓</td><td>✓</td><td>✓</td></tr>
+              <tr><td><span class="badge b-acc">manager</span></td><td>✓</td><td>✓</td><td>✓</td></tr>
+              <tr><td><span class="badge b-acc">editor</span></td><td><span lang="en">✓ own cone</span><span lang="it">✓ solo il suo cono</span></td><td>✓</td><td>—</td></tr>
+              <tr><td><span class="badge b-warn">auditor</span></td><td>✓</td><td>—</td><td>—</td></tr>
+              <tr><td><span class="badge b-warn">viewer</span></td><td>✓</td><td>—</td><td>—</td></tr>
+              <tr><td><span class="badge b-warn">stakeholder</span></td><td><span lang="en">✓ own cone</span><span lang="it">✓ solo il suo cono</span></td><td>—</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p lang="en">Read-only roles read drafts but cannot approve or reject them: an auditor observes, it does not decide.</p>
+        <p lang="it">I ruoli di sola lettura leggono le bozze ma non possono approvarle o rifiutarle: un auditor osserva, non decide.</p>
+      </section>
+
+      <section id="data">
+        <h2><span lang="en">Your data and the model</span><span lang="it">I tuoi dati e il modello</span></h2>
+        <div class="block">
+          <p lang="en">The agent uses the model configured in <a href="11-settings.html#ai">Settings → AI / LLM</a>. With
+            <strong>Ollama</strong> the model runs on your own machine and nothing about your findings leaves it. With
+            <strong>Claude</strong> the prompt is sent to the provider's API, exactly as for the core's own AI summaries.
+            The choice is yours and it is the same setting.</p>
+          <p lang="it">L'agente usa il modello configurato in <a href="11-settings.html#ai">Impostazioni → AI / LLM</a>. Con
+            <strong>Ollama</strong> il modello gira sulla tua macchina e nulla dei tuoi finding la lascia. Con
+            <strong>Claude</strong> il prompt viene inviato all'API del fornitore, esattamente come per le sintesi AI del
+            core. La scelta è tua ed è la stessa impostazione.</p>
+        </div>
+        <div class="block">
+          <p lang="en">Two public catalogues are consulted to enrich the ranking: <strong>CISA KEV</strong> and
+            <strong>EPSS</strong>. Only CVE identifiers are sent, never your assets. If either is unreachable, the ranking
+            is produced anyway and declares what is missing.</p>
+          <p lang="it">Per arricchire la classifica si consultano due cataloghi pubblici: <strong>CISA KEV</strong> ed
+            <strong>EPSS</strong>. Vengono inviati solo identificativi CVE, mai i tuoi asset. Se uno dei due non risponde,
+            la classifica viene prodotta comunque e dichiara cosa manca.</p>
+        </div>
+        <div class="note">
+          <p lang="en">Every analysis produced and every decision taken on a draft is written to the activity ledger, with
+            who asked for it and the outcome. That is what makes an agent giving advice acceptable: you can always
+            reconstruct what it said and who accepted it.</p>
+          <p lang="it">Ogni analisi prodotta e ogni decisione presa su una bozza vengono scritte nel registro attività, con
+            chi le ha chieste e l'esito. È questo che rende accettabile un agente che dà indicazioni: si può sempre
+            ricostruire cosa ha detto e chi l'ha accettato.</p>
+        </div>
+      </section>
+
+      <div class="pager">
+        <a href="12-reference.html">
+          <span class="lbl"><span lang="en">Previous</span><span lang="it">Indietro</span></span>
+          12 · <span lang="en">Reference</span><span lang="it">Riferimento</span>
+        </a>
+        <a class="nxt" href="index.html">
+          <span class="lbl"><span lang="en">Back to</span><span lang="it">Torna a</span></span>
+          00 · <span lang="en">Overview</span><span lang="it">Panoramica</span>
+        </a>
+      </div>
+    </main>
+  </div>
+
+  <div id="lightbox"><img src="" alt="" /></div>
+  <script src="assets/manual.js?v=2"></script>
+</body>
+
+</html>

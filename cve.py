@@ -443,10 +443,28 @@ def compute_fix_plan(name: str, ecosystem: str | None = None,
 _LANG_NAMES = {"en": "English", "it": "Italian"}
 
 
-def _llm_complete(prompt: str, timeout: int) -> str:
+def _llm_complete(prompt: str, timeout: int, max_tokens: int = 256,
+                  json_schema: dict | None = None,
+                  model: str | None = None) -> str:
     """
     Invia un prompt all'LLM configurato (Ollama o Claude) e ritorna la risposta.
     Best-effort: stringa vuota in caso di errore o provider non disponibile.
+
+    'max_tokens' limita la risposta del ramo Claude. Il default 256 basta alle
+    sintesi di questo modulo; chi chiede output strutturato piu' lungo (es. un
+    JSON) lo alza esplicitamente, altrimenti la risposta arriva troncata a
+    meta'. Il ramo Ollama non ha un tetto equivalente e ignora il parametro.
+
+    'json_schema', se presente, vincola la risposta di Ollama a quella forma:
+    a ogni passo il modello puo' emettere solo token compatibili con lo
+    schema, quindi il JSON esce valido per costruzione. Vincola la forma, non
+    il contenuto: chi chiama deve comunque verificare cosa c'e' dentro. Il
+    ramo Claude lo ignora e resta affidato alle istruzioni del prompt.
+
+    'model' sostituisce, per questa sola chiamata, il modello Ollama della
+    configurazione. Serve a valutare un modello candidato con lo stesso
+    percorso di chiamata della produzione, prima di promuoverlo. Il ramo
+    Claude lo ignora.
     """
     cfg = load_config()["ai"]
     provider = cfg.get("provider", "ollama")
@@ -461,7 +479,7 @@ def _llm_complete(prompt: str, timeout: int) -> str:
             client = _anthropic.Anthropic(api_key=api_key)
             msg = client.messages.create(
                 model=cfg.get("claude_model", "claude-haiku-4-5-20251001"),
-                max_tokens=256,
+                max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
             return (msg.content[0].text or "").strip()
@@ -469,20 +487,89 @@ def _llm_complete(prompt: str, timeout: int) -> str:
             return ""
 
     # Default: Ollama
+    body = {
+        "model": model or cfg.get("ollama_model", "qwen2.5:7b"),
+        "prompt": prompt,
+        "stream": False,
+    }
+    if json_schema:
+        body["format"] = json_schema
     try:
         resp = requests.post(
             cfg.get("ollama_url", "http://localhost:11434/api/generate"),
-            json={
-                "model": cfg.get("ollama_model", "qwen2.5:7b"),
-                "prompt": prompt,
-                "stream": False,
-            },
+            json=body,
             timeout=timeout,
         )
         resp.raise_for_status()
         return (resp.json().get("response") or "").strip()
     except Exception:
         return ""
+
+
+def _llm_stream(prompt: str, timeout: int, max_tokens: int = 256):
+    """
+    Come _llm_complete, ma restituisce la risposta a pezzi mentre arriva.
+
+    Generatore di stringhe: ogni elemento e' un frammento di testo, nell'ordine
+    in cui il modello lo produce. Serve alle risposte interattive, dove far
+    aspettare l'utente in silenzio per un minuto e' peggio che mostrargli la
+    risposta mentre si forma. Le sintesi non interattive continuano a usare
+    _llm_complete: un output che va salvato va prima verificato per intero.
+
+    Best-effort come il resto: se il provider non risponde il generatore si
+    chiude senza produrre nulla, e il chiamante lo interpreta come assenza di
+    risposta.
+    """
+    cfg = load_config()["ai"]
+    provider = cfg.get("provider", "ollama")
+
+    if provider == "claude":
+        if not _ANTHROPIC_AVAILABLE:
+            return
+        api_key = cfg.get("claude_api_key", "")
+        if not api_key:
+            return
+        try:
+            client = _anthropic.Anthropic(api_key=api_key)
+            with client.messages.stream(
+                model=cfg.get("claude_model", "claude-haiku-4-5-20251001"),
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}],
+            ) as stream:
+                for chunk in stream.text_stream:
+                    if chunk:
+                        yield chunk
+        except Exception:
+            return
+        return
+
+    # Default: Ollama, che emette una riga JSON per frammento.
+    try:
+        resp = requests.post(
+            cfg.get("ollama_url", "http://localhost:11434/api/generate"),
+            json={
+                "model": cfg.get("ollama_model", "qwen2.5:7b"),
+                "prompt": prompt,
+                "stream": True,
+            },
+            timeout=timeout,
+            stream=True,
+        )
+        resp.raise_for_status()
+        for line in resp.iter_lines():
+            if not line:
+                continue
+            try:
+                data = _json.loads(line)
+            except ValueError:
+                continue
+            chunk = data.get("response") or ""
+            if chunk:
+                yield chunk
+            if data.get("done"):
+                break
+    except Exception:
+        return
 
 
 def summarize_cves(product: str, version: str | None, ids: list[str],

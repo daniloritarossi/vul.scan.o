@@ -107,6 +107,15 @@ _DEFAULTS: dict = {
         "low": 180,
         "unknown": 90,
     },
+    # Add-on di analisi opzionale (vfa-agent): qui si incolla la chiave di
+    # licenza. Senza il pacchetto installato la sezione resta inerte.
+    "agent": {
+        "license_key": "",
+        # Le sintesi dell'add-on sono piu' lunghe di quelle del core e un
+        # modello locale su CPU ci mette minuti: timeout proprio, separato da
+        # quelli della sezione 'ai'.
+        "summary_timeout": 180,
+    },
 }
 
 

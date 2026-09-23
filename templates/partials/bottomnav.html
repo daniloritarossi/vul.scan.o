@@ -20,6 +20,12 @@
   {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',     'text': 'Admin'},
   {'page': 'settings',  'href': '/settings', 'icon': 'settings',        'key': 'nav.settings',  'text': 'Settings'}
 ] %}
+{# Add-on di analisi opzionale: solo con pacchetto installato e licenza attiva. #}
+{% if agent_enabled is defined and agent_enabled() %}
+{% set all_items = all_items + [
+  {'page': 'agent', 'href': '/agent/', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent'}
+] %}
+{% endif %}
 <!-- "More" sheet (hidden until toggled) -->
 <div id="mnavSheet" class="md:hidden hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Navigation">
   <div id="mnavBackdrop" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>

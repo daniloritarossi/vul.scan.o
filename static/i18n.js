@@ -467,6 +467,11 @@
       'nav.findings': 'Findings',
       'nav.audit': 'Audit',
       'nav.sbom': 'SBOM',
+      'nav.agent': 'Agent',
+      'settings.agent_title': 'ANALYSIS AGENT (ADD-ON)',
+      'settings.agent_desc': 'Licence key for the analysis add-on. Paste the key you were supplied: the Agent entry appears in the menu as soon as it is valid, with no restart. On expiry new analyses stop and everything already produced stays readable.',
+      'settings.agent_key': 'Licence key',
+      'settings.agent_hint': 'Leave empty to disable the add-on.',
       'nav.settings': 'Settings',
       'nav.admin': 'Admin',
       'navm.dashboard': 'DASH',
@@ -1441,6 +1446,11 @@
       'nav.findings': 'Finding',
       'nav.audit': 'Audit',
       'nav.sbom': 'SBOM',
+      'nav.agent': 'Agente',
+      'settings.agent_title': 'AGENTE DI ANALISI (ADD-ON)',
+      'settings.agent_desc': 'Chiave di licenza dell\u2019add-on di analisi. Incolla la chiave che ti \u00e8 stata consegnata: la voce Agente compare nel menu appena \u00e8 valida, senza riavviare. Alla scadenza le analisi nuove si fermano e tutto ci\u00f2 che \u00e8 gi\u00e0 stato prodotto resta leggibile.',
+      'settings.agent_key': 'Chiave di licenza',
+      'settings.agent_hint': 'Lascia vuoto per disattivare l\u2019add-on.',
       'nav.settings': 'Impostazioni',
       'nav.admin': 'Admin',
       'navm.dashboard': 'HOME',
@@ -1973,12 +1983,31 @@
     return s;
   }
 
+  function has(key) {
+    return (DICT[lang] && DICT[lang][key] != null) || DICT.en[key] != null;
+  }
+
   function applyStatic(root) {
     const scope = root || document;
-    scope.querySelectorAll('[data-i18n]').forEach((el) => { el.innerHTML = t(el.getAttribute('data-i18n')); });
-    scope.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
-    scope.querySelectorAll('[data-i18n-title]').forEach((el) => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
-    scope.querySelectorAll('[data-i18n-al]').forEach((el) => { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-al'))); });
+    // Chiavi sconosciute: si lascia il testo che c'e' in pagina. Sostituirlo
+    // col nome della chiave rendeva illeggibili le pagine di un add-on che
+    // porta il proprio dizionario (vedi vfa-agent).
+    scope.querySelectorAll('[data-i18n]').forEach((el) => {
+      const k = el.getAttribute('data-i18n');
+      if (has(k)) el.innerHTML = t(k);
+    });
+    scope.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+      const k = el.getAttribute('data-i18n-ph');
+      if (has(k)) el.setAttribute('placeholder', t(k));
+    });
+    scope.querySelectorAll('[data-i18n-title]').forEach((el) => {
+      const k = el.getAttribute('data-i18n-title');
+      if (has(k)) el.setAttribute('title', t(k));
+    });
+    scope.querySelectorAll('[data-i18n-al]').forEach((el) => {
+      const k = el.getAttribute('data-i18n-al');
+      if (has(k)) el.setAttribute('aria-label', t(k));
+    });
     document.documentElement.lang = lang;
   }
 
