@@ -49,12 +49,13 @@
             </ol>
             <div class="grp"><span lang="en">Add-on</span><span lang="it">Add-on</span></div>
             <ol>
-              <li><a href="13-agent.html" aria-current="page"><span class="num">13</span><span lang="en">Analysis agent</span><span lang="it">Agente di analisi</span></a></li>
+              <li><a href="13-agent.html" aria-current="page"><span class="num">13</span><span lang="en">Analysis agent</span><span lang="it">Agente di analisi</span> <span class="badge b-warn">WIP</span></a></li>
             </ol>
             <div class="grp"><span lang="en">On this page</span><span lang="it">In questa pagina</span></div>
             <ol class="sub">
               <li><a href="#overview"><span lang="en">What it is</span><span lang="it">Che cos'è</span></a></li>
               <li><a href="#install"><span lang="en">Installation &amp; licence</span><span lang="it">Installazione e licenza</span></a></li>
+              <li><a href="#update"><span lang="en">Updating &amp; removing</span><span lang="it">Aggiornare e rimuovere</span></a></li>
               <li><a href="#briefing"><span lang="en">Briefing</span><span lang="it">Briefing</span></a></li>
               <li><a href="#finding"><span lang="en">Finding analysis</span><span lang="it">Analisi del finding</span></a></li>
               <li><a href="#drafts"><span lang="en">Drafts to approve</span><span lang="it">Bozze da approvare</span></a></li>
@@ -68,7 +69,8 @@
     <main>
       <header class="hero">
         <div class="kicker">13 · <span lang="en">Analysis agent</span><span lang="it">Agente di analisi</span> <span class="route">/agent/</span></div>
-        <h1><span lang="en">Analysis agent (optional add-on)</span><span lang="it">Agente di analisi (add-on opzionale)</span></h1>
+        <h1><span lang="en">Analysis agent (optional add-on)</span><span lang="it">Agente di analisi (add-on opzionale)</span>
+          <span class="badge b-warn">WORK IN PROGRESS</span></h1>
         <p lang="en">
           A separate, paid module that reads the data this application already holds — assets, CVEs, findings, network
           exposure — and says <strong>what to fix first and why</strong>. It is not part of the open source core: the core
@@ -80,6 +82,18 @@
           source: senza di lui il core funziona identico. Queste pagine compaiono solo se il pacchetto è installato e la
           sua licenza è attiva.
         </p>
+        <div class="warn">
+          <p lang="en"><strong>This add-on is under active development.</strong> The pages described here work, and the
+            procedures below are the ones currently implemented — but both are still moving. Screens, wording and the
+            installation steps can change from one build to the next, and a feature described here may behave differently
+            in the build you have. Check the version shown at the bottom of the side menu against what you read here.
+            Last revised: <strong>5 October 2026</strong>.</p>
+          <p lang="it"><strong>Questo add-on è in sviluppo attivo.</strong> Le pagine descritte qui funzionano, e le
+            procedure che seguono sono quelle attualmente implementate — ma entrambe sono ancora in movimento. Schermate,
+            testi e passi di installazione possono cambiare da una build all'altra, e una funzione descritta qui può
+            comportarsi diversamente nella build che hai in mano. Confronta la versione mostrata in fondo al menu
+            laterale con quello che leggi qui. Ultima revisione: <strong>5 ottobre 2026</strong>.</p>
+        </div>
       </header>
 
       <section id="overview">
@@ -122,12 +136,62 @@
 
       <section id="install">
         <h2><span lang="en">Installation and licence</span><span lang="it">Installazione e licenza</span></h2>
+        <p lang="en">Everything is done from the installation menu, not by hand: <code>./start.sh update</code> →
+          <strong>Analysis add-on (vfa-agent)</strong>. You need two things — the <strong>licence key</strong> you were
+          supplied, and the <strong>package</strong> (the <code>.whl</code> file).</p>
+        <p lang="it">Si fa tutto dal menu di installazione, non a mano: <code>./start.sh update</code> →
+          <strong>Analysis add-on (vfa-agent)</strong>. Ti servono due cose — la <strong>chiave di licenza</strong> che ti
+          è stata consegnata e il <strong>pacchetto</strong> (il file <code>.whl</code>).</p>
         <ol class="steps">
-          <li><span lang="en">Install the wheel you were supplied, inside the application's virtualenv.</span><span lang="it">Installa il wheel che ti è stato consegnato, dentro il virtualenv dell'applicazione.</span></li>
-          <li><span lang="en">Apply the add-on's migrations, then reload the PostgREST schema (<code>notify pgrst, 'reload schema';</code>), otherwise its new tables are unreachable.</span><span lang="it">Applica le migrazioni dell'add-on, poi ricarica lo schema di PostgREST (<code>notify pgrst, 'reload schema';</code>), altrimenti le tabelle nuove non sono raggiungibili.</span></li>
-          <li><span lang="en">Paste the licence key in <a href="11-settings.html">Settings</a>, section <code>agent</code>.</span><span lang="it">Incolla la chiave di licenza in <a href="11-settings.html">Impostazioni</a>, sezione <code>agent</code>.</span></li>
-          <li><span lang="en">The <strong>Agent</strong> entry appears in the navigation. No restart needed.</span><span lang="it">La voce <strong>Agente</strong> compare nel menu. Nessun riavvio necessario.</span></li>
+          <li><span lang="en"><strong>The licence key.</strong> Asked first: it is the gate. It is not written anywhere
+            until it has been verified.</span><span lang="it"><strong>La chiave di licenza.</strong> Chiesta per prima: è
+            il cancello. Non viene scritta da nessuna parte finché non è stata verificata.</span></li>
+          <li><span lang="en"><strong>The package path.</strong> The <code>.whl</code> file, a folder containing it and its
+            dependencies (for machines with no internet access), or the source directory. The path you used is remembered
+            and offered again next time.</span><span lang="it"><strong>Il percorso del pacchetto.</strong> Il file
+            <code>.whl</code>, una cartella che lo contiene insieme alle sue dipendenze (per macchine senza accesso a
+            internet), oppure la cartella del sorgente. Il percorso usato viene ricordato e riproposto la volta
+            dopo.</span></li>
+          <li><span lang="en"><strong>Then the menu does the rest:</strong> installs the package, verifies the signature
+            and the expiry of the key, counts the assets against the ceiling the licence declares, writes the key into the
+            configuration, applies the add-on's database migrations and reloads the PostgREST schema.</span><span lang="it"><strong>Poi fa tutto il menu:</strong> installa il pacchetto, verifica firma e scadenza della chiave, conta
+            gli asset rispetto al tetto dichiarato dalla licenza, scrive la chiave nella configurazione, applica le
+            migrazioni del database dell'add-on e ricarica lo schema di PostgREST.</span></li>
+          <li><span lang="en"><strong>Restart the application</strong> — choose <em>Save and launch the app</em> at the end
+            of the menu, or run <code>./start.sh</code> again. The <strong>Agent</strong> entry then appears in the
+            navigation.</span><span lang="it"><strong>Riavvia l'applicazione</strong> — scegli <em>Save and launch the
+            app</em> alla fine del menu, oppure rilancia <code>./start.sh</code>. La voce <strong>Agente</strong> compare
+            allora nel menu.</span></li>
         </ol>
+        <div class="note">
+          <p lang="en"><strong>A key that does not validate uninstalls the package again.</strong> Expired beyond the
+            tolerance window, altered in copy-paste, or not issued for this product: the package is removed and your
+            configuration is left exactly as it was. Nothing half-installed is left behind.</p>
+          <p lang="it"><strong>Una chiave che non passa la verifica disinstalla il pacchetto.</strong> Scaduta oltre la
+            tolleranza, alterata nel copia-incolla, o non emessa per questo prodotto: il pacchetto viene rimosso e la tua
+            configurazione resta esattamente com'era. Non rimane niente installato a metà.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>Why the package is installed before the key is checked.</strong> The code that verifies the
+            signature ships inside the package itself — it is the add-on's own signature. So the order on screen is
+            licence first, but the check can only run after the install, and a failed check rolls the install back. A
+            package without a valid key is inert anyway: no menu entry, and the analysis routes refuse to run.</p>
+          <p lang="it"><strong>Perché il pacchetto viene installato prima di controllare la chiave.</strong> Il codice che
+            verifica la firma sta dentro il pacchetto stesso — è la firma dell'add-on. Quindi l'ordine sullo schermo è
+            prima la licenza, ma il controllo può girare solo dopo l'installazione, e se non passa l'installazione viene
+            annullata. Un pacchetto senza chiave valida è comunque inerte: nessuna voce di menu, e le rotte di analisi
+            rifiutano di girare.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>Changing the key later needs no restart.</strong> Installing or removing the package does,
+            because the module is attached when the application starts. The key itself is read on every request, so a
+            renewal takes effect the moment it is saved — from the same menu (<em>Licence key</em>) or from
+            <a href="11-settings.html">Settings</a>, section <code>agent</code>.</p>
+          <p lang="it"><strong>Cambiare la chiave dopo non richiede riavvio.</strong> Installare o rimuovere il pacchetto
+            sì, perché il modulo viene agganciato all'avvio dell'applicazione. La chiave invece viene riletta a ogni
+            richiesta, quindi un rinnovo ha effetto nel momento in cui lo salvi — dallo stesso menu (<em>Licence
+            key</em>) o da <a href="11-settings.html">Impostazioni</a>, sezione <code>agent</code>.</p>
+        </div>
         <div class="block">
           <p lang="en"><strong>On expiry it degrades gently.</strong> New analyses stop; everything already produced stays
             readable. There is a <strong>14-day tolerance</strong> past the expiry date, for slow renewals and clocks that
@@ -135,6 +199,121 @@
           <p lang="it"><strong>Alla scadenza degrada con gentilezza.</strong> Le analisi nuove si fermano; tutto ciò che è
             già stato prodotto resta leggibile. C'è una <strong>tolleranza di 14 giorni</strong> oltre la scadenza, per
             rinnovi lenti e orologi non allineati. L'applicazione non viene mai bloccata.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>The licence also carries an asset ceiling.</strong> While the inventory stays within it
+            nothing changes. Just above it a warning appears on the agent pages and analyses keep running; past a
+            tolerance band (10% of the ceiling, never less than 5 assets) new analyses are suspended until the plan is
+            adjusted — and, here too, everything already produced stays readable. The count is the whole inventory, the
+            same number shown on the Assets page.</p>
+          <p lang="it"><strong>La licenza porta anche un tetto di asset.</strong> Finché l'inventario ci sta sotto non
+            cambia nulla. Appena sopra compare un avviso sulle pagine dell'agente e le analisi continuano; oltre una
+            fascia di tolleranza (il 10% del tetto, mai meno di 5 asset) le analisi nuove vengono sospese finché il piano
+            non viene adeguato — e anche qui tutto ciò che è già stato prodotto resta leggibile. Si conta l'intero
+            inventario, lo stesso numero della pagina Asset.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>The ceiling is also checked at install time.</strong> Before the key is saved, the menu
+            counts the inventory and shows the comparison — <code>Assets : 13 of 100 hosts (14 rows, 10 enabled)</code>.
+            <strong>Distinct hosts</strong> are counted, not rows: the same host entered twice is an inventory mistake, not
+            an extra asset to pay for. Disabled assets still count. Over the ceiling the install stops and asks whether to
+            continue: answering no removes the package and leaves the configuration untouched. The comparison stays
+            visible afterwards under <em>Licence status</em> in the same menu.</p>
+          <p lang="it"><strong>Il tetto viene controllato anche all'installazione.</strong> Prima di salvare la chiave il
+            menu conta l'inventario e mostra il confronto — <code>Assets : 13 of 100 hosts (14 rows, 10 enabled)</code>.
+            Si contano gli <strong>host distinti</strong>, non le righe: lo stesso host inserito due volte è un errore di
+            inventario, non un asset in più da pagare. Gli asset disabilitati contano comunque. Sopra il tetto
+            l'installazione si ferma e chiede se proseguire: rispondendo no il pacchetto viene rimosso e la configurazione
+            resta intatta. Il confronto resta visibile anche dopo, sotto <em>Licence status</em> nello stesso menu.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>If your database is not the local one.</strong> The add-on needs its own tables, created by
+            migrations that are applied with SQL. The menu can do that only on the database of the local Docker stack. If
+            the application is pointed elsewhere (<code>SUPABASE_URL</code>), or if a local database is running that is not
+            this application's, nothing is written to it: the menu prints the exact <code>.sql</code> files to apply, plus
+            the <code>notify pgrst, 'reload schema';</code> that has to follow them. Until that is done the Agent pages
+            fail on tables that do not exist — the installation itself is not undone, and the licence key stays saved.</p>
+          <p lang="it"><strong>Se il tuo database non è quello locale.</strong> L'add-on ha bisogno delle proprie tabelle,
+            create da migrazioni che si applicano via SQL. Il menu può farlo solo sul database dello stack Docker locale.
+            Se l'applicazione punta altrove (<code>SUPABASE_URL</code>), o se gira un database locale che non è quello di
+            questa applicazione, non viene scritto niente: il menu stampa i file <code>.sql</code> esatti da applicare,
+            più il <code>notify pgrst, 'reload schema';</code> che deve seguirli. Finché non è fatto le pagine dell'agente
+            falliscono su tabelle che non esistono — l'installazione non viene annullata e la chiave resta salvata.</p>
+        </div>
+        <div class="scroll-x">
+          <table>
+            <thead>
+              <tr>
+                <th><span lang="en">Situation</span><span lang="it">Situazione</span></th>
+                <th><span lang="en">What the menu does with the migrations</span><span lang="it">Cosa fa il menu con le migrazioni</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span lang="en">Local stack, and it is this application's database</span><span lang="it">Stack locale, ed è il database di questa applicazione</span></td>
+                <td><span lang="en">applied, row-level security enforced, PostgREST reloaded</span><span lang="it">applicate, row-level security attivata, PostgREST ricaricato</span></td>
+              </tr>
+              <tr>
+                <td><code>SUPABASE_URL</code> <span lang="en">points elsewhere</span><span lang="it">punta altrove</span></td>
+                <td><span lang="en">nothing written; the files to apply by hand are printed</span><span lang="it">niente scritto; vengono stampati i file da applicare a mano</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">A local database is up, but without this application's tables</span><span lang="it">Un database locale è attivo, ma senza le tabelle di questa applicazione</span></td>
+                <td><span lang="en">nothing written — it is not the right database; same manual instructions</span><span lang="it">niente scritto — non è il database giusto; stesse istruzioni manuali</span></td>
+              </tr>
+              <tr>
+                <td><span lang="en">No database running yet</span><span lang="it">Nessun database ancora attivo</span></td>
+                <td><span lang="en">deferred to the next <code>./start.sh</code>, which applies them once the stack is up</span><span lang="it">rimandate al prossimo <code>./start.sh</code>, che le applica quando lo stack è su</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tip">
+          <p lang="en"><strong>No internet on the machine?</strong> Ask for the package as a folder holding the wheel and
+            its dependencies, and give the menu that folder: nothing is downloaded. The add-on never fetches code at run
+            time — a security product that pulled and executed remote code would not survive your own review.</p>
+          <p lang="it"><strong>Macchina senza internet?</strong> Chiedi il pacchetto come cartella che contiene il wheel e
+            le sue dipendenze, e indica al menu quella cartella: non viene scaricato niente. L'add-on non scarica mai
+            codice a runtime — un prodotto di sicurezza che recuperasse ed eseguisse codice remoto non supererebbe la tua
+            stessa verifica.</p>
+        </div>
+      </section>
+
+      <section id="update">
+        <h2><span lang="en">Updating and removing</span><span lang="it">Aggiornare e rimuovere</span></h2>
+        <p lang="en">Same menu: <code>./start.sh update</code> → <strong>Analysis add-on (vfa-agent)</strong>. It shows what
+          is installed and the state of the licence before you choose anything.</p>
+        <p lang="it">Stesso menu: <code>./start.sh update</code> → <strong>Analysis add-on (vfa-agent)</strong>. Mostra cosa
+          è installato e lo stato della licenza prima che tu scelga qualcosa.</p>
+        <div class="block">
+          <p lang="en"><strong>Update package.</strong> Asks only for the path of the new wheel. The licence is neither
+            asked for nor touched — the key has nothing to do with which build of the code is installed. New database
+            migrations that come with the version are applied, and the version change is reported
+            (<code>0.1.0 → 0.2.0</code>). A restart is needed, as for any install.</p>
+          <p lang="it"><strong>Update package.</strong> Chiede solo il percorso del nuovo wheel. La licenza non viene
+            chiesta né toccata — la chiave non c'entra con quale build del codice è installata. Le eventuali migrazioni
+            nuove della versione vengono applicate, e il cambio di versione viene riportato
+            (<code>0.1.0 → 0.2.0</code>). Serve un riavvio, come per ogni installazione.</p>
+        </div>
+        <div class="block">
+          <p lang="en"><strong>Uninstall add-on.</strong> Removes the package from the application's virtualenv and clears
+            the licence key. Your <code>agent_*</code> tables are <strong>kept</strong>: they hold the analyses produced and
+            the drafts people approved, and they are reused if you install the add-on again. Dropping them is a separate
+            question, answered by typing <code>DROP</code> in full. Entries already written to the activity ledger stay
+            there — that ledger is tamper-evident and nothing deletes from it.</p>
+          <p lang="it"><strong>Uninstall add-on.</strong> Rimuove il pacchetto dal virtualenv dell'applicazione e svuota la
+            chiave di licenza. Le tue tabelle <code>agent_*</code> vengono <strong>conservate</strong>: contengono le
+            analisi prodotte e le bozze approvate dalle persone, e vengono riusate se reinstalli l'add-on. Cancellarle è
+            una domanda a parte, a cui si risponde digitando <code>DROP</code> per intero. Le voci già scritte nel registro
+            attività restano — quel registro è a prova di manomissione e da lì non si cancella nulla.</p>
+        </div>
+        <div class="note">
+          <p lang="en">After removing the package the application runs exactly as it did before the add-on: the Agent entry
+            disappears and nothing else changes. If it had been installed from a source directory rather than a wheel, only
+            the link into that directory is removed — the source itself is left alone.</p>
+          <p lang="it">Dopo la rimozione del pacchetto l'applicazione funziona esattamente come prima dell'add-on: la voce
+            Agente sparisce e non cambia nient'altro. Se era stato installato da una cartella sorgente invece che da un
+            wheel, viene rimosso solo il collegamento a quella cartella — il sorgente resta dov'è.</p>
         </div>
       </section>
 
