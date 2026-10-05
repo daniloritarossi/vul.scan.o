@@ -10,11 +10,18 @@
   {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',  'text': 'Admin'},
   {'page': 'settings',  'href': '/settings', 'icon': 'settings',     'key': 'nav.settings',  'text': 'Settings'}
 ] %}
-{# Add-on di analisi opzionale: la voce compare solo se il pacchetto e'
-   installato e la licenza e' attiva (vedi _agent_enabled in app.py). #}
+{# Add-on di analisi opzionale. Con licenza attiva e' una voce come le altre
+   (_agent_enabled). Con licenza scaduta o non valida resta al suo posto ma
+   spenta: rossa, senza href e non cliccabile (_agent_locked), cosi' si vede
+   che va rinnovata invece di sparire e sembrare un guasto. Senza nessuna
+   chiave configurata non compare. #}
 {% if agent_enabled is defined and agent_enabled() %}
 {% set nav_items = nav_items + [
   {'page': 'agent', 'href': '/agent/', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent'}
+] %}
+{% elif agent_locked is defined and agent_locked() %}
+{% set nav_items = nav_items + [
+  {'page': 'agent', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent', 'locked': true}
 ] %}
 {% endif %}
 <!-- NavigationDrawer (Web) -->
@@ -26,7 +33,18 @@
   <ul class="flex flex-col w-full px-4 gap-2">
     {% for it in nav_items %}
     <li>
-      {% if it.page == active_page %}
+      {% if it.locked %}
+      {# Niente <a> e niente href: non e' cliccabile, non finisce nella palette
+         dei comandi (che raccoglie 'nav a[href]') e non e' raggiungibile da
+         tastiera. #}
+      <span aria-disabled="true" data-i18n-title="nav.agent_locked"
+        title="Licence expired — renew it in Settings"
+        class="flex items-center gap-3 px-4 py-3 text-rose-600 bg-rose-50 border border-rose-200 rounded-xl font-body-md text-[13px] cursor-not-allowed select-none">
+        <span class="material-symbols-outlined text-rose-500">{{ it.icon }}</span>
+        <span data-i18n="{{ it.key }}">{{ it.text }}</span>
+        <span class="material-symbols-outlined text-[16px] ml-auto">lock</span>
+      </span>
+      {% elif it.page == active_page %}
       <a aria-current="page" class="flex items-center gap-3 px-4 py-3 text-white bg-slate-900 rounded-xl font-body-md text-[13px] font-semibold shadow-lg shadow-slate-900/10 transition-colors"
         href="{{ it.href }}">
         <span class="material-symbols-outlined text-cyan-400">{{ it.icon }}</span>
@@ -50,5 +68,16 @@
       title="{{ app_version }}">
       <span class="material-symbols-outlined text-[13px]">commit</span>{{ app_version }}
     </span>
+    {# Versione dell'add-on di analisi, se installato. Sta sotto a quella
+       dell'app e non dentro il chip: lo script della topbar scrive in
+       #appVersionChip e sovrascriverebbe questa riga. Dipende
+       dall'installazione e non dalla licenza: serve nel momento in cui una
+       licenza non va e bisogna sapere quale versione gira. #}
+    {% if agent_version is defined and agent_version() %}
+    <span class="font-code-sm text-[10px] text-slate-400 flex items-center gap-1.5 mt-1"
+      title="vfa-agent {{ agent_version() }}">
+      <span class="material-symbols-outlined text-[13px]">auto_awesome</span>agent {{ agent_version() }}
+    </span>
+    {% endif %}
   </div>
 </nav>

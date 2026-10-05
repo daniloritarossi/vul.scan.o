@@ -20,10 +20,16 @@
   {'page': 'admin',     'href': '/admin',    'icon': 'manage_accounts', 'key': 'nav.admin',     'text': 'Admin'},
   {'page': 'settings',  'href': '/settings', 'icon': 'settings',        'key': 'nav.settings',  'text': 'Settings'}
 ] %}
-{# Add-on di analisi opzionale: solo con pacchetto installato e licenza attiva. #}
+{# Add-on di analisi opzionale: voce normale con licenza attiva, voce spenta e
+   senza link con licenza scaduta o non valida, niente senza chiave. Stessa
+   regola della sidebar (vedi _agent_enabled / _agent_locked in app.py). #}
 {% if agent_enabled is defined and agent_enabled() %}
 {% set all_items = all_items + [
   {'page': 'agent', 'href': '/agent/', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent'}
+] %}
+{% elif agent_locked is defined and agent_locked() %}
+{% set all_items = all_items + [
+  {'page': 'agent', 'icon': 'auto_awesome', 'key': 'nav.agent', 'text': 'Agent', 'locked': true}
 ] %}
 {% endif %}
 <!-- "More" sheet (hidden until toggled) -->
@@ -32,12 +38,23 @@
   <nav
     class="absolute bottom-24 left-4 right-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 rounded-2xl shadow-2xl p-3 grid grid-cols-3 gap-2">
     {% for it in all_items %}
+    {% if it.locked %}
+    {# Voce spenta: <span> senza href, quindi non cliccabile e fuori dalla
+       palette dei comandi, che raccoglie 'nav a[href]'. #}
+    <span aria-disabled="true" data-i18n-title="nav.agent_locked"
+      title="Licence expired — renew it in Settings"
+      class="flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl text-rose-600 bg-rose-50 border border-rose-200 cursor-not-allowed select-none">
+      <span class="material-symbols-outlined">{{ it.icon }}</span>
+      <span class="font-label-caps text-[9px] tracking-wide text-center" data-i18n="{{ it.key }}">{{ it.text }}</span>
+    </span>
+    {% else %}
     <a href="{{ it.href }}"
       class="flex flex-col items-center justify-center gap-1 min-h-[64px] rounded-xl transition-colors {{ 'bg-slate-900 text-cyan-400' if it.page == active_page else 'text-slate-600 hover:bg-slate-100' }}"
       {% if it.page == active_page %}aria-current="page"{% endif %}>
       <span class="material-symbols-outlined">{{ it.icon }}</span>
       <span class="font-label-caps text-[9px] tracking-wide text-center" data-i18n="{{ it.key }}">{{ it.text }}</span>
     </a>
+    {% endif %}
     {% endfor %}
   </nav>
 </div>

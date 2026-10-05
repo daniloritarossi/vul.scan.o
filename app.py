@@ -290,6 +290,35 @@ def _agent_enabled() -> bool:
         return False
 
 
+def _agent_locked() -> bool:
+    """
+    Se la voce di menu dell'add-on va mostrata spenta: licenza scaduta oltre la
+    tolleranza, o chiave non valida. La voce resta al suo posto in rosso e senza
+    link — dice che il modulo c'e' e che la licenza va rinnovata, invece di
+    sparire e far pensare a un guasto. Senza nessuna chiave configurata non si
+    mostra niente: non c'e' ancora niente da rinnovare.
+    """
+    try:
+        from vfa_agent import license_state
+        return license_state() in ("expired", "invalid")
+    except Exception:
+        return False
+
+
+def _agent_version() -> str:
+    """
+    Versione dell'add-on, per il chip in fondo al menu laterale. Stringa vuota
+    se il pacchetto non c'e': in quel caso il template non stampa nulla. Come
+    sopra: import a ogni chiamata e nessuna eccezione verso il template.
+    """
+    try:
+        import vfa_agent
+
+        return str(getattr(vfa_agent, "__version__", "") or "")
+    except Exception:
+        return ""
+
+
 def _agent_installed() -> bool:
     """Se il pacchetto dell'add-on c'e': basta a decidere se mostrare il campo
     della licenza nelle impostazioni, che serve proprio quando la licenza non
@@ -303,6 +332,8 @@ def _agent_installed() -> bool:
 
 templates.env.globals["agent_enabled"] = _agent_enabled
 templates.env.globals["agent_installed"] = _agent_installed
+templates.env.globals["agent_locked"] = _agent_locked
+templates.env.globals["agent_version"] = _agent_version
 
 
 # ---------------------------------------------------------------------------
