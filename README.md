@@ -1165,15 +1165,124 @@ except ImportError:
 ### Installation
 
 ```bash
+./start.sh update      # → "Analysis add-on (vfa-agent: install, licence, uninstall)"
+```
+
+The menu asks for two things, in this order:
+
+1. **the licence key**, which is the gate;
+2. **the package path** — the `.whl` file you were supplied, a directory
+   holding it (a wheelhouse, for machines without network access), or the
+   source directory.
+
+It then installs the package, verifies the key, counts the assets in the
+inventory against the cap the licence declares, and **only if the key validates
+and the operator accepts the count** writes it to `config.json`, applies the
+add-on's migrations and reloads the PostgREST schema. If the key does not validate — expired beyond the
+tolerance window, tampered with, not issued for this product — the package is
+uninstalled again and `config.json` is left untouched.
+
+### The asset cap
+
+A licence declares `max_assets`. At install the menu counts what is actually in
+the inventory and shows the comparison:
+
+```
+  Assets   : 13 of 100 hosts (14 rows, 10 enabled)
+```
+
+**Distinct hosts** are counted, not rows: the same host entered twice is an
+inventory mistake, not an extra asset to pay for. Disabled assets still count —
+they stay in the inventory, and disabling them the day before a check would
+make the cap a formality.
+
+Over the cap, the install stops and asks:
+
+```
+  ⚠  Over the licensed cap by 8 hosts.
+  The inventory exceeds what this licence covers.
+  Install anyway? (y/n) [n]:
+```
+
+Answering no removes the package and leaves `config.json` untouched. Answering
+yes proceeds and records the decision on screen. This is a commercial term, not
+a security control — on an on-premise install anyone can work around it — so it
+is measured and stated rather than pretended to be enforced. The comparison
+stays visible in **Licence status**, so an installation that drifted past its
+cap is not something you have to remember.
+
+The count goes through `SUPABASE_URL` and the service key — the same path the
+application itself uses — so it is always the inventory the application reads,
+not whatever database happens to be running locally. If that address does not
+answer, the count is skipped (`not counted — <url> did not answer`) and the
+install proceeds.
+
+### Which database the migrations reach
+
+The application talks to PostgREST over HTTP at `SUPABASE_URL`. Migrations need
+SQL, and the only SQL path this script has is the Postgres container of the
+local stack — a different road to what must be the same database. The menu
+checks which, and never assumes:
+
+| situation | what happens |
+|---|---|
+| `SUPABASE_URL` is local and the container holds this application's tables | migrations applied, RLS enforced, PostgREST reloaded |
+| `SUPABASE_URL` points elsewhere | nothing is written; the menu prints the `.sql` files to apply by hand and the `notify pgrst` that follows them |
+| a local Postgres is up but has no `assets`/`findings` tables | nothing is written — it is not this application's database; same manual instructions |
+| no local Postgres at all | deferred to the next `./start.sh`, which applies them after the stack is up |
+
+A schema that could not be applied does not undo the installation: the package
+and the key stay, and the Agent pages fail on missing tables until the SQL is
+applied. The alternative — a green tick over a database nobody wrote to — is
+worse than an explicit instruction.
+
+The order is deliberate but it does mean the package is installed before the
+key is checked: the verifier ships inside the package, because the signature it
+checks is the add-on's own. A package without a valid key is inert — no menu
+entry, and the analysis routes answer 402.
+
+Installing or removing the package needs a restart, because the router is
+attached when `app.py` is imported. **Changing the licence key does not:** the
+key is read on every request, so the menu entry appears as soon as a valid key
+is in place, and only while the licence is active.
+
+By hand, if you prefer:
+
+```bash
 source .venv/bin/activate
 pip install vfa_agent-<version>-py3-none-any.whl     # wheel supplied to you
-# apply the add-on's migrations (vfa_agent/migrations/*.sql), then:
+# apply the add-on's migrations (vfa_agent/migrations/*.sql) in order, then:
 #   notify pgrst, 'reload schema';
 # paste the licence key in Settings, section 'agent'
 ```
 
-Restart is not required to make the menu entry appear: it shows up as soon as
-the key is in place, and only while the licence is active.
+The path you used is remembered in `.agent_source` (git-ignored, installer
+state only — nothing the application reads) and offered as the default next
+time. With no memory yet, the default is the newest wheel in `../vfa-agent/dist`
+if there is one, then `../vfa-agent` itself.
+
+### Updating the package
+
+Same menu → **Update package (new wheel, keeps the licence)**. It asks only for
+the path, installs over the current version, reapplies the migrations (a new
+version may carry new ones) and reports `0.1.0 → 0.2.0`. The licence is not
+asked for and not touched: the key has nothing to do with which build of the
+code is installed. If the key no longer validates against the new version, the
+menu says so and the package stays — it simply produces no analyses until a
+valid key is entered.
+
+A wheel rebuilt with the *same* version number is installed too: pip considers
+it already satisfied, so the menu detects the unchanged version and forces the
+reinstall.
+
+### Uninstallation
+
+Same menu → **Uninstall add-on**. It removes the package and clears the licence
+key. The `agent_*` tables are **kept**: they hold saved analyses and drafts
+approved by people, and they are reused if you install the add-on again.
+Dropping them is a separate question that has to be answered by typing `DROP`.
+The `agent.*` entries already written to the activity ledger stay there — the
+ledger is tamper-evident and nothing deletes from it.
 
 ### What it adds to the interface
 

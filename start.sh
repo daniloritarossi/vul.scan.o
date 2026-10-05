@@ -248,7 +248,19 @@ _choose() {
   done
   while true; do
     printf '  Choice [1]: ' >&2
-    read -r _sel
+    # EOF (stdin chiuso) non e' "ha premuto Invio": senza distinguerlo la riga
+    # sotto lo trasformerebbe nella scelta 1, il menu chiamante ripartirebbe e
+    # la voce di uscita non arriverebbe mai — un ciclo che non si blocca su
+    # nessuna lettura, brucia una CPU e riempie il terminale.
+    #
+    # Si termina l'intero script, non questa funzione: _choose gira dentro
+    # $(...), e un exit qui chiuderebbe solo la subshell lasciando il menu a
+    # girare a vuoto. $$ resta il PID della shell principale anche in subshell.
+    if ! read -r _sel; then
+      printf '\n  No input available (stdin closed) — aborted.\n' >&2
+      kill -TERM $$
+      exit 1
+    fi
     _sel="${_sel:-1}"
     if [[ "$_sel" =~ ^[0-9]+$ ]] && [ "$_sel" -ge 1 ] && [ "$_sel" -le "${#_opts[@]}" ]; then
       printf '%s' "$_sel"
@@ -297,15 +309,24 @@ DEFAULTS = {
     },
     "scanner": {"simulate_auth": True, "socket_timeout": 4},
     "osv": {"url": "https://api.osv.dev/v1/query", "timeout": 15},
+    "agent": {"license_key": "", "summary_timeout": 180},
 }
-data = {k: dict(v) for k, v in DEFAULTS.items()}
+# Si parte da cio' che c'e' su disco, non dai DEFAULTS: config.py ha sezioni
+# che questo script non conosce (nvd, msrc, ticketing, smtp, auth, sla) e
+# ricostruire il file dai soli DEFAULTS le cancellerebbe, credenziali SMTP e
+# politica password comprese.
+data = {}
 if CONFIG.exists():
     try:
-        raw = json.loads(CONFIG.read_text())
-        for sec in DEFAULTS:
-            data[sec].update(raw.get(sec, {}))
+        loaded = json.loads(CONFIG.read_text())
+        if isinstance(loaded, dict):
+            data = loaded
     except Exception:
         pass
+for sec, defaults in DEFAULTS.items():
+    merged = dict(defaults)
+    merged.update(data.get(sec) or {})
+    data[sec] = merged
 
 for arg in sys.argv[1:]:
     sec, rest = arg.split(".", 1)
@@ -317,7 +338,7 @@ for arg in sys.argv[1:]:
         except ValueError:
             try: val = float(val)
             except ValueError: pass
-    data[sec][key] = val
+    data.setdefault(sec, {})[key] = val
 
 CONFIG.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 PYEOF
@@ -501,7 +522,7 @@ DOCKEREOF
   docker rm -f vuln-test-linux-1 >/dev/null 2>&1 || true
 
   printf '  ==> starting container vuln-test-linux-1...\n' >&2
-  docker run -d --name vuln-test-linux-1 vuln-test-linux >/dev/null || {
+  docker run -d --name vuln-test-linux-1 vuln-test-linux </dev/null >/dev/null || {
     printf '  ERROR: container start failed.\n' >&2; return
   }
 
@@ -630,7 +651,7 @@ BATEOF
 
   printf '\n  ==> starting Windows VM (dockurr/windows). The first boot downloads and\n' >&2
   printf '      installs Windows: it may take quite a few minutes.\n' >&2
-  ( cd "$_dir" && docker compose up -d ) >&2 || {
+  ( cd "$_dir" && docker compose up -d ) </dev/null >&2 || {
     printf '  ERROR: Windows container start failed.\n' >&2; return
   }
 
@@ -796,6 +817,662 @@ _check_app_update() {
   esac
 }
 
+# ── Add-on di analisi (vfa-agent) ─────────────────────────────────────────────
+# Modulo proprietario opzionale. Il core funziona senza: il gancio in app.py
+# inghiotte l'ImportError e non succede nulla.
+#
+# Ordine: prima la chiave, poi il pacchetto — la licenza e' il cancello. Ma il
+# verificatore sta DENTRO il pacchetto (chiave pubblica Ed25519 in
+# vfa_agent/license.py) e non puo' girare prima dell'installazione. Quindi:
+# si installa, si verifica, e se la chiave non regge il pacchetto viene
+# disinstallato completamente e config.json non viene mai toccato.
+#
+# Installare per verificare non espone nulla: senza chiave valida il pacchetto
+# e' inerte — nessuna voce di menu (license_active() e' False) e le rotte di
+# analisi rispondono 402.
+
+AGENT_PKG="vfa-agent"
+AGENT_MOD="vfa_agent"
+AGENT_PY=".venv/bin/python"
+
+_agent_venv() {
+  # La fase di configurazione gira prima del blocco che crea il virtualenv per
+  # l'avvio: qui lo si crea se manca. Le dipendenze del core arrivano dopo, non
+  # servono a verificare una licenza.
+  [ -x "$AGENT_PY" ] && return 0
+  printf '  Creating virtualenv .venv ...\n' >&2
+  python3 -m venv .venv >/dev/null 2>&1 || {
+    printf '  ✗  Could not create .venv — install python3-venv and retry.\n' >&2
+    return 1
+  }
+}
+
+_agent_installed() {
+  [ -x "$AGENT_PY" ] || return 1
+  "$AGENT_PY" -c "import importlib.util, sys
+sys.exit(0 if importlib.util.find_spec('$AGENT_MOD') else 1)" 2>/dev/null
+}
+
+_agent_version() {
+  # Versione della distribuzione installata, non $AGENT_MOD.__version__: il
+  # secondo e' una stringa scritta a mano in __init__.py e puo' non essere
+  # stata aggiornata insieme al pyproject. Chiedendolo al modulo, un
+  # aggiornamento riuscito si legge come "versione invariata".
+  "$AGENT_PY" -c "
+try:
+    from importlib.metadata import version
+    print(version('$AGENT_PKG'))
+except Exception:
+    import $AGENT_MOD
+    print(getattr($AGENT_MOD, '__version__', '?'))" 2>/dev/null
+}
+
+_agent_license_check() {
+  # Chiave di licenza su stdin (non in argv: non deve comparire in 'ps').
+  # Stampa: state|customer|plan|expires|days_left|max_assets
+  "$AGENT_PY" -c '
+import sys
+# stdin va letto per primo anche quando il modulo manca: uscire prima chiude la
+# pipe sotto il naso di chi la scrive, che muore con un BrokenPipeError a video.
+key = sys.stdin.read().strip()
+try:
+    from vfa_agent.license import evaluate
+except Exception:
+    print("unavailable|||||")
+    raise SystemExit(0)
+s = evaluate(key)
+print("|".join([s.state, s.customer or "", s.plan or "",
+                s.expires.isoformat() if s.expires else "",
+                "" if s.days_left is None else str(s.days_left),
+                "" if s.max_assets is None else str(s.max_assets)]))
+' 2>/dev/null
+}
+
+_agent_asset_count() {
+  # Quanti asset ha l'inventario: "righe|abilitati|host_distinti", niente se non
+  # si riesce a leggerlo.
+  #
+  # Passa da PostgREST con SUPABASE_URL e la service key, cioe' dalla stessa
+  # strada che usa l'applicazione (db.py). Contare dal container locale darebbe
+  # il numero di un altro database quando SUPABASE_URL punta altrove: un tetto
+  # di licenza verificato sull'inventario sbagliato.
+  local _url _key
+  _url=$(_agent_sb_url)
+  _key=$(_agent_sb_key)
+  [ -n "$_key" ] || return 1
+  curl -sf --max-time 10 "$_url/rest/v1/assets?select=ip,enabled" \
+    -H "apikey: $_key" -H "Authorization: Bearer $_key" 2>/dev/null \
+  | python3 -c "
+import json, sys
+try:
+    rows = json.load(sys.stdin)
+except Exception:
+    raise SystemExit(1)
+if not isinstance(rows, list):
+    raise SystemExit(1)
+print('%d|%d|%d' % (len(rows),
+                    sum(1 for r in rows if r.get('enabled')),
+                    len({r.get('ip') for r in rows})))"
+}
+
+_agent_capacity_report() {
+  # _agent_capacity_report MAX_ASSETS → stampa il confronto fra tetto di licenza
+  # e inventario. rc=1 solo se il tetto e' superato.
+  local _max="$1" _counts _rows _en _hosts
+  _counts=$(_agent_asset_count) || {
+    printf '  Assets   : not counted — %s did not answer\n' "$(_agent_sb_url)" >&2
+    return 0
+  }
+  IFS='|' read -r _rows _en _hosts <<< "$_counts"
+  if [ -z "$_max" ]; then
+    printf '  Assets   : %s hosts in inventory (licence declares no cap)\n' "${_hosts:-?}" >&2
+    return 0
+  fi
+  # Si contano gli host distinti, non le righe: lo stesso host inserito due
+  # volte e' un errore di inventario, non un asset in piu' da pagare. Gli asset
+  # disabilitati contano comunque: restano nell'inventario e disabilitarli alla
+  # vigilia di un controllo renderebbe il tetto una formalita'.
+  printf '  Assets   : %s of %s hosts (%s rows, %s enabled)\n' \
+    "${_hosts:-?}" "$_max" "${_rows:-?}" "${_en:-?}" >&2
+  if [ -n "$_hosts" ] && [ "$_hosts" -gt "$_max" ] 2>/dev/null; then
+    printf '  ⚠  Over the licensed cap by %s hosts.\n' "$((_hosts - _max))" >&2
+    return 1
+  fi
+  return 0
+}
+
+_agent_license_explain() {
+  # _agent_license_explain STATE → una riga di spiegazione su stderr
+  case "$1" in
+    active) printf '  ✓  Licence valid.\n' >&2 ;;
+    grace)  printf '  ✓  Licence expired but within the %s-day tolerance — renew soon.\n' "14" >&2 ;;
+    expired)printf '  ✗  Licence expired beyond the tolerance window.\n' >&2 ;;
+    invalid)printf '  ✗  Signature does not verify: key altered, truncated or not issued for this product.\n' >&2 ;;
+    missing)printf '  ✗  No licence key.\n' >&2 ;;
+    unavailable) printf '  ✗  Verifier not importable — package broken or dependencies missing.\n' >&2 ;;
+    *)      printf '  ✗  Unknown licence state: %s\n' "$1" >&2 ;;
+  esac
+}
+
+_agent_status_line() {
+  if ! _agent_installed; then printf 'not installed'; return; fi
+  local _v _res
+  _v=$(_agent_version)
+  _res=$(_json_read agent license_key | _agent_license_check)
+  printf 'installed %s — licence: %s' "${_v:-?}" "${_res%%|*}"
+}
+
+AGENT_SOURCE_FILE=".agent_source"
+
+_agent_remember_source() {
+  # Da dove e' arrivato il pacchetto l'ultima volta. Non va in config.json:
+  # e' stato dell'installatore, non configurazione dell'applicazione, e non
+  # deve comparire fra le impostazioni che l'utente vede nella UI.
+  local _p="$1"
+  # Path assoluto: il menu si apre dalla radice del progetto, ma un path
+  # relativo salvato oggi puo' non valere piu' domani.
+  case "$_p" in
+    /*) ;;
+    *) _p="$(cd "$(dirname "$_p")" 2>/dev/null && pwd)/$(basename "$_p")" || return 0 ;;
+  esac
+  printf '%s\n' "$_p" > "$AGENT_SOURCE_FILE" 2>/dev/null || true
+}
+
+_agent_default_source() {
+  # Il default proposto dal prompt, nell'ordine: cio' che ha funzionato
+  # l'ultima volta, poi il wheel piu' recente della cartella sorella, poi la
+  # cartella sorella stessa.
+  local _saved _whl
+  if [ -f "$AGENT_SOURCE_FILE" ]; then
+    _saved=$(head -n1 "$AGENT_SOURCE_FILE")
+    if [ -n "$_saved" ] && [ -e "$_saved" ]; then
+      printf '%s' "$_saved"
+      return
+    fi
+  fi
+  # Il wheel, non il sorgente: 'pip install ../vfa-agent' compila dal codice,
+  # che sulla macchina di un cliente non c'e'.
+  _whl=$(ls -t ../vfa-agent/dist/*.whl 2>/dev/null | head -n1)
+  if [ -n "$_whl" ]; then
+    printf '%s' "$_whl"
+    return
+  fi
+  [ -d ../vfa-agent ] && printf '%s' "../vfa-agent"
+}
+
+_agent_pip_run() {
+  # pip silenzioso, ma l'errore per intero quando fallisce: "installation
+  # failed" senza il motivo manda chi installa a indovinare.
+  local _out
+  if ! _out=$("$AGENT_PY" -m pip install "$@" 2>&1); then
+    printf '\n' >&2
+    printf '%s\n' "$_out" | tail -n 15 >&2
+    printf '\n' >&2
+    return 1
+  fi
+}
+
+_agent_pip_install() {
+  # _agent_pip_install PATH [flag pip aggiuntivi...] → installa da wheel,
+  # sorgente o wheelhouse.
+  # --find-links sulla cartella indicata: su una macchina senza rete (il caso
+  # normale dal cliente) le dipendenze, PyNaCl in testa, devono stare li'
+  # accanto. Nessun download di codice a runtime, mai.
+  local _path="$1"; shift
+  local _extra=("$@") _dir
+  # ${a[@]+"${a[@]}"}: un array vuoto sotto 'set -u' non deve diventare un
+  # argomento vuoto ne' far fallire l'espansione.
+  if [ -f "$_path" ]; then
+    case "$_path" in
+      *.whl|*.tar.gz) ;;
+      *) printf '  ✗  Not a package file (.whl or .tar.gz): %s\n' "$_path" >&2; return 1 ;;
+    esac
+    _dir=$(dirname "$_path")
+    _agent_pip_run --upgrade ${_extra[@]+"${_extra[@]}"} --find-links "$_dir" "$_path"
+  elif [ -d "$_path" ]; then
+    if [ -f "$_path/pyproject.toml" ]; then
+      # cartella del sorgente
+      [ -d "$_path/dist" ] && _dir="$_path/dist" || _dir="$_path"
+      _agent_pip_run --upgrade ${_extra[@]+"${_extra[@]}"} --find-links "$_dir" "$_path"
+    elif ls "$_path"/*.whl >/dev/null 2>&1; then
+      # wheelhouse: tutto in locale, niente indice remoto
+      _agent_pip_run --upgrade ${_extra[@]+"${_extra[@]}"} --no-index --find-links "$_path" "$AGENT_PKG"
+    else
+      printf '  ✗  No pyproject.toml and no .whl in: %s\n' "$_path" >&2
+      return 1
+    fi
+  else
+    printf '  ✗  Path not found: %s\n' "$_path" >&2
+    return 1
+  fi
+}
+
+_agent_pip_uninstall() {
+  "$AGENT_PY" -m pip uninstall -y "$AGENT_PKG" >/dev/null 2>&1
+  # Il wheel installa il package, ma un 'pip install -e' lascia il .pth: se il
+  # modulo si importa ancora, la disinstallazione non e' completa e va detto.
+  if _agent_installed; then
+    printf '  ⚠  %s still importable after uninstall (editable install?).\n' "$AGENT_MOD" >&2
+    return 1
+  fi
+}
+
+# L'applicazione non usa psql: parla HTTP con PostgREST all'indirizzo
+# SUPABASE_URL (db.py). Le migrazioni invece hanno bisogno di SQL, e l'unica
+# via SQL che questo script ha e' il container Postgres dello stack locale.
+# Due strade diverse verso quello che deve essere lo stesso database: tutto
+# cio' che segue serve a non dare per scontato che lo sia.
+
+_agent_sb_url() { printf '%s' "${SUPABASE_URL:-http://localhost:8001}"; }
+
+_agent_sb_key() {
+  local _k="${SUPABASE_SERVICE_KEY:-}"
+  if [ -z "$_k" ] && [ -f supabase/.env ]; then
+    _k=$(grep -m1 '^SERVICE_ROLE_KEY=' supabase/.env | cut -d= -f2-)
+  fi
+  printf '%s' "$_k"
+}
+
+_agent_db_is_local() {
+  case "$(_agent_sb_url)" in
+    *localhost*|*127.0.0.1*|*'[::1]'*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_agent_pg() {
+  # SQL nel container dello stack locale. </dev/null dove non si passa un file:
+  # 'docker compose exec' si porta via tutto lo stdin bufferizzato anche quando
+  # il comando non lo legge, e dentro un menu vuol dire mangiarsi le risposte
+  # successive di chi sta rispondendo.
+  [ -d supabase ] || return 1
+  ( cd supabase && docker compose exec -T db psql -tAqX -U postgres -d postgres "$@" ) \
+    </dev/null 2>/dev/null
+}
+
+_agent_db_target() {
+  # Con chi si puo' applicare lo schema dell'add-on:
+  #   local    container locale, e dentro c'e' lo schema del core
+  #   remote   SUPABASE_URL punta altrove: psql non e' la strada
+  #   foreign  un Postgres c'e', ma non e' il database dell'applicazione
+  #   down     nessun Postgres raggiungibile
+  if ! _agent_db_is_local; then printf 'remote'; return; fi
+  if ! ( cd supabase && docker compose exec -T db pg_isready -U postgres -d postgres ) \
+         </dev/null >/dev/null 2>&1; then
+    printf 'down'; return
+  fi
+  # Prova d'identita' povera ma efficace: il database dell'applicazione ha le
+  # sue tabelle. Intercetta il container di un altro progetto, o uno vuoto.
+  local _n
+  _n=$(_agent_pg -c "select count(*) from pg_tables
+                      where schemaname='public' and tablename in ('assets','findings')" \
+       | tr -d '\r' | head -n1)
+  [ "$_n" = "2" ] && printf 'local' || printf 'foreign'
+}
+
+_agent_manual_migration_note() {
+  # Quando le migrazioni non si possono applicare da qui, l'unica cosa utile e'
+  # dire esattamente cosa deve fare una persona. Una spunta verde falsa e'
+  # peggio di nessuna spunta.
+  local _dir="$1" _f
+  printf '  Apply these to the database the application uses, in order:\n' >&2
+  for _f in "$_dir"/*.sql; do
+    [ -f "$_f" ] && printf '    %s\n' "$_f" >&2
+  done
+  printf "    then:  notify pgrst, 'reload schema';\n" >&2
+  printf '  Until then the Agent pages fail on tables that do not exist.\n' >&2
+}
+
+_agent_db_ready() {
+  # Compatibilita' con i chiamanti che vogliono solo sapere se si puo' scrivere.
+  [ "$(_agent_db_target)" = "local" ]
+}
+
+_agent_migrate() {
+  # Migrazioni dell'add-on: separate da quelle del core, da applicare in
+  # ordine. Tutte con IF NOT EXISTS, quindi rilanciabili a ogni avvio come fa
+  # supabase/setup.sh con lo schema del core.
+  _agent_installed || return 0
+  local _dir
+  _dir=$("$AGENT_PY" -c "import $AGENT_MOD, pathlib
+print(pathlib.Path($AGENT_MOD.__file__).parent / 'migrations')" 2>/dev/null) || return 0
+  [ -d "$_dir" ] || return 0
+
+  case "$(_agent_db_target)" in
+    local) ;;
+    remote)
+      printf '  ⚠  The application uses a database this script cannot reach with SQL:\n' >&2
+      printf '       SUPABASE_URL = %s\n' "$(_agent_sb_url)" >&2
+      printf '     Migrations are NOT applied from here.\n' >&2
+      _agent_manual_migration_note "$_dir"
+      return 1
+      ;;
+    foreign)
+      printf '  ⚠  A local Postgres is running but it is not this application'"'"'s database\n' >&2
+      printf '     (no assets/findings tables in it). Nothing was written to it.\n' >&2
+      _agent_manual_migration_note "$_dir"
+      return 1
+      ;;
+    down)
+      printf '  ⚠  Local database not running — add-on migrations deferred to the next ./start.sh\n' >&2
+      return 0
+      ;;
+  esac
+
+  local _f
+  for _f in "$_dir"/*.sql; do
+    [ -f "$_f" ] || continue
+    printf '  applying %s\n' "$(basename "$_f")" >&2
+    # client_min_messages=warning: le migrazioni sono IF NOT EXISTS e a ogni
+    # avvio stamperebbero una NOTICE per oggetto gia' presente.
+    if ! ( cd supabase && docker compose exec -T -e PGOPTIONS='-c client_min_messages=warning' \
+             db psql -q -v ON_ERROR_STOP=1 -U postgres -d postgres ) < "$_f" >/dev/null; then
+      printf '  ✗  migration failed: %s\n' "$(basename "$_f")" >&2
+      return 1
+    fi
+  done
+
+  # RLS sulle agent_*: una tabella nuova nasce con RLS spenta e PostgREST
+  # pubblica tutto public/* alla chiave anon, che e' pubblica per definizione.
+  # Lo schema del core la riaccende, ma solo al prossimo avvio: senza questo
+  # blocco le analisi salvate resterebbero leggibili dal gateway per tutta la
+  # sessione in corso. RLS attiva senza policy = nega tutto ai ruoli normali;
+  # l'app usa la service_role key, che ha BYPASSRLS.
+  ( cd supabase && docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+      -U postgres -d postgres ) >/dev/null <<'SQLEOF'
+DO $$
+DECLARE t text;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public'
+              AND tablename LIKE 'agent\_%'
+              AND NOT rowsecurity
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+  END LOOP;
+END $$;
+NOTIFY pgrst, 'reload schema';
+SQLEOF
+  printf '  ✓  add-on schema applied, RLS enforced, PostgREST reloaded\n' >&2
+}
+
+_agent_set_license() {
+  # _agent_set_license → chiede la chiave, la verifica con il pacchetto gia'
+  # installato e la scrive solo se regge. Non richiede riavvio: il core rilegge
+  # la chiave a ogni richiesta.
+  local _key _res _state
+  _key=$(_ask_secret "Licence key")
+  if [ -z "$_key" ]; then
+    printf '  Nothing entered — unchanged.\n' >&2
+    return 1
+  fi
+  _res=$(printf '%s' "$_key" | _agent_license_check)
+  _state="${_res%%|*}"
+  _agent_license_explain "$_state"
+  case "$_state" in
+    active|grace) ;;
+    *) printf '  config.json left untouched.\n' >&2; return 1 ;;
+  esac
+  _json_write "agent.license_key=$_key"
+  _agent_show_license
+}
+
+_agent_show_license() {
+  local _res _state _cust _plan _exp _days _max
+  _res=$(_json_read agent license_key | _agent_license_check)
+  IFS='|' read -r _state _cust _plan _exp _days _max <<< "$_res"
+  printf '\n  State    : %s\n' "${_state:-unknown}" >&2
+  [ -n "$_cust" ] && printf '  Customer : %s\n' "$_cust" >&2
+  [ -n "$_plan" ] && printf '  Plan     : %s\n' "$_plan" >&2
+  [ -n "$_exp" ]  && printf '  Expires  : %s\n' "$_exp" >&2
+  [ -n "$_days" ] && printf '  Days left: %s\n' "$_days" >&2
+  case "$_state" in
+    active|grace) _agent_capacity_report "$_max" || true ;;
+  esac
+  printf '\n' >&2
+}
+
+_agent_install() {
+  _sep "Analysis add-on — install" >&2
+  _agent_venv || return
+
+  if _agent_installed; then
+    printf '  Already installed (%s). Use "Update package" for a newer wheel,\n' "$(_agent_version)" >&2
+    printf '  or "Licence key" to change the key.\n' >&2
+    return
+  fi
+
+  printf '  The licence key is the gate. The verifier ships inside the package,\n' >&2
+  printf '  so the package is installed first, then the key is checked: if it\n' >&2
+  printf '  does not validate the package is removed again and config.json is\n' >&2
+  printf '  left untouched.\n\n' >&2
+
+  local _key
+  _key=$(_ask_secret "Licence key")
+  if [ -z "$_key" ]; then
+    printf '  Nothing entered — aborted.\n' >&2
+    return
+  fi
+
+  local _path
+  _path=$(_ask "Package path (.whl file, source dir, or wheelhouse dir)" "$(_agent_default_source)")
+  if [ -z "$_path" ]; then
+    printf '  No path — aborted.\n' >&2
+    return
+  fi
+
+  printf '\n  Installing %s ...\n' "$_path" >&2
+  if ! _agent_pip_install "$_path"; then
+    printf '  ✗  Installation failed. On a machine without network access, point\n' >&2
+    printf '     this at a directory holding the wheel and its dependencies\n' >&2
+    printf '     (PyNaCl included).\n' >&2
+    _agent_pip_uninstall >/dev/null 2>&1
+    return
+  fi
+
+  local _res _state
+  _res=$(printf '%s' "$_key" | _agent_license_check)
+  _state="${_res%%|*}"
+  _agent_license_explain "$_state"
+
+  case "$_state" in
+    active|grace) ;;
+    *)
+      printf '  Rolling back: removing the package.\n' >&2
+      if _agent_pip_uninstall; then
+        printf '  ✓  package removed, config.json untouched\n' >&2
+      fi
+      return
+      ;;
+  esac
+
+  # Conformita' al tetto di asset dichiarato dalla licenza. Non e' un controllo
+  # di sicurezza — e' una clausola commerciale, e su un'installazione on-premise
+  # chiunque puo' aggirarla: quindi si misura, si dichiara e si fa decidere a
+  # una persona, invece di fingere di imporla.
+  local _max="${_res##*|}"
+  if ! _agent_capacity_report "$_max"; then
+    printf '\n  The inventory exceeds what this licence covers.\n' >&2
+    local _yn
+    _yn=$(_ask "Install anyway? (y/n)" "n")
+    case "$_yn" in
+      s|S|y|Y)
+        printf '  Continuing on the operator'"'"'s decision.\n' >&2
+        ;;
+      *)
+        printf '  Rolling back: removing the package.\n' >&2
+        if _agent_pip_uninstall; then
+          printf '  ✓  package removed, config.json untouched\n' >&2
+        fi
+        printf '  Ask for a licence with a higher cap, or reduce the inventory.\n' >&2
+        return
+        ;;
+    esac
+  fi
+
+  _json_write "agent.license_key=$_key"
+  _agent_remember_source "$_path"
+  printf '  ✓  licence key saved in config.json (section "agent")\n' >&2
+  _agent_show_license
+  # Lo schema non applicato non annulla l'installazione: il pacchetto e la
+  # chiave restano, e cio' che manca e' stato detto sopra con i file da
+  # applicare. L'avviso sul riavvio serve comunque.
+  _agent_migrate || printf '  ⚠  Add-on schema not applied — see the note above.\n' >&2
+
+  printf '  ⚠  Restart required: the router is attached when app.py is imported.\n' >&2
+  printf '     Choose "Save and launch the app" below, or run ./start.sh again.\n' >&2
+}
+
+_agent_update() {
+  # Aggiorna il solo pacchetto. La licenza non c'entra con la versione del
+  # codice: non viene chiesta e non viene toccata.
+  _sep "Analysis add-on — update package" >&2
+  if ! _agent_installed; then
+    printf '  Not installed — use "Install add-on" first.\n' >&2
+    return
+  fi
+
+  local _before
+  _before=$(_agent_version)
+  printf '  Installed now: %s\n\n' "${_before:-?}" >&2
+
+  local _path
+  _path=$(_ask "Package path (.whl file, source dir, or wheelhouse dir)" "$(_agent_default_source)")
+  if [ -z "$_path" ]; then
+    printf '  No path — unchanged.\n' >&2
+    return
+  fi
+
+  printf '\n  Installing %s ...\n' "$_path" >&2
+  if ! _agent_pip_install "$_path"; then
+    printf '  ✗  Update failed — the previously installed version is still in place.\n' >&2
+    return
+  fi
+
+  local _after
+  _after=$(_agent_version)
+  if [ "$_after" = "$_before" ]; then
+    # pip considera "gia' aggiornato" un wheel con lo stesso numero di
+    # versione, anche se ricostruito: in sviluppo e' il caso normale.
+    printf '  Version unchanged (%s) — forcing a reinstall of the package.\n' "$_before" >&2
+    if ! _agent_pip_install "$_path" --force-reinstall --no-deps; then
+      printf '  ✗  Reinstall failed.\n' >&2
+      return
+    fi
+    _after=$(_agent_version)
+  fi
+  _agent_remember_source "$_path"
+  printf '  ✓  package: %s → %s\n' "${_before:-?}" "${_after:-?}" >&2
+
+  # La versione nuova puo' portare migrazioni nuove, e puo' pretendere una
+  # licenza che quella salvata non soddisfa piu'. Si dichiara, non si rimedia
+  # da soli: tornare indietro richiederebbe il wheel precedente, che non
+  # abbiamo, e senza chiave valida il pacchetto e' comunque inerte.
+  local _res _state
+  _res=$(_json_read agent license_key | _agent_license_check)
+  _state="${_res%%|*}"
+  _agent_license_explain "$_state"
+  case "$_state" in
+    active|grace) _agent_capacity_report "${_res##*|}" || true ;;
+    *) printf '  The package is installed but produces no analyses until a valid\n' >&2
+       printf '  key is entered ("Licence key" in this menu).\n' >&2 ;;
+  esac
+
+  _agent_migrate || printf '  ⚠  Add-on schema not applied — see the note above.\n' >&2
+
+  printf '  ⚠  Restart required: the router is attached when app.py is imported.\n' >&2
+}
+
+_agent_uninstall() {
+  _sep "Analysis add-on — uninstall" >&2
+  if ! _agent_installed; then
+    printf '  Not installed.\n' >&2
+    return
+  fi
+
+  local _yn
+  _yn=$(_ask "Remove vfa-agent from the virtualenv? (y/n)" "n")
+  case "$_yn" in
+    s|S|y|Y) ;;
+    *) printf '  Cancelled.\n' >&2; return ;;
+  esac
+
+  if _agent_pip_uninstall; then
+    printf '  ✓  package removed\n' >&2
+  fi
+  _json_write "agent.license_key="
+  printf '  ✓  licence key cleared from config.json\n' >&2
+
+  # Le tabelle restano. Dentro ci sono sintesi salvate e bozze approvate da
+  # persone: un default distruttivo qui sarebbe un errore, e reinstallare
+  # sopra dati intatti e' il caso normale.
+  printf '\n  The agent_* tables hold saved analyses and drafts approved by people.\n' >&2
+  printf '  They are kept by default, and reused if you reinstall.\n' >&2
+  local _confirm
+  _confirm=$(_ask "Drop them anyway? IRREVERSIBLE — type DROP to confirm" "")
+  if [ "$_confirm" = "DROP" ]; then
+    if _agent_db_ready; then
+      ( cd supabase && docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+          -U postgres -d postgres ) >/dev/null <<'SQLEOF'
+DO $$
+DECLARE t text;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public' AND tablename LIKE 'agent\_%'
+  LOOP
+    EXECUTE format('DROP TABLE public.%I CASCADE', t);
+  END LOOP;
+END $$;
+NOTIFY pgrst, 'reload schema';
+SQLEOF
+      printf '  ✓  agent_* tables dropped\n' >&2
+    else
+      printf '  ⚠  Cannot reach the database with SQL from here (target: %s) — tables kept.\n' \
+        "$(_agent_db_target)" >&2
+      printf '     Drop them by hand if you really want them gone.\n' >&2
+    fi
+  else
+    printf '  Tables kept.\n' >&2
+  fi
+
+  printf '\n  ⚠  Restart required: the router stays loaded in the running process.\n' >&2
+  printf '     The audit ledger keeps the agent.* events already recorded.\n' >&2
+}
+
+_agent_menu() {
+  while true; do
+    _sep "Analysis add-on (vfa-agent)" >&2
+    printf '  Status: %s\n' "$(_agent_status_line)" >&2
+
+    local _c
+    if _agent_installed; then
+      _c=$(_choose "Add-on:" \
+        "Licence key — enter or replace it" \
+        "Licence status — show details" \
+        "Update package (new wheel, keeps the licence)" \
+        "Apply database migrations" \
+        "Uninstall add-on" \
+        "Back")
+      case "$_c" in
+        1) _agent_set_license || true ;;
+        2) _agent_show_license       ;;
+        3) _agent_update             ;;
+        4) _agent_migrate || true    ;;
+        5) _agent_uninstall          ;;
+        6) break                     ;;
+      esac
+    else
+      _c=$(_choose "Add-on:" \
+        "Install add-on (licence key, then package path)" \
+        "Back")
+      case "$_c" in
+        1) _agent_install ;;
+        2) break          ;;
+      esac
+    fi
+  done
+}
+
 # ── Update menu ───────────────────────────────────────────────────────────────
 
 _update_menu() {
@@ -805,13 +1482,15 @@ _update_menu() {
     _ai=$(_json_read ai provider)
     _se=$(_json_read search_engine provider)
     printf '  Current AI     : %s\n' "$_ai" >&2
-    printf '  Current search : %s\n\n' "$_se" >&2
+    printf '  Current search : %s\n' "$_se" >&2
+    printf '  Analysis add-on: %s\n\n' "$(_agent_status_line)" >&2
 
     local _c
     _c=$(_choose "What do you want to change?" \
       "AI provider (local/remote)" \
       "Search engine (DuckDuckGo/Serper)" \
       "Docker test machine (Linux/Windows)" \
+      "Analysis add-on (vfa-agent: install, licence, uninstall)" \
       "Check application updates (GitHub)" \
       "Save and exit (configuration only, does not launch)" \
       "Save and launch the app")
@@ -819,9 +1498,10 @@ _update_menu() {
       1) _wizard_ai           ;;
       2) _wizard_search        ;;
       3) _wizard_test_machine  ;;
-      4) _check_app_update     ;;
-      5) LAUNCH_APP=0; break  ;;
-      6) break                ;;
+      4) _agent_menu           ;;
+      5) _check_app_update     ;;
+      6) LAUNCH_APP=0; break  ;;
+      7) break                ;;
     esac
   done
 }
@@ -1024,6 +1704,18 @@ if [ "$WITH_SUPABASE" = "1" ]; then
   ( cd supabase && ./setup.sh )
 else
   echo "==> skipping Supabase (--no-supabase)"
+fi
+
+# Migrazioni dell'add-on, se installato. Dopo lo schema del core e prima del
+# server: sono idempotenti, e dopo setup.sh il database locale e' certamente in
+# piedi (la fase di configurazione gira a stack spento).
+#
+# Fuori dal ramo --no-supabase di proposito: senza stack locale il database puo'
+# essere remoto e vivo, e _agent_migrate distingue da sola i quattro casi. Dentro
+# il ramo, con --no-supabase le migrazioni non sarebbero mai state applicate.
+if _agent_installed; then
+  echo "==> vfa-agent schema"
+  _agent_migrate || echo "   (add-on schema NOT applied — see the note above)"
 fi
 
 # ── 3) Server FastAPI (foreground) ────────────────────────────────────────────
