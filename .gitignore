@@ -40,6 +40,9 @@ node_modules/
 
 # ── Segreti runtime: MAI committare ──
 .vfa_auth_secret
+# JWT secret, chiavi anon/service_role e password Postgres: generati per ogni
+# installazione da supabase/gen_secrets.py (modello: supabase/.env.example).
+supabase/.env
 assets.txt.migrated
 assets.txt
 

@@ -12,7 +12,8 @@ ignorati, cosi' l'app resta usabile anche senza DB.
 
 Variabili d'ambiente (con default per il locale):
     SUPABASE_URL          default http://localhost:8001
-    SUPABASE_SERVICE_KEY  default chiave service_role demo (vedi supabase/.env)
+    SUPABASE_SERVICE_KEY  default SERVICE_ROLE_KEY di supabase/.env, generata
+                          per questa installazione da supabase/setup.sh
     SUPABASE_PERSIST      "0" per disabilitare del tutto la scrittura
 """
 
@@ -68,13 +69,33 @@ def _utc_iso() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+00:00")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "http://localhost:8001")
-# Chiave demo service_role (firmata con il JWT_SECRET demo). Solo per uso locale.
-SUPABASE_SERVICE_KEY = os.environ.get(
-    "SUPABASE_SERVICE_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-    "eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ."
-    "5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww",
-)
+_SUPABASE_ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                  "supabase", ".env")
+
+
+def _load_service_key() -> str:
+    """
+    Chiave service_role: env SUPABASE_SERVICE_KEY, altrimenti quella generata
+    per questa installazione in supabase/.env (supabase/gen_secrets.py).
+
+    Niente valore di riserva nel codice: una chiave scritta qui sarebbe la
+    stessa per ogni installazione, cioe' pubblica, e aprirebbe in lettura e
+    scrittura il database di chiunque non l'avesse cambiata.
+    """
+    env = os.environ.get("SUPABASE_SERVICE_KEY")
+    if env:
+        return env.strip()
+    try:
+        with open(_SUPABASE_ENV_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("SERVICE_ROLE_KEY="):
+                    return line.split("=", 1)[1].strip().strip("'\"")
+    except OSError:
+        pass
+    return ""
+
+
+SUPABASE_SERVICE_KEY = _load_service_key()
 PERSIST_ENABLED = os.environ.get("SUPABASE_PERSIST", "1") != "0"
 
 # Client creato una sola volta (lazy).
@@ -88,6 +109,12 @@ def _get_client():
     if _client is not None or _init_failed:
         return _client
     if not PERSIST_ENABLED:
+        return None
+    if not SUPABASE_SERVICE_KEY:
+        logger.warning("Supabase non inizializzato (persistenza disattivata): "
+                       "nessuna SUPABASE_SERVICE_KEY e nessun supabase/.env — "
+                       "lancia supabase/setup.sh per generare i segreti.")
+        _init_failed = True
         return None
     try:
         from supabase import create_client

@@ -749,6 +749,7 @@ _download_update() {
       --exclude '.venv/' \
       --exclude '.encdec/' \
       --exclude '.vfa_auth_secret' \
+      --exclude 'supabase/.env' \
       --exclude 'assets.txt*' \
       --exclude 'supabase/volumes/db/data/' \
       --exclude '*.log' --exclude '*.pid' \

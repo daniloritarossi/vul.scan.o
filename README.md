@@ -1471,7 +1471,18 @@ only until the row is sealed. See [Point-in-time audit evidence](#4-quater--poin
 
 Env overrides: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_PERSIST=0`.
 
-> ⚠️ The keys in `supabase/.env` are demo keys, for local environments only.
+Secrets are **per installation**. On first run `supabase/setup.sh` creates
+`supabase/.env` (mode `600`, not versioned) with a random `JWT_SECRET`, a random
+`POSTGRES_PASSWORD` and the `ANON_KEY` / `SERVICE_ROLE_KEY` JWTs signed with that
+secret (`supabase/gen_secrets.py`; template in `supabase/.env.example`). The app
+reads `SERVICE_ROLE_KEY` from that file unless `SUPABASE_SERVICE_KEY` is set.
+
+Installations created before this change shipped the demo secrets that were
+committed to the repository. `setup.sh` recognises them and replaces them; it
+then sets the new password on **every** Postgres login role, because the
+image only applies `POSTGRES_PASSWORD` to an empty data volume. Data is kept.
+Restart the app after `setup.sh` rotates the keys (`./start.sh` does both in
+order). To rotate on purpose: delete `supabase/.env` and run `./setup.sh`.
 
 ---
 
