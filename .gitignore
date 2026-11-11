@@ -1,5 +1,6 @@
 # ── Python: virtualenv e bytecode (creati da start.sh fase 3) ──
 .venv/
+.venv.broken/
 venv/
 __pycache__/
 *.py[cod]

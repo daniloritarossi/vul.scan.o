@@ -747,6 +747,7 @@ _download_update() {
     rsync -a \
       --exclude 'config.json' \
       --exclude '.venv/' \
+      --exclude '.venv.broken/' \
       --exclude '.encdec/' \
       --exclude '.vfa_auth_secret' \
       --exclude 'supabase/.env' \
@@ -836,16 +837,73 @@ AGENT_PKG="vfa-agent"
 AGENT_MOD="vfa_agent"
 AGENT_PY=".venv/bin/python"
 
-_agent_venv() {
-  # La fase di configurazione gira prima del blocco che crea il virtualenv per
-  # l'avvio: qui lo si crea se manca. Le dipendenze del core arrivano dopo, non
-  # servono a verificare una licenza.
-  [ -x "$AGENT_PY" ] && return 0
-  printf '  Creating virtualenv .venv ...\n' >&2
+_venv_healthy() {
+  # Un .venv puo' esistere ed essere inutilizzabile: i link puntano a
+  # /usr/bin/python3, e quando la distro aggiorna Python (3.12 -> 3.14) il venv
+  # parte col nuovo interprete ma i pacchetti stanno in lib/python3.12 — niente
+  # pip, niente fastapi. Sano = l'interprete gira, ha la stessa major.minor
+  # registrata in pyvenv.cfg e ha pip.
+  [ -x .venv/bin/python ] || return 1
+  local _want _have
+  _want=$(sed -n 's/^version[_info]* *= *\([0-9]*\.[0-9]*\).*/\1/p' .venv/pyvenv.cfg 2>/dev/null | head -n1)
+  _have=$(.venv/bin/python -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null) || return 1
+  [ -n "$_want" ] && [ "$_want" != "$_have" ] && return 1
+  .venv/bin/python -m pip --version >/dev/null 2>&1
+}
+
+VENV_REBUILT_AGENT=""
+
+_ensure_venv() {
+  # Crea .venv se manca; se c'e' ma e' rotto lo mette da parte e lo ricrea.
+  # Ricorda se dentro c'era l'add-on (e da dove, se installato editable): va
+  # reinstallato DOPO le dipendenze del core, vedi _reinstall_agent_after_rebuild.
+  _venv_healthy && return 0
+  if [ -e .venv ]; then
+    local _pth
+    _pth=$(ls .venv/lib/python*/site-packages/_editable_impl_vfa_agent.pth 2>/dev/null | head -n1)
+    if [ -n "$_pth" ]; then
+      VENV_REBUILT_AGENT="editable:$(head -n1 "$_pth")"
+    elif ls -d .venv/lib/python*/site-packages/vfa_agent >/dev/null 2>&1; then
+      VENV_REBUILT_AGENT="package"
+    fi
+    printf '==> .venv non utilizzabile (Python di sistema cambiato o pip assente): lo ricreo\n' >&2
+    printf '    il vecchio resta in .venv.broken (cancellabile)\n' >&2
+    rm -rf .venv.broken
+    mv .venv .venv.broken
+  else
+    printf '==> creating virtualenv .venv\n' >&2
+  fi
   python3 -m venv .venv >/dev/null 2>&1 || {
     printf '  ✗  Could not create .venv — install python3-venv and retry.\n' >&2
     return 1
   }
+}
+
+_reinstall_agent_after_rebuild() {
+  # L'add-on stava nel venv ricreato: senza reinstallarlo l'app partirebbe
+  # senza il modulo e la voce di menu sparirebbe senza spiegazione.
+  [ -n "$VENV_REBUILT_AGENT" ] || return 0
+  local _src
+  case "$VENV_REBUILT_AGENT" in
+    editable:*) _src="${VENV_REBUILT_AGENT#editable:}"
+                printf '==> reinstalling add-on (editable) from %s\n' "$_src" >&2
+                _agent_pip_run -e "$_src" ;;
+    *)          _src=$(_agent_default_source)
+                if [ -z "$_src" ]; then
+                  printf '  ⚠  add-on was installed but no package found: reinstall it from ./start.sh update\n' >&2
+                  return 0
+                fi
+                printf '==> reinstalling add-on from %s\n' "$_src" >&2
+                _agent_pip_install "$_src" ;;
+  esac || printf '  ⚠  add-on reinstall failed: reinstall it from ./start.sh update\n' >&2
+  VENV_REBUILT_AGENT=""
+}
+
+_agent_venv() {
+  # La fase di configurazione gira prima del blocco che crea il virtualenv per
+  # l'avvio: qui lo si crea (o ricrea, se rotto) quando serve. Le dipendenze
+  # del core arrivano dopo, non servono a verificare una licenza.
+  _ensure_venv
 }
 
 _agent_installed() {
@@ -1620,14 +1678,12 @@ fi
 # ── 1) Virtualenv + dipendenze ────────────────────────────────────────────────
 
 PYBIN=".venv/bin/python"
-if [ ! -x "$PYBIN" ]; then
-  echo "==> creating virtualenv .venv"
-  python3 -m venv .venv
-fi
+_ensure_venv || exit 1
 export PATH="$PWD/.venv/bin:$PATH"
 echo "==> installing/updating dependencies (requirements.txt)"
 "$PYBIN" -m pip install -q --upgrade pip
 "$PYBIN" -m pip install -q -r requirements.txt
+_reinstall_agent_after_rebuild
 
 # ── 1b) UI CSS (Tailwind, compiled) ───────────────────────────────────────────
 # Templates load static/vendor/tailwind.css (committed). Rebuild it when npm is
