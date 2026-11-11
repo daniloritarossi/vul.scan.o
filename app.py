@@ -220,9 +220,10 @@ def _fetch_latest_release() -> Optional[dict]:
     (lavoro taggato ma non ancora pubblicato) e proporlo come aggiornamento
     manderebbe l'utente su una versione che nessuno ha rilasciato.
 
-    Non si usa /releases/latest: quell'endpoint ESCLUDE le prerelease, e questo
-    progetto pubblica solo '-beta' — risponderebbe 404 nascondendo ogni
-    aggiornamento. Si prende quindi l'elenco e si sceglie la versione massima
+    Non si usa /releases/latest: quell'endpoint ESCLUDE le prerelease, e fino
+    alla v1.0.78 il progetto pubblicava solo '-beta' — rispondeva 404
+    nascondendo ogni aggiornamento. Dalla v1.0.79 le release sono stabili, ma
+    una prerelease piu' recente deve comunque essere proposta (ed etichettata). Si prende quindi l'elenco e si sceglie la versione massima
     fra le release pubblicate (draft esclusi: non sono pubbliche). A parita' di
     versione una release stabile batte una prerelease.
     """

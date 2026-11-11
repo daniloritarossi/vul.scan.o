@@ -695,7 +695,8 @@ _latest_version() {
   # Si guardano le release, non i tag: un tag puo' esistere senza release e
   # proporlo come aggiornamento manderebbe l'utente su una versione che nessuno
   # ha pubblicato. Non si usa /releases/latest perche' ESCLUDE le prerelease, e
-  # qui si pubblicano solo '-beta': risponderebbe 404 nascondendo tutto.
+  # fino alla v1.0.78 si pubblicavano solo '-beta' (404, tutto nascosto); una
+  # prerelease piu' recente di una stabile va comunque proposta.
   curl -fsS --max-time 8 \
     -H 'Accept: application/vnd.github+json' \
     "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=30" 2>/dev/null \

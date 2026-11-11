@@ -192,8 +192,10 @@ sidebar) with the latest **published GitHub release**:
   tagged but not published — and offering it as an update sends people to a
   version nobody released. Only published, non-draft releases count. The
   `/releases/latest` endpoint is deliberately *not* used: it excludes
-  pre-releases, and this project publishes only `-beta` ones, so it would
-  answer 404 and hide every update.
+  pre-releases, and up to v1.0.78 this project published only `-beta` ones,
+  so it would have answered 404 and hidden every update. Since v1.0.79
+  releases are stable; the list is kept so a pre-release is still offered
+  (and labelled) when it is the newest one.
 - **The comparison is numeric.** Two versions being different does not mean the
   remote one is newer: a development checkout can sit *ahead* of the latest
   release, and a string comparison used to present that as an update — i.e. a
