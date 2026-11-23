@@ -121,7 +121,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=62"></script>
+  <script src="/static/i18n.js?v=63"></script>
   <script src="/static/vendor/xlsx.full.min.js"></script>
   <script src="/static/tableutils.js"></script>
 </head>
@@ -678,7 +678,7 @@
         const hidden = total - visible.length;
         toggle = `<button type="button" data-cve-toggle data-cid="${cid}"`
           + ` data-product="${esc(product || '')}" data-version="${esc(version || '')}"`
-          + ` data-count="${total}" data-ids='${JSON.stringify(arr)}' data-expanded="0"`
+          + ` data-count="${total}" data-ids="${esc(JSON.stringify(arr))}" data-expanded="0"`
           + ` class="mt-1 inline-block font-code-sm text-[10px] text-indigo-600 hover:text-indigo-800 underline cursor-pointer">`
           + `${t('audit.show_more', { n: hidden })}</button>`;
       }

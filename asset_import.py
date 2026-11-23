@@ -137,6 +137,21 @@ def host_error(raw: str) -> str | None:
     return None
 
 
+# Account SSH/Windows reali: 'root', 'svc_scanner', 'DOMAIN\user',
+# 'user@domain.local', 'HOST$'. Niente spazi, virgolette o parentesi angolari:
+# lo username finisce nella dashboard di chiunque veda l'asset, e un editor che
+# potesse scriverci HTML lo farebbe eseguire nella sessione dell'admin.
+_USERNAME = re.compile(r"^[A-Za-z0-9._@\\$-]{1,128}$")
+
+
+def username_error(raw: str) -> str | None:
+    """Motivo per cui lo username non e' accettabile, None se lo e' (o e' vuoto)."""
+    s = (raw or "").strip()
+    if not s:
+        return None
+    return None if _USERNAME.match(s) else "username_invalid"
+
+
 def valid_host(raw: str) -> bool:
     """True se la stringa e' un IP o un hostname sintatticamente valido."""
     return host_error(raw) is None
@@ -167,6 +182,9 @@ def normalize(raw: dict) -> tuple[dict, list[str]]:
         errors.append("os_type_invalid")
 
     username, password = _s("username"), _s("password")
+    bad_user = username_error(username)
+    if bad_user:
+        errors.append(bad_user)
     # Mezza credenziale non e' una credenziale: l'asset finirebbe in
     # inventario come "autenticazione non richiesta" e la scansione
     # profonda che l'operatore si aspetta non verrebbe mai fatta.

@@ -152,7 +152,7 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  <script src="/static/i18n.js?v=62"></script>
+  <script src="/static/i18n.js?v=63"></script>
 </head>
 
 <body
@@ -1050,16 +1050,16 @@
         const st = hover ? hover.st : null;
         if (hover) {
           const rel = hover.via
-            ? i18n.t('dash.orbit_via', { p: hover.via })
+            ? i18n.t('dash.orbit_via', { p: escHtml(hover.via) })
             : i18n.t('dash.orbit_direct');
           read.innerHTML =
             `<div class="k" style="color:${P.labelDim}">${rel}</div>
-             <div class="v" style="color:${P.label}">${hover.pkg}</div>` +
+             <div class="v" style="color:${P.label}">${escHtml(hover.pkg)}</div>` +
             (st.known
               ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_cve')}</span><b style="color:${hover.colour}">${st.cve}</b></div>
                  <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_epss')}</span><b style="color:${P.label}">${st.epss ? (st.epss * 100).toFixed(0) + '%' : '—'}</b></div>
                  <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_seen')}</span><b style="color:${P.label}">${st.assets}</b></div>` +
-                (st.as ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_measured_as')}</span><b style="color:${P.label}">${st.as}</b></div>` : '')
+                (st.as ? `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_measured_as')}</span><b style="color:${P.label}">${escHtml(st.as)}</b></div>` : '')
               : `<div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_unmeasured')}</span></div>`);
         } else {
           const known = nodes.filter((n) => n.st.known);
@@ -1067,7 +1067,7 @@
           const kev = known.filter((n) => n.st.kev).length;
           read.innerHTML =
             `<div class="k" style="color:${P.labelDim}">${i18n.t('dash.orbit_hover')}</div>
-             <div class="v" style="color:${P.labelDim}">${t.product}${t.version ? ' ' + t.version : ''}</div>
+             <div class="v" style="color:${P.labelDim}">${escHtml(t.product)}${t.version ? ' ' + escHtml(t.version) : ''}</div>
              <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_linked')}</span><b style="color:${P.label}">${nodes.length}</b></div>
              <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_inherited')}</span><b style="color:${P.label}">${known.length ? totalCve : '—'}</b></div>
              <div class="ln" style="color:${P.labelDim}"><span>${i18n.t('dash.orbit_kev')}</span><b style="color:${kev ? P.crit : P.label}">${known.length ? kev : '—'}</b></div>`;
@@ -1307,8 +1307,8 @@
             <span class="material-symbols-outlined text-slate-500">${icon}</span>
           </div>
           <div>
-            <div class="font-code-sm text-code-sm text-slate-900 font-semibold flex items-center gap-2">${healthDot(a.index)}${a.ip}</div>
-            <div class="font-label-caps text-[10px] text-slate-500 mt-0.5">${a.username ? a.username.toUpperCase() : 'NO-CRED'}</div>
+            <div class="font-code-sm text-code-sm text-slate-900 font-semibold flex items-center gap-2">${healthDot(a.index)}${escHtml(a.ip)}</div>
+            <div class="font-label-caps text-[10px] text-slate-500 mt-0.5">${a.username ? escHtml(a.username.toUpperCase()) : 'NO-CRED'}</div>
           </div>
         </div>
         <div class="flex items-center gap-2">${scanBadge}${authBadge(a.auth_required)}</div>
@@ -1564,8 +1564,15 @@
 
     // --- Critical findings (dati reali dall'ultima posture run) -------------
     let _lastRun = null;
-    const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g,
-      (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // Dichiarazione di funzione, non 'const': e' hoisted, quindi disponibile a
+    // ogni render della pagina anche se chiamato prima di questa riga. Ogni
+    // dato che arriva da asset, host scansionati, AI o rete passa da qui prima
+    // di finire in innerHTML (un editor sceglie ip e username di un asset, e
+    // l'admin li vede in dashboard: senza escape e' XSS nella sessione admin).
+    function escHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g,
+        (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
     function renderCriticalFindings(run) {
       const el = $('criticalFindings');
       if (!el) return;
@@ -2044,7 +2051,7 @@
           $('postureNote').textContent = t('dash.posture_note', { n: notFoundCount });
         }
         const [tag, tagCls, boxCls, txtCls] = MATCH_STYLE[r.vuln_match] || ['[INFO]', 'text-cyan-400', '', 'text-slate-300'];
-        const ver = r.detected_version ? ' ' + r.detected_version : '';
+        const ver = r.detected_version ? ' ' + escHtml(r.detected_version) : '';
         let cveNote = '';
         if (r.cve_count !== null && r.cve_count !== undefined) {
           cveNote = r.cve_count > 0
@@ -2053,12 +2060,12 @@
         }
         const detail = r.product_found ? ' — ' + t('log.detected') + ver : ' — ' + t('log.product_not_found');
         const advNote = (r.match_basis === 'ai-advisory')
-          ? ` <span class="text-amber-300">· ${t('log.ai_basis')} (${t('log.ai_affected')}: ${r.affected_version})</span>`
+          ? ` <span class="text-amber-300">· ${t('log.ai_basis')} (${t('log.ai_affected')}: ${escHtml(r.affected_version)})</span>`
           : '';
         const remNote = r.remediation
-          ? ` <span class="text-cyan-200">· ${r.remediation.replace(/</g, '&lt;')}</span>`
+          ? ` <span class="text-cyan-200">· ${escHtml(r.remediation)}</span>`
           : '';
-        const body = `<span class="font-bold ${tagCls}">${tag}</span> <span class="${txtCls}">${t('vuln.' + r.vuln_match)}</span> ${t('log.on_host')} <span class="text-white bg-white/10 px-1 rounded">${r.ip}</span> <span class="text-slate-500">[${r.method}]</span>${detail}${advNote}${cveNote}${remNote}`;
+        const body = `<span class="font-bold ${tagCls}">${tag}</span> <span class="${txtCls}">${t('vuln.' + r.vuln_match)}</span> ${t('log.on_host')} <span class="text-white bg-white/10 px-1 rounded">${escHtml(r.ip)}</span> <span class="text-slate-500">[${escHtml(r.method)}]</span>${detail}${advNote}${cveNote}${remNote}`;
         if (boxCls) {
           const div = document.createElement('div');
           div.className = boxCls;
@@ -2075,7 +2082,7 @@
         const providerTag = a.provider === 'claude'
           ? `<span class="text-violet-400">claude</span>`
           : `<span class="text-cyan-400">ollama</span>`;
-        const modelTag = `<span class="text-white bg-white/10 px-1 rounded font-code-sm">${a.model}</span>`;
+        const modelTag = `<span class="text-white bg-white/10 px-1 rounded font-code-sm">${escHtml(a.model)}</span>`;
         const purposeLabel = a.purpose === 'advisory' ? 'advisory extraction'
           : a.purpose === 'extract' ? 'product identification'
             : a.purpose === 'triage' ? 'triage analysis'
@@ -2085,12 +2092,12 @@
 
       es.addEventListener('advisory', (e) => {
         const a = JSON.parse(e.data);
-        log(`<span class="text-amber-400">[AI]</span> ${t('log.ai_affected')}: <span class="text-white">${a.affected_version}</span> <span class="text-slate-500">(${a.product})</span>`);
+        log(`<span class="text-amber-400">[AI]</span> ${t('log.ai_affected')}: <span class="text-white">${escHtml(a.affected_version)}</span> <span class="text-slate-500">(${escHtml(a.product)})</span>`);
       });
 
       es.addEventListener('error', (e) => {
         if (_scanDone) return;
-        if (e.data) { try { log('<span class="text-rose-400">[ERR]</span> ' + JSON.parse(e.data).message); } catch (_) { } }
+        if (e.data) { try { log('<span class="text-rose-400">[ERR]</span> ' + escHtml(JSON.parse(e.data).message)); } catch (_) { } }
         else { log('<span class="text-rose-400">[ERR]</span> stream interrupted'); }
         ['pipe-parse', 'pipe-osint', 'pipe-detect'].forEach(id => {
           const el = $(id);
@@ -2114,27 +2121,27 @@
           const detLabel = step.querySelector('div.flex-col > span');
           if (detLabel) detLabel.className = 'font-code-sm text-code-sm text-slate-900 font-semibold';
         }
-        const verTxt = c.version ? ' ' + c.version : '';
+        const verTxt = c.version ? ' ' + escHtml(c.version) : '';
         if (c.error) {
-          log(`<span class="text-amber-400">[CVE]</span> ${t('cve.osv_unreachable', { err: c.error })}`);
+          log(`<span class="text-amber-400">[CVE]</span> ${t('cve.osv_unreachable', { err: escHtml(c.error) })}`);
         } else if (c.count > 0) {
           const countSpan = `<span class="text-rose-300 font-bold">${c.count}</span>`;
-          log(`<span class="text-rose-400 font-bold">[CVE]</span> <span class="text-white">${c.product}${verTxt}</span>: ${t('cve.known', { n: countSpan })}`);
+          log(`<span class="text-rose-400 font-bold">[CVE]</span> <span class="text-white">${escHtml(c.product)}${verTxt}</span>: ${t('cve.known', { n: countSpan })}`);
           const div = document.createElement('div');
           div.className = 'bg-indigo-500/10 border border-indigo-500/20 p-3 rounded-lg space-y-2';
           const idsHtml = (c.ids || []).map((id) =>
-            `<span class="inline-block font-code-sm text-[10px] text-indigo-200 bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 rounded">${id}</span>`).join(' ');
+            `<span class="inline-block font-code-sm text-[10px] text-indigo-200 bg-indigo-500/10 border border-indigo-400/20 px-1.5 py-0.5 rounded">${escHtml(id)}</span>`).join(' ');
           div.innerHTML =
             `<p class="text-indigo-200 text-[11px] font-label-caps tracking-wider">RAG · CVE INTELLIGENCE</p>` +
             (idsHtml ? `<div class="flex flex-wrap gap-1">${idsHtml}${c.count > c.ids.length ? `<span class="text-indigo-300 text-[10px] px-1">${t('cve.more', { n: c.count - c.ids.length })}</span>` : ''}</div>` : '') +
             (c.summary
-              ? `<p class="text-slate-200 leading-relaxed">${c.summary.replace(/</g, '&lt;')}</p>` +
+              ? `<p class="text-slate-200 leading-relaxed">${escHtml(c.summary)}</p>` +
                 `<p class="text-amber-300/80 text-[10px] font-label-caps tracking-wider" title="${t('ai.disclaimer')}">⚠ ${t('ai.badge')}</p>`
               : `<p class="text-slate-500 text-[11px]">${t('cve.no_summary')}</p>`);
           consoleEl.insertBefore(div, promptEl);
           consoleEl.scrollTop = consoleEl.scrollHeight;
         } else {
-          log(`<span class="text-emerald-400">[CVE]</span> <span class="text-white">${c.product}${verTxt}</span>: ${t('cve.none')}`);
+          log(`<span class="text-emerald-400">[CVE]</span> <span class="text-white">${escHtml(c.product)}${verTxt}</span>: ${t('cve.none')}`);
         }
       });
 
@@ -2148,19 +2155,19 @@
           const parts = l.split('|').map(s => s.trim());
           if (parts.length === 3) {
             return `<div class="flex gap-2 text-[11px]">
-              <span class="font-code-sm text-violet-300 font-semibold shrink-0">${parts[0].replace(/</g, '&lt;')}</span>
+              <span class="font-code-sm text-violet-300 font-semibold shrink-0">${escHtml(parts[0])}</span>
               <span class="text-slate-300">·</span>
-              <span class="text-slate-300">${parts[1].replace(/</g, '&lt;')}</span>
+              <span class="text-slate-300">${escHtml(parts[1])}</span>
               <span class="text-slate-500">→</span>
-              <span class="text-cyan-200">${parts[2].replace(/</g, '&lt;')}</span>
+              <span class="text-cyan-200">${escHtml(parts[2])}</span>
             </div>`;
           }
-          return `<p class="text-violet-200 text-[11px]">${l.replace(/</g, '&lt;')}</p>`;
+          return `<p class="text-violet-200 text-[11px]">${escHtml(l)}</p>`;
         }).join('');
         div.innerHTML =
           `<p class="text-violet-300 text-[11px] font-label-caps tracking-wider mb-2">` +
           `<span class="material-symbols-outlined text-[13px] align-middle mr-1">priority_high</span>` +
-          `AI · TRIAGE REPORT · ${(tr.product || '').toUpperCase()}</p>` +
+          `AI · TRIAGE REPORT · ${escHtml((tr.product || '').toUpperCase())}</p>` +
           rowsHtml +
           `<p class="text-amber-300/80 text-[10px] font-label-caps tracking-wider mt-2" title="${t('ai.disclaimer')}">⚠ ${t('ai.badge')}</p>`;
         consoleEl.insertBefore(div, promptEl);
@@ -2172,7 +2179,7 @@
         es.close(); runBtn.disabled = false;
         const d = JSON.parse(e.data);
         const note = d.note === 'No product identified.' ? t('note.no_product') : d.note;
-        log(`<span class="text-indigo-400">[SYS]</span> ${t('scan.complete', { n: d.scanned })}${note ? ' · ' + note : ''}`, 'opacity-70');
+        log(`<span class="text-indigo-400">[SYS]</span> ${t('scan.complete', { n: d.scanned })}${note ? ' · ' + escHtml(note) : ''}`, 'opacity-70');
         setPipeStep('pipe-parse', 'done');
         setPipeStep('pipe-osint', 'done');
         setPipeStep('pipe-detect', 'done');

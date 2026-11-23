@@ -2520,6 +2520,28 @@ def api_assets_all(user: CurrentUser = Depends(get_current_user)):
     return {"assets": out}
 
 
+def _asset_identity_error(ip: str, username) -> Optional[JSONResponse]:
+    """
+    400 se ip o username dell'asset non sono validi, None se lo sono.
+
+    Le stesse regole dell'import (asset_import.host_error/username_error):
+    prima valevano solo li', e dal form un editor poteva salvare HTML come ip o
+    username — che la dashboard di ogni altro utente, admin compreso, mostrava.
+    """
+    err = asset_import.host_error(ip)
+    if err == "ip_missing":
+        return JSONResponse({"error": "Missing IP", "code": err}, status_code=400)
+    if err:
+        return JSONResponse({"error": "Invalid IP or hostname", "code": err},
+                            status_code=400)
+    err = asset_import.username_error(str(username or ""))
+    if err:
+        return JSONResponse(
+            {"error": "Invalid username: letters, digits and . _ - @ \\ $ only",
+             "code": err}, status_code=400)
+    return None
+
+
 @app.post("/api/assets")
 async def api_assets_create(request: Request,
                             user: CurrentUser = Depends(_writer)):
@@ -2531,8 +2553,9 @@ async def api_assets_create(request: Request,
     """
     body = await request.json()
     ip = (body.get("ip") or "").strip()
-    if not ip:
-        return JSONResponse({"error": "Missing IP"}, status_code=400)
+    bad = _asset_identity_error(ip, body.get("username"))
+    if bad:
+        return bad
     os_type = (body.get("os_type") or "").strip().lower()
     if os_type not in ("linux", "windows"):
         return JSONResponse({"error": "OS type required (linux or windows)"}, status_code=400)
@@ -2847,8 +2870,9 @@ async def api_assets_update(index: int, request: Request,
     _require_asset_in_scope(user, index)
     body = await request.json()
     ip = (body.get("ip") or "").strip()
-    if not ip:
-        return JSONResponse({"error": "Missing IP"}, status_code=400)
+    bad = _asset_identity_error(ip, body.get("username"))
+    if bad:
+        return bad
     os_type = (body.get("os_type") or "").strip().lower()
     if os_type not in ("linux", "windows"):
         return JSONResponse({"error": "OS type required (linux or windows)"}, status_code=400)
