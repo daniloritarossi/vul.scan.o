@@ -1662,6 +1662,47 @@ def mark_auth_token_used(token_id: int) -> bool:
         return False
 
 
+def revoke_session(jti_hash: str, user_id: int, expires_at: str) -> bool:
+    """
+    Segna la sessione come chiusa (logout). True se la revoca e' registrata.
+
+    Idempotente (upsert sull'hash): un doppio logout non e' un errore. Nella
+    stessa occasione si buttano le revoche gia' scadute: un token oltre la sua
+    scadenza e' rifiutato comunque, ricordarne la revoca non serve piu'.
+    """
+    client = _get_client()
+    if client is None:
+        return False
+    try:
+        client.table("revoked_sessions").upsert({
+            "jti_hash": jti_hash, "user_id": user_id, "expires_at": expires_at,
+        }, on_conflict="jti_hash").execute()
+    except Exception as exc:
+        logger.warning("revoke_session fallita (user=%s): %s", user_id, exc)
+        return False
+    try:
+        (client.table("revoked_sessions").delete()
+         .lt("expires_at", _utc_iso()).execute())
+    except Exception as exc:                       # pulizia: mai bloccante
+        logger.info("pulizia revoked_sessions saltata: %s", exc)
+    return True
+
+
+def is_session_revoked(jti_hash: str) -> Optional[bool]:
+    """True se la sessione e' stata chiusa, False se no, None se il DB non
+    risponde (il chiamante deve rifiutare: senza risposta non si sa)."""
+    client = _get_client()
+    if client is None:
+        return None
+    try:
+        resp = (client.table("revoked_sessions").select("jti_hash")
+                .eq("jti_hash", jti_hash).limit(1).execute())
+        return bool(resp.data)
+    except Exception as exc:
+        logger.warning("is_session_revoked fallita: %s", exc)
+        return None
+
+
 def invalidate_auth_tokens(user_id: int, purpose: str) -> None:
     """Brucia i token pendenti dell'utente (reinvio invito/reset)."""
     client = _get_client()

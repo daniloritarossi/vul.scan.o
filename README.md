@@ -1690,6 +1690,13 @@ Related flows, all built on the same one-time token mechanism:
 - **Global logout on password change** — session tokens carry their issue
   time; any session issued *before* the last password change is rejected. A
   password change/reset instantly invalidates every other open session.
+- **Logout revokes the session server-side** — every session token carries its
+  own random id (`jti`). Signing out stores its SHA-256 in `revoked_sessions`,
+  so a copied token stops working at that moment instead of living until its
+  12-hour expiry. Only that session is closed: the same user stays signed in on
+  other devices. If the revocation list cannot be read the request is refused.
+  Rows are dropped once the token would have expired anyway. Tokens issued
+  before v1.0.81 (no `jti`) are no longer accepted: sign in once after updating.
 - **Brute-force brake** — failed logins are counted on a sliding window, per
   username *and* per source address (`auth.max_attempts`, `auth.ip_max_attempts`,
   `auth.window_seconds`). Over the threshold `/api/login` answers `429` with
@@ -1734,7 +1741,7 @@ auth_tokens       (user_id, token_hash UNIQUE, purpose activation|reset,
   random salt) — see `auth.py`. This is separate from asset SSH passwords,
   which are encrypted with `encdec` (see below): user passwords only need to
   be *verified*, asset passwords must be *recovered* to open SSH sessions.
-- The session token carries only `user_id` + expiry: **role and group
+- The session token carries only `user_id`, expiry, issue time and a session id: **role and group
   membership are re-read from the DB on every request**, so a role change or
   group removal takes effect immediately (no stale JWT claims).
 - The HMAC secret is auto-generated at `.vfa_auth_secret` (mode 600,

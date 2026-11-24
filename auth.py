@@ -33,9 +33,11 @@ account viewer gia' esistenti.
 
 Password: PBKDF2-HMAC-SHA256 con salt casuale (stdlib, nessuna dipendenza).
 Sessione: cookie HttpOnly con token firmato HMAC-SHA256
-          "<user_id>.<expiry_unix>.<firma>". Il ruolo e i gruppi NON stanno
-          nel token: vengono riletti dal DB a ogni richiesta, cosi' revoche e
-          cambi ruolo hanno effetto immediato.
+          "<user_id>.<expiry>.<issued_at>.<jti>.<firma>". Il ruolo e i gruppi
+          NON stanno nel token: vengono riletti dal DB a ogni richiesta, cosi'
+          revoche e cambi ruolo hanno effetto immediato. Il 'jti' identifica
+          la singola sessione: il logout lo mette in 'revoked_sessions' e da
+          quel momento il token e' morto anche se qualcuno l'aveva copiato.
 """
 
 import hashlib
@@ -111,28 +113,71 @@ def _secret() -> bytes:
 
 
 def make_session_token(user_id: int) -> str:
-    """Token 'uid.exp.iat.sig'. 'iat' serve a invalidare le sessioni emesse
-    PRIMA di un cambio password (logout globale su cambio/reset)."""
+    """
+    Token 'uid.exp.iat.jti.sig'.
+
+    'iat' invalida le sessioni emesse PRIMA di un cambio password (logout
+    globale). 'jti' e' l'identita' della singola sessione: senza, il logout
+    poteva solo cancellare il cookie dal browser, e chi aveva copiato il token
+    continuava a usarlo fino alla scadenza (12 ore).
+    """
     now = int(time.time())
     exp = now + SESSION_TTL
-    payload = f"{user_id}.{exp}.{now}"
+    jti = secrets.token_urlsafe(16)          # alfabeto senza '.'
+    payload = f"{user_id}.{exp}.{now}.{jti}"
     sig = hmac.new(_secret(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}.{sig}"
 
 
-def parse_session_token(token: str) -> Optional[tuple]:
-    """Ritorna (user_id, issued_at) se il token e' valido e non scaduto."""
+@dataclass(frozen=True)
+class SessionToken:
+    user_id: int
+    expires_at: int
+    issued_at: int
+    jti: str
+
+    @property
+    def jti_hash(self) -> str:
+        """In DB va l'hash, come per i token one-time."""
+        return hash_token(self.jti)
+
+
+def parse_session_token(token: str) -> Optional[SessionToken]:
+    """
+    Token firmato e non scaduto, None altrimenti. NON guarda la revoca: quella
+    richiede il DB e la fa get_current_user.
+
+    I token del formato precedente (4 parti, senza jti) sono rifiutati: non si
+    potrebbero mai revocare, quindi dopo l'aggiornamento si rientra una volta.
+    """
     try:
-        uid_s, exp_s, iat_s, sig = token.split(".")
-        payload = f"{uid_s}.{exp_s}.{iat_s}"
+        uid_s, exp_s, iat_s, jti, sig = token.split(".")
+        if not jti:
+            return None
+        payload = f"{uid_s}.{exp_s}.{iat_s}.{jti}"
         expected = hmac.new(_secret(), payload.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(sig, expected):
             return None
         if int(exp_s) < time.time():
             return None
-        return int(uid_s), int(iat_s)
+        return SessionToken(int(uid_s), int(exp_s), int(iat_s), jti)
     except Exception:
         return None
+
+
+def revoke_session(token: str) -> bool:
+    """
+    Revoca la sessione del token (logout). True se ora risulta revocata.
+
+    Funziona anche con una sessione che get_current_user rifiuterebbe per altri
+    motivi (cambio password forzato, account disattivato): basta che il token
+    sia autentico. Un token falso o scaduto non ha niente da revocare.
+    """
+    st = parse_session_token(token or "")
+    if st is None:
+        return False
+    expires = datetime.fromtimestamp(st.expires_at, timezone.utc).isoformat()
+    return db.revoke_session(st.jti_hash, st.user_id, expires)
 
 
 # ---------------------------------------------------------------------------
@@ -282,7 +327,11 @@ def get_current_user(request: Request) -> CurrentUser:
     parsed = parse_session_token(token)
     if parsed is None:
         raise AuthRequired()
-    uid, iat = parsed
+    uid, iat = parsed.user_id, parsed.issued_at
+    # Sessione chiusa col logout. None = DB non raggiungibile: si rifiuta,
+    # come gia' succede quando l'utente stesso non si puo' rileggere.
+    if db.is_session_revoked(parsed.jti_hash) is not False:
+        raise AuthRequired()
     row = db.fetch_user(uid)
     if not row or not row.get("is_active", True):
         raise AuthRequired()

@@ -73,7 +73,8 @@ from auth import (AuthRequired, Forbidden, PasswordChangeRequired, CurrentUser,
                   visible_asset_ips, make_session_token, verify_password,
                   hash_password, ensure_default_admin, create_onetime_token,
                   consume_onetime_token, set_user_password,
-                  password_policy_error, SESSION_COOKIE, SESSION_TTL, ROLES)
+                  password_policy_error, revoke_session,
+                  SESSION_COOKIE, SESSION_TTL, ROLES)
 from auth import _secret as _hmac_secret
 import evidence
 import msrc
@@ -542,8 +543,15 @@ def logout(request: Request):
         user = get_current_user(request)
     except Exception:
         user = None
+    # La revoca avviene lato server: cancellare il cookie dal browser non
+    # bastava, il token restava valido fino a 12 ore per chiunque l'avesse
+    # copiato. Si revoca anche una sessione che get_current_user rifiuterebbe
+    # per altri motivi (es. cambio password forzato): il token e' autentico.
+    revoked = revoke_session(request.cookies.get(SESSION_COOKIE) or "")
     if user is not None:
-        _audit("auth.logout", request, user)
+        _audit("auth.logout", request, user,
+               outcome="success" if revoked else "failure",
+               detail={"session_revoked": revoked})
     resp = RedirectResponse("/login", status_code=303)
     resp.delete_cookie(SESSION_COOKIE)
     return resp

@@ -341,6 +341,21 @@ CREATE TABLE IF NOT EXISTS public.auth_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_auth_tokens_user ON public.auth_tokens(user_id);
 
+-- Sessioni chiuse col logout. Il token di sessione e' firmato e senza stato:
+-- cancellare il cookie dal browser non bastava, chi l'aveva copiato poteva
+-- usarlo fino alla scadenza. Qui finisce l'hash SHA-256 del 'jti' del token
+-- (mai il token); la riga serve solo fino a expires_at, poi il token e'
+-- rifiutato comunque e la riga viene eliminata al logout successivo.
+CREATE TABLE IF NOT EXISTS public.revoked_sessions (
+  jti_hash   text PRIMARY KEY,
+  user_id    bigint NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  revoked_at timestamptz NOT NULL DEFAULT now(),
+  expires_at timestamptz NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_revoked_sessions_expires
+  ON public.revoked_sessions(expires_at);
+
 -- 8) AUDIT POINT-IN-TIME: registro append-only degli eventi di ciclo di vita.
 --    La tabella 'findings' e' aggiornata IN PLACE (UPDATE su status) e quindi
 --    NON conserva la storia: senza questo registro non e' possibile dimostrare
